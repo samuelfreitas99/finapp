@@ -8,6 +8,7 @@ import { formatDate, money } from '../../lib/format';
 import { useHiddenValues } from '../../lib/hidden-values';
 import { useDebt, useDebtMutations } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
+import { DebtExtraActions, PayInstallmentForm } from './DebtActions';
 
 const STATUS_PILL: Record<DebtInstallmentDto['status'], string> = {
   pending: 'pill',
@@ -49,6 +50,7 @@ export function DebtPage() {
   const toast = useToast();
   const { hidden } = useHiddenValues();
   const [showAll, setShowAll] = useState(false);
+  const [paying, setPaying] = useState<string | null>(null);
 
   if (debt.isPending) return <div className="skeleton" style={{ height: 480 }} />;
   if (debt.isError || !debt.data) {
@@ -202,7 +204,19 @@ export function DebtPage() {
                   {i.interestPart > 0 ? ` juros ${money(i.interestPart, hidden)}` : ''}
                 </span>
               </span>
-              <strong className="num">{money(i.amount, hidden)}</strong>
+              <span className="row-link__value">
+                <strong className="num">{money(i.amount, hidden)}</strong>
+                {d.status === 'active' && i.status !== 'paid' && paying !== i.id && (
+                  <button type="button" className="btn btn--ghost" onClick={() => setPaying(i.id)}>
+                    {owedToMe ? 'Receber' : 'Pagar'}
+                  </button>
+                )}
+              </span>
+              {paying === i.id && (
+                <div className="schedule-pay">
+                  <PayInstallmentForm debtId={d.id} inst={i} onDone={() => setPaying(null)} />
+                </div>
+              )}
             </li>
           ))}
           {visible.length === 0 && (
@@ -212,6 +226,8 @@ export function DebtPage() {
           )}
         </ul>
       </section>
+
+      {d.status === 'active' && <DebtExtraActions d={d} />}
 
       {d.status === 'active' && (
         <section className="card card--pad form" aria-label="Cancelar">

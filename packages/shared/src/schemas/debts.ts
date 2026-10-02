@@ -216,3 +216,46 @@ export const debtPreviewSchema = z.object({
   summary: debtSummarySchema,
 });
 export type DebtPreview = z.infer<typeof debtPreviewSchema>;
+
+/**
+ * Corpo de `POST /debts/:id/installments/:number/pay`. Padrões: o que falta da parcela,
+ * hoje, a conta da dívida. Desconto (pagar adiantado): valor **ou** taxa mensal (valor
+ * presente, arredondado para baixo).
+ * @see RN 6.3, 6.5
+ */
+export const payInstallmentBodySchema = z
+  .object({
+    amount: z.int().positive().optional(),
+    date: isoDateSchema.optional(),
+    accountId: z.uuid().optional(),
+    discount: z.int().min(0).optional(),
+    discountMonthlyRate: z.number().min(0).lt(1).optional(),
+  })
+  .refine((b) => b.discount === undefined || b.discountMonthlyRate === undefined, {
+    message: 'informe o desconto em valor ou em taxa (só um)',
+    path: ['discount'],
+  });
+export type PayInstallmentBody = z.input<typeof payInstallmentBodySchema>;
+
+/** Corpo de `POST /debts/:id/amortize` (price/sac). @see RN 6.5 */
+export const amortizeBodySchema = z.object({
+  amount: z.int().positive(),
+  mode: z.enum(['reduce_term', 'reduce_installment']),
+  phaseId: z.uuid().optional(),
+  date: isoDateSchema.optional(),
+  accountId: z.uuid().optional(),
+});
+export type AmortizeBody = z.input<typeof amortizeBodySchema>;
+
+/** Corpo de `POST /debts/:id/payoff`: quitação total pelo saldo devedor. @see RN 6.5 */
+export const payoffBodySchema = z.object({
+  date: isoDateSchema.optional(),
+  accountId: z.uuid().optional(),
+});
+export type PayoffBody = z.input<typeof payoffBodySchema>;
+
+export const debtInstallmentParamsSchema = z.object({
+  spaceId: z.uuid(),
+  id: z.uuid(),
+  number: z.coerce.number().int().min(1),
+});

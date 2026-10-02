@@ -15,6 +15,7 @@ import { accountForEntry } from '../accounts/service';
 import { cardForEntry } from '../cards/service';
 import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 import { assertContact } from '../transactions/service';
+import { debtActionRoutes } from './actions';
 import {
   findDebt,
   insertDebt,
@@ -90,6 +91,8 @@ export function debtRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
       installments: toInstallmentDtos(rows, t),
     };
   };
+
+  debtActionRoutes(app, { db, today }, detail);
 
   /** Cronograma e painel sem gravar. */
   app.post('/debts/preview', async (request): Promise<DebtPreview> => {

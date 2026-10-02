@@ -53,9 +53,9 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 ## Dívidas
 - `POST /debts/preview` ✅ (cronograma + painel sem gravar), `POST /debts` ✅ (`{ name, direction?, kind, contactId?, institution?, principal?, paymentAccountId | paymentCardId, completionDate?, assetValue?, notes?, paidInstallments?, phases: [{ name, system, firstDueDate, installments?, installmentAmount | total, principal, rateMonthly | rateAnnual, index?, values?, lastMonth?, endsAtCompletion?, startsAfterCompletion?, payments? }] }`; cria as parcelas e os lançamentos previstos de cada parcela pendente na conta (despesa se devo, receita se me devem) ou como itens das faturas do cartão)
 - `GET /debts` ✅ (com painel e próxima parcela), `GET /debts/:id` ✅ (painel geral e por fase, patrimônio líquido `assetValue − saldo devedor`, cronograma com status do dia), `PATCH /debts/:id` ✅ (nome, contato, instituição, valor do bem, observações), `DELETE /debts/:id` ✅ (cancela; apaga os previstos não pagos)
-- `POST /debts/:id/installments/:n/pay` (`{ amount, date, accountId, discount? }`)
-- `POST /debts/:id/amortize` (`{ amount, mode: reduce_term|reduce_installment }`)
-- `POST /debts/:id/payoff`
+- `POST /debts/:id/installments/:n/pay` ✅ (`{ amount?, date?, accountId?, discount? | discountMonthlyRate? }`; padrão: o que falta, hoje; o previsto da parcela vira o pagamento; parcial deixa o resto previsto; desconto por taxa = valor presente arredondado para baixo; última parcela paga = `paid_off`)
+- `POST /debts/:id/amortize` ✅ (`{ amount, mode: reduce_term|reduce_installment, phaseId?, date?, accountId? }`; só fase price/sac, sem parcela parcial; recalcula as pendentes, renumera e registra evento)
+- `POST /debts/:id/payoff` ✅ (`{ date?, accountId? }`; paga o saldo devedor, encerra as pendentes, `paid_off`, evento)
 - `PATCH /debts/:id/completion-date`
 - `POST /debts/:id/phases/:phaseId/values` (valor do mês para fase variável)
 - `GET/POST /index-values`

@@ -1,5 +1,8 @@
 import type {
   Account,
+  AmortizeBody,
+  PayInstallmentBody,
+  PayoffBody,
   Debt,
   DebtBody,
   DebtDetail,
@@ -524,5 +527,27 @@ export function useDebtMutations() {
       onSuccess: invalidate,
     }),
     invalidate,
+  };
+}
+
+export function useDebtActions(id: string) {
+  const spaceId = useSpaceId();
+  const { invalidate } = useDebtMutations();
+  const post = (path: string, body: unknown) =>
+    api<DebtDetail>(spacePath(spaceId, `/debts/${id}${path}`), { method: 'POST', body });
+  return {
+    pay: useMutation({
+      mutationFn: ({ number, ...body }: PayInstallmentBody & { number: number }) =>
+        post(`/installments/${number}/pay`, body),
+      onSuccess: invalidate,
+    }),
+    amortize: useMutation({
+      mutationFn: (body: AmortizeBody) => post('/amortize', body),
+      onSuccess: invalidate,
+    }),
+    payoff: useMutation({
+      mutationFn: (body: PayoffBody) => post('/payoff', body),
+      onSuccess: invalidate,
+    }),
   };
 }

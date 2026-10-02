@@ -175,8 +175,16 @@ export async function syncPlannedEntries(
   today: ISODate,
   userId: string | null,
 ) {
-  const [rows, phases] = await Promise.all([installmentsOf(db, debt.id), phasesOf(db, debt.id)]);
-  const ids = rows.map((r) => r.id);
+  const [rows, phases, all] = await Promise.all([
+    installmentsOf(db, debt.id),
+    phasesOf(db, debt.id),
+    // Inclui parcelas substituídas (amortização, quitação): os previstos delas também saem.
+    db
+      .select({ id: debtInstallments.id })
+      .from(debtInstallments)
+      .where(eq(debtInstallments.debtId, debt.id)),
+  ]);
+  const ids = all.map((r) => r.id);
   if (ids.length) {
     await db
       .update(transactions)

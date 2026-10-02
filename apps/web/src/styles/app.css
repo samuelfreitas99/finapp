@@ -1675,3 +1675,11 @@ h3 {
 .timeline .row-link__main {
   gap: 4px;
 }
+
+.schedule-pay {
+  flex-basis: 100%;
+}
+
+.list > li.row-link {
+  flex-wrap: wrap;
+}

@@ -52,7 +52,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 ## Fase 5: Dívidas e empréstimos
 - [x] Schema de dívidas, fases, parcelas, eventos, índices
 - [x] Cadastro com prévia (todos os tipos e sistemas), painel e cronograma
-- [ ] Pagar, pagar adiantado, amortizar, quitar
+- [x] Pagar, pagar adiantado, amortizar, quitar
 - [ ] Cartão de terceiro, empréstimo no cartão, emprestei/peguei com pessoa
 - [ ] Imóvel na planta com fases e data de entrega
 
@@ -129,4 +129,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: **Fase 4 concluída** (PR #29). Fase 5: schema `debts`, `debt_phases`, `debt_installments`, `debt_events`, `index_values` e FK `transactions.debt_installment_id` (migração 0005); taxas e índices em `numeric` lidos como número (não são dinheiro) (Claude).
 - 02/10/2026: produção atualizada (main `2bb5b97`: Fase 4 e migração 0005); publicação automática registrada em arquitetura.md. API de dívidas: prévia, cadastro de todos os sistemas e fases (imóvel na planta com entrada, intermediárias, juros de obra até a entrega e financiamento depois dela), dívida em andamento (parcelas já pagas), previstos por parcela na conta ou na fatura, a receber quando me devem, painel geral e por fase, patrimônio líquido, cancelamento. Telas ainda faltam (Claude).
 - 02/10/2026: telas de dívidas: lista (você deve / te devem / quitadas) com progresso e próxima parcela; cadastro por tipo (empréstimo, financiamento, imóvel na planta com modelo de 4 fases, pessoa, cartão, cartão de outra pessoa...) com editor de fases por sistema (parcelas fixas, Price/SAC com taxa ao mês ou ao ano, juros de obra até a entrega, intermediárias), pago com conta ou cartão, parcelas já pagas e prévia do cronograma; painel com falta pagar, % quitado, para quitar hoje, juros, patrimônio, fases e cronograma (Claude).
+- 02/10/2026: dívidas: pagar parcela (atrasada, parcial ou adiantada com desconto por taxa), amortização extraordinária (menos parcelas ou parcela menor), quitação total, com lançamento na conta, eventos e previstos refeitos; botões "Pagar/Receber" no cronograma e cartões "Amortizar" e "Quitar" no painel. Fluxo novo: a IA mescla na `main` sozinha e publica em lotes (Claude).
 
