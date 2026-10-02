@@ -45,3 +45,8 @@ Decisão: novo repositório privado `finapp` com a stack desta documentação. O
 
 ## ADR-011 Ferramentas de desenvolvimento (01/10/2026)
 Decisão: Claude Code instalado **no servidor**, ligado ao projeto do claude.ai por **Remote Control**: o Samuel só conversa e aprova pelo projeto (app/web); o Claude no servidor instala, configura e roda tudo. Sessões na nuvem do claude.ai abrem PRs. VS Code com Remote-SSH fica opcional, para ver o código. Documentação agnóstica (AGENTS.md) para permitir continuar com outra IA (ex.: Antigravity/Gemini). Detalhes em `como-trabalhar.md`.
+
+## ADR-012 Portas e nomes no servidor compartilhado (01/10/2026)
+Contexto: o servidor já usa as portas 3000 (voleidraft), 5173 (centralsuporte) e tem containers antigos parados de um projeto Compose chamado `finapp` (com volume `finapp_postgres_data`). O `cloudflared` roda no host (systemd), não em Docker.
+Decisão: projetos Compose `finapp-dev` e `finapp-prod`; containers `finapp-dev-db`, `finapp-api`, `finapp-db`. Dev: API 3001, web 5174, Postgres `127.0.0.1:5433`. Produção: API publicada só em `127.0.0.1:3010` para o cloudflared do host; banco sem porta publicada.
+Consequências: nenhum conflito com os outros projetos nem reaproveitamento acidental do volume antigo. A API escuta em 3000 dentro do container.

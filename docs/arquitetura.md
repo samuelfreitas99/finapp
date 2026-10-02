@@ -67,21 +67,30 @@ Cada funcionalidade da API é um módulo (`modules/cards`, `modules/debts`...) c
 | `backup` | container separado, diário 03:00 |
 
 ## Desenvolvimento
-Pré-requisitos: Node 22, pnpm 9+, Docker.
+Pré-requisitos: Node 22 (no servidor: via `fnm`), pnpm (via `corepack enable`, versão fixada em `packageManager`), Docker.
 ```
-cp infra/.env.example .env
-docker compose -f infra/docker-compose.dev.yml up -d   # só o Postgres, porta 5432 local
+docker compose -f infra/docker-compose.dev.yml up -d   # só o Postgres (finapp-dev-db), 127.0.0.1:5433
 pnpm install
-pnpm db:migrate && pnpm db:seed                        # categorias padrão, feriados, usuário de teste
-pnpm dev                                               # api :3000, web :5173 (proxy /api -> 3000)
+pnpm db:migrate && pnpm db:seed                        # (Fase 2) categorias padrão, feriados, usuário de teste
+pnpm dev                                               # api :3001, web :5174 (proxy /api -> 3001)
 ```
+Portas escolhidas para não colidir com outros projetos do servidor (3000 = voleidraft, 5173 = centralsuporte, 5432 reservado). Ver ADR-012.
+
+Build: `pnpm build` gera `apps/web/dist` e `apps/api/dist/server.cjs` (bundle único via tsup, inclui os pacotes do workspace e as dependências). A imagem (`infra/Dockerfile`) roda só esse arquivo e serve o front de `WEB_DIST`; rotas fora de `/api` caem no `index.html` (SPA).
 
 ## Deploy no servidor do Samuel
 O servidor já roda `cloudflared` com um túnel para outro site. O FinApp usa **o mesmo túnel**, com um subdomínio novo do domínio existente: **`financas.voleidraft.top`**:
-1. No servidor: `git clone` do repositório, `cp infra/.env.example infra/.env` e preencher (senha do banco, `BETTER_AUTH_SECRET`, chaves VAPID, `APP_URL`).
-2. `docker compose -f infra/docker-compose.yml up -d` (sobe `finapp-api`, `finapp-db`, `finapp-backup`).
-3. Ligar o `finapp-api` à rede Docker do `cloudflared` existente (ou publicar `127.0.0.1:3000` se o cloudflared roda fora do Docker).
-4. No painel Cloudflare Zero Trust → Tunnels → túnel existente → **Public Hostname** → adicionar `financas.voleidraft.top` → `http://finapp-api:3000` (ou `http://localhost:3000`). A Cloudflare cria o DNS e o certificado.
+O `cloudflared` do servidor roda **no host, como serviço systemd**, com túnel **gerenciado localmente** (`/etc/cloudflared/config.yml` com regras `ingress`; voleidraft.top → `http://localhost:3000`). Por isso o painel da Cloudflare **não** serve para adicionar o hostname: a mudança é no arquivo.
+1. No servidor (repositório em `/srv/finapp`): `cp infra/.env.example infra/.env` e preencher (senha do banco, `BETTER_AUTH_SECRET`, chaves VAPID, `APP_URL`).
+2. `docker compose -f infra/docker-compose.yml up -d --build` (projeto `finapp-prod`: `finapp-api`, `finapp-db`; depois `finapp-backup`). A API fica em `127.0.0.1:3010` (só loopback).
+3. Em `/etc/cloudflared/config.yml` (precisa de sudo), adicionar **antes** da regra final `http_status:404`:
+   ```yaml
+   - hostname: "financas.voleidraft.top"
+     service: http://localhost:3010
+   ```
+   Validar com `cloudflared tunnel --config /etc/cloudflared/config.yml ingress validate`.
+4. Criar o DNS: `cloudflared tunnel route dns <id-do-túnel> financas.voleidraft.top` (precisa do `cert.pem` de login; ou criar no painel um CNAME `financas` → `<id-do-túnel>.cfargotunnel.com`, com proxy ligado).
+5. Recarregar o túnel: `sudo systemctl restart cloudflared` (o voleidraft.top fica fora do ar por alguns segundos; fazer com aprovação do Samuel).
 5. Opcional: Cloudflare Access na aplicação com login por código de e-mail para os e-mails permitidos.
 
 Atualizar: `git pull && docker compose -f infra/docker-compose.yml up -d --build` (ou puxar imagem do GHCR). Migrações rodam automaticamente na subida da API.
