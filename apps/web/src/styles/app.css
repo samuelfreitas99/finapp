@@ -598,3 +598,263 @@ textarea.input {
     bottom: 32px;
   }
 }
+
+/* Cabeçalho de tela interna */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+
+.page-header h1 {
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-header .icon-btn {
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.page-header__action {
+  flex-shrink: 0;
+}
+
+/* Linhas de lista clicáveis */
+.row-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 14px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.row-link:hover {
+  color: var(--text);
+  background: var(--surface-sunken);
+}
+
+.list > li:first-child .row-link {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.list > li:last-child .row-link {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.list > li:only-child .row-link {
+  border-radius: var(--radius);
+}
+
+.row-link__main {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row-link__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-link__meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.row-link__value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+}
+
+/* Totais das contas */
+.totals {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.totals > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.totals > div:last-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.totals span {
+  font-size: 13px;
+}
+
+.totals strong {
+  font-size: 17px;
+}
+
+.totals .totals__value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+/* Escolhas em grade (tipo de conta, categoria) */
+.fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.fieldset legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 560px) {
+  .choice-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice[aria-pressed='true'] {
+  border: 2px solid var(--primary);
+  padding: 7px 11px;
+  background: var(--primary-soft);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.18);
+}
+
+.swatch[aria-pressed='true'] {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.toggle > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.field-hint {
+  font-size: 13px;
+}
+
+/* Valor em reais */
+.money {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.money__input {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.money__sign {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.money__sign[aria-pressed='true'] {
+  color: var(--expense);
+  border-color: var(--expense);
+}
+
+.money--large .money__input {
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  min-height: 64px;
+}
