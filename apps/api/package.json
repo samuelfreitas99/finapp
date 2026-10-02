@@ -1,0 +1,23 @@
+{
+  "name": "@finapp/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup",
+    "start": "node dist/server.cjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.5",
+    "@finapp/core": "workspace:*",
+    "@finapp/shared": "workspace:*",
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "tsx": "^4.23.15"
+  }
+}
