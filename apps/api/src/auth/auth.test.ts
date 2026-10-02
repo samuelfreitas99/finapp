@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../app';
 import { createAdminInvite } from '../cli/create-invite';
 import type { Db } from '../db/client';
-import { invites, spaceMembers, spaces } from '../db/schema';
+import { categories, invites, spaceMembers, spaces } from '../db/schema';
+import { DEFAULT_CATEGORIES, SYSTEM_CATEGORIES } from '../db/seed';
 import { createTempDb, one, testDatabaseUrl } from '../test/temp-db';
 import { createAuth } from './auth';
 
@@ -80,6 +81,12 @@ describe.skipIf(!testDatabaseUrl)('auth with invites (integration)', () => {
     expect(body.spaces).toHaveLength(1);
     expect(body.spaces[0]).toMatchObject({ name: 'Pessoal', type: 'personal', role: 'owner' });
     expect(body.activeSpaceId).toBe(body.spaces[0].id);
+    const seeded = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.spaceId, body.spaces[0].id));
+    expect(seeded.filter((c) => c.isSystem)).toHaveLength(SYSTEM_CATEGORIES.length);
+    expect(seeded.length).toBe(SYSTEM_CATEGORIES.length + DEFAULT_CATEGORIES.length);
 
     const [invite] = await db.select().from(invites).where(eq(invites.code, code));
     expect(invite?.usedBy).toBe(body.user.id);

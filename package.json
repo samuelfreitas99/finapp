@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @finapp/api db:generate",
-    "db:migrate": "pnpm --filter @finapp/api db:migrate"
+    "db:migrate": "pnpm --filter @finapp/api db:migrate",
+    "db:seed": "pnpm --filter @finapp/api db:seed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

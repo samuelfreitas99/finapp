@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { and, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { invites, spaceMembers, spaces, userSettings } from '../db/schema';
+import { seedSpaceCategories } from '../db/seed';
 
 export type Invite = typeof invites.$inferSelect;
 
@@ -40,8 +41,8 @@ export async function claimInvite(db: Db, rawCode: string, email: string): Promi
 }
 
 /**
- * Depois do cadastro: liga o convite ao usuário, cria o espaço pessoal, as
- * configurações e, se o convite for de um espaço compartilhado, adiciona como membro.
+ * Depois do cadastro: liga o convite ao usuário, cria o espaço pessoal (com as
+ * categorias padrão), as configurações e, se o convite for de um espaço compartilhado, adiciona como membro.
  * @see docs/arquitetura.md › Autenticação, ADR-007
  */
 export async function onboardUser(
@@ -65,6 +66,7 @@ export async function onboardUser(
       .returning({ id: spaces.id });
     if (!personal) throw new Error('falha ao criar o espaço pessoal');
     await tx.insert(spaceMembers).values({ spaceId: personal.id, userId: user.id, role: 'owner' });
+    await seedSpaceCategories(tx, personal.id, user.id);
     if (sharedSpaceId) {
       await tx
         .insert(spaceMembers)

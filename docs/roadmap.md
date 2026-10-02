@@ -28,7 +28,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 ## Fase 2: Base usável
 - [x] Schema Drizzle de identidade, espaços, contas, categorias, tags, contatos, feriados, lançamentos (MD)
 - [x] Better Auth com convite; espaço pessoal criado no cadastro (ARQ › Autenticação)
-- [ ] Seed: categorias padrão brasileiras e feriados
+- [x] Seed: categorias padrão brasileiras e feriados
 - [ ] API: contas, categorias, lançamentos, transferências, ajuste, Pix (API)
 - [ ] Web: layout, navegação, tema, login/cadastro, telas de contas e lançamentos, botão + (DS)
 - [ ] Dashboard simples (saldo atual, previsto, receitas x despesas)
@@ -105,3 +105,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 01/10/2026: `packages/core/projection` (fluxo de caixa mês a mês, comprometido/livre, meses negativos) e `splits` (divisão equal/percent/amount/shares, saldos, acertos, simplificação). **Fase 1 concluída** (Claude).
 - 01/10/2026: schema Drizzle + migração `0000_init` (tabelas do Better Auth `users`/`sessions`/`auth_accounts`/`verifications`, espaços, membros, convites, configurações, contas, categorias, tags, contatos, feriados, lançamentos, tags de lançamento), enums em `packages/shared`, `pnpm db:generate`/`db:migrate`, teste de integração em banco temporário (CI com serviço Postgres) (Claude).
 - 01/10/2026: Better Auth (e-mail/senha, sessão em cookie) em `/api/auth/*`, cadastro só com convite (reserva atômica, convite por e-mail e para espaço compartilhado), espaço pessoal + configurações no cadastro, `GET /api/me`, `GET/POST /api/invites`, convite de administrador por CLI, migrações automáticas na subida da API; testes de integração do fluxo (Claude).
+- 01/10/2026: correções da revisão do Codex no core (PR #11). Seed idempotente (`apps/api/src/db/seed.ts`): feriados nacionais (`space_id` nulo) do ano anterior até +30 anos, 23 categorias padrão + 4 técnicas (`invoice_payment`, `adjustment`, `transfer`, `loan`) criadas no cadastro do espaço pessoal; roda na subida da API (`RUN_SEED=false` desliga) e em `pnpm db:seed` (Claude).
