@@ -25,7 +25,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 | Tabela | Colunas principais |
 |---|---|
 | `accounts` | id, space_id, name, type (`checking`/`savings`/`cash`/`investment`/`benefit`/`wallet`), initial_balance, initial_date, color, icon, include_in_totals, archived_at, owner_user_id (no espaço compartilhado: de quem é) |
-| `credit_cards` | id, space_id, name, brand, limit_amount, closing_day, due_day, closing_day_goes_to_next, payment_account_id, color, archived_at, parent_card_id (adicional) |
+| `credit_cards` | id, space_id, name, brand (`visa`/`mastercard`/`elo`/`amex`/`hipercard`/`other`), limit_amount (≥0), closing_day e due_day (1–31), closing_day_goes_to_next (padrão true), payment_account_id, color, archived_at, parent_card_id (adicional) |
 | `categories` | id, space_id, name, kind (`income`/`expense`), parent_id, icon, color, is_system, system_key (`invoice_payment`/`adjustment`/`transfer`/`loan`, único por espaço: identifica as técnicas), archived_at |
 | `tags` | id, space_id, name, color |
 | `contacts` | id, space_id, name, pix_key, phone, linked_user_id |
@@ -34,7 +34,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 ## Movimentação
 | Tabela | Colunas principais |
 |---|---|
-| `transactions` | id, space_id, type (`income`/`expense`/`transfer_in`/`transfer_out`/`adjustment`), status (`planned`/`settled`), amount (>0; no `adjustment`, a diferença com sinal, ≠0, ADR-013), date, description, notes, category_id, account_id **ou** invoice_id (check: exatamente um), card_id, payment_method (`pix`/`debit`/`credit`/`cash`/`boleto`/`ted`/`other`), pix_counterparty, contact_id, transfer_id, installment_plan_id, installment_number, recurrence_id, detached, debt_installment_id, invoice_payment_id, split_id, estimated, reconciled_at, settled_at |
+| `transactions` | id, space_id, type (`income`/`expense`/`transfer_in`/`transfer_out`/`adjustment`), status (`planned`/`settled`), amount (>0; no `adjustment`, a diferença com sinal, ≠0, ADR-013), date, description, notes, category_id, account_id **ou** invoice_id (check: exatamente um), card_id, payment_method (`pix`/`debit`/`credit`/`cash`/`boleto`/`ted`/`other`), pix_counterparty, contact_id, transfer_id, installment_plan_id, installment_number, anticipated, recurrence_id, detached, debt_installment_id, invoice_payment_id, split_id, estimated, reconciled_at, settled_at |
 | `transaction_tags` | transaction_id, tag_id |
 | `attachments` | id, space_id, transaction_id, file_path, mime, size |
 | `recurrences` | id, space_id, type (`income`/`expense`), description, amount, frequency, interval, day_rule (jsonb: `{kind, day?, n?}`), adjust, parts (jsonb, salário dividido), start_date, end_date, account_id/card_id, category_id, payment_method, variable_amount, generated_until |
@@ -42,11 +42,11 @@ Regras detalhadas em `regras-de-negocio.md`.
 ## Cartões
 | Tabela | Colunas principais |
 |---|---|
-| `invoices` | id, space_id, card_id, reference_month (`YYYY-MM`, unique com card_id), closing_date, due_date, closing_date_override, due_date_override, status, carried_balance |
-| `invoice_payments` | id, invoice_id, account_id, amount, date, transaction_id |
-| `installment_plans` | id, space_id, description, total_amount, installments, first_date, first_due_date (fora do cartão), card_id/account_id, category_id, interest_amount, start_installment, status (`active`/`finished`/`cancelled`) |
+| `invoices` | id, space_id, card_id, reference_month (`YYYY-MM`, unique com card_id), closing_date, due_date (já com overrides; check fechamento ≤ vencimento), closing_date_override, due_date_override, status (`open`/`closed`/`paid`/`partial`/`overdue`, último estado calculado), carried_balance |
+| `invoice_payments` | id, space_id, invoice_id, account_id, amount (>0), date, transaction_id, deleted_at |
+| `installment_plans` | id, space_id, description, total_amount, installments (1–420), first_date, first_due_date (fora do cartão), card_id **ou** account_id (check), category_id, interest_amount, start_installment (1..installments), status (`active`/`finished`/`cancelled`) |
 
-Itens da fatura = `transactions` com `invoice_id`. Total da fatura é calculado (view `invoice_totals`), não armazenado.
+Itens da fatura = `transactions` com `invoice_id` (e `card_id`). Total da fatura é calculado na consulta (soma dos itens), não armazenado. Parcelas: `installment_plan_id` e `installment_number` andam juntos (check); `anticipated` marca parcela antecipada (RN 5.5). Migração `0003`.
 
 ## Dívidas
 | Tabela | Colunas principais |
