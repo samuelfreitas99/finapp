@@ -37,10 +37,10 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 
 ## Fase 3: Cartões e parcelamentos
 - [x] Schema: cartões, faturas, pagamentos, planos de parcelamento
-- [ ] API e telas de cartões e faturas, pagar fatura (total/parcial), estorno
-- [ ] Compra parcelada com prévia, parcelamentos ativos, antecipar, cancelar
-- [ ] Parcelamento fora do cartão (carnê/boleto)
-- [ ] Limite disponível e melhor dia de compra na UI
+- [x] API e telas de cartões e faturas, pagar fatura (total/parcial), estorno
+- [x] Compra parcelada com prévia, parcelamentos ativos, antecipar, cancelar
+- [ ] Parcelamento fora do cartão (carnê/boleto) (API pronta; falta a tela)
+- [x] Limite disponível e melhor dia de compra na UI
 
 ## Fase 4: Recorrências e projeção
 - [ ] Schema e API de recorrências (com prévia e "alterar a partir de")
@@ -118,4 +118,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: produção atualizada (main `5f71f6a`): migrações 0001–0002 e seed aplicados, convite do Samuel criado. Fase 3: schema `credit_cards`, `invoices`, `invoice_payments`, `installment_plans`, FKs de `transactions` para cartão/fatura/parcelamento/pagamento e coluna `anticipated` (migração `0003`), com testes de restrições (Claude).
 - 02/10/2026: API de cartões e faturas: CRUD de cartões com limite disponível, melhor dia e fatura atual; faturas por mês (criadas sob demanda) com saldo anterior encadeado (`invoiceLedger` no core), status recalculado e gravado, overrides de datas com reposicionamento de compras; compra e estorno no cartão via `POST /transactions` com `cardId`; pagar fatura total/parcial (despesa na conta + `invoice_payments`) e desfazer (Claude).
 - 02/10/2026: cor principal azul-marinho (ADR-015). API de parcelamentos: prévia e criação no cartão (uma parcela por fatura, plano em andamento) e fora dele (carnê/boleto com ajuste de dia útil), painel com parcelas pagas/restantes e próxima, antecipação com desconto (estorno na fatura aberta) e cancelamento com estorno opcional das já faturadas; parcelas travadas para edição individual. Telas ainda faltam (Claude).
+- 02/10/2026: telas de cartões: carrossel com fatura atual e limite disponível, melhor dia de compra, fatura por mês (status, fechamento/vencimento, saldo anterior, itens, pagamentos com desfazer), pagar fatura total/parcial, cadastro/edição/arquivo de cartão; parcelamentos ativos com progresso e tela do plano (antecipar com taxa, cancelar com estorno); no "+", conta ou cartão no mesmo campo, compra/estorno no cartão e "Parcelar" com prévia (Claude).
 

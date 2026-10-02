@@ -19,6 +19,7 @@ import { money } from '../../lib/format';
 import { useHiddenValues } from '../../lib/hidden-values';
 import {
   useAccounts,
+  useCards,
   useCategories,
   useSettleTransaction,
   useTransactions,
@@ -69,9 +70,14 @@ export function TransactionsPage() {
   const categories = useCategories();
   const settle = useSettleTransaction();
 
+  const cards = useCards({ includeArchived: true });
   const accountName = useMemo(
-    () => new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
-    [accounts.data],
+    () =>
+      new Map([
+        ...(accounts.data ?? []).map((a) => [a.id, a.name] as const),
+        ...(cards.data ?? []).map((c) => [c.id, `Cartão ${c.name}`] as const),
+      ]),
+    [accounts.data, cards.data],
   );
   const categoryById = useMemo(
     () => new Map((categories.data ?? []).map((c) => [c.id, c])),
@@ -217,7 +223,9 @@ export function TransactionsPage() {
                 const meta = [
                   isTransfer
                     ? `${t.type === 'transfer_out' ? 'Saiu de' : 'Entrou em'} ${accountName.get(t.accountId ?? '') ?? 'conta'}`
-                    : [cat?.name, accountName.get(t.accountId ?? '')].filter(Boolean).join(', '),
+                    : [cat?.name, accountName.get(t.accountId ?? t.cardId ?? '')]
+                        .filter(Boolean)
+                        .join(', '),
                   t.paymentMethod === 'pix' ? 'Pix' : '',
                 ]
                   .filter(Boolean)

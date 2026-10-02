@@ -6,7 +6,10 @@ import { LoginPage } from './pages/Login';
 import { MorePage } from './pages/More';
 import { EditAccountPage, NewAccountPage } from './pages/accounts/AccountFormPage';
 import { AccountsPage } from './pages/accounts/AccountsPage';
-import { CardsPage, CategoriesPage } from './pages/Placeholders';
+import { EditCardPage, NewCardPage } from './pages/cards/CardFormPage';
+import { CardsPage } from './pages/cards/CardsPage';
+import { PlanPage } from './pages/cards/PlanPage';
+import { CategoriesPage } from './pages/Placeholders';
 import { EditEntryPage, NewEntryPage } from './pages/transactions/EntryPages';
 import { TransactionsPage } from './pages/transactions/TransactionsPage';
 import { SignUpPage } from './pages/SignUp';
@@ -30,6 +33,9 @@ export const router = createBrowserRouter([
           { path: '/lancamentos/:id', element: <EditEntryPage /> },
           { path: '/lancar', element: <NewEntryPage /> },
           { path: '/cartoes', element: <CardsPage /> },
+          { path: '/cartoes/novo', element: <NewCardPage /> },
+          { path: '/cartoes/:id/editar', element: <EditCardPage /> },
+          { path: '/parcelamentos/:id', element: <PlanPage /> },
           { path: '/contas', element: <AccountsPage /> },
           { path: '/contas/nova', element: <NewAccountPage /> },
           { path: '/contas/:id', element: <EditAccountPage /> },

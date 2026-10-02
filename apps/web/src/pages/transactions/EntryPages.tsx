@@ -9,14 +9,23 @@ import { money } from '../../lib/format';
 import { readLastAccount, saveLastAccount } from '../../lib/last-account';
 import {
   useAccounts,
+  useCards,
   useCategories,
+  useCreatePlan,
   useCreateTransaction,
   useCreateTransfer,
   useDeleteTransaction,
   useTransaction,
   useUpdateTransaction,
 } from '../../lib/queries';
-import { EntryForm, errorText, type EntryKind, type EntryState } from './EntryForm';
+import {
+  CARD_PREFIX,
+  EntryForm,
+  errorText,
+  isCardTarget,
+  type EntryKind,
+  type EntryState,
+} from './EntryForm';
 
 const SAVED: Record<EntryKind, string> = {
   expense: 'Despesa salva.',
@@ -47,15 +56,17 @@ function NoAccounts() {
 
 export function NewEntryPage() {
   const accounts = useAccounts();
+  const cards = useCards();
   const categories = useCategories();
   const createTx = useCreateTransaction();
   const createTransfer = useCreateTransfer();
+  const createPlan = useCreatePlan();
   const remove = useDeleteTransaction();
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
 
-  if (accounts.isPending || categories.isPending) {
+  if (accounts.isPending || categories.isPending || cards.isPending) {
     return <div className="skeleton" style={{ height: 520 }} />;
   }
   const list = accounts.data ?? [];
@@ -68,8 +79,10 @@ export function NewEntryPage() {
       </>
     );
   }
+  const cardList = cards.data ?? [];
   const last = readLastAccount();
-  const defaultAccount = list.find((a) => a.id === last)?.id ?? list[0]?.id ?? '';
+  const known = [...list.map((a) => a.id), ...cardList.map((c) => `${CARD_PREFIX}${c.id}`)];
+  const defaultAccount = (last && known.includes(last) ? last : list[0]?.id) ?? '';
 
   // Abriu o "+" direto (link, atalho do PWA): não há tela anterior no app.
   const back = () => (location.key === 'default' ? navigate('/lancamentos') : navigate(-1));
@@ -106,19 +119,44 @@ export function NewEntryPage() {
       return;
     }
     const category = cats.find((c) => c.id === s.categoryId);
+    const cardId = isCardTarget(s.accountId) ? s.accountId.slice(CARD_PREFIX.length) : null;
+    if (cardId && s.kind === 'expense' && s.installments > 1) {
+      createPlan.mutate(
+        {
+          description: describe(s, category?.name),
+          cardId,
+          totalAmount: s.amount,
+          installments: s.installments,
+          firstDate: s.date,
+          categoryId: s.categoryId,
+        },
+        {
+          onSuccess: (plan) => {
+            toast({ text: `Compra parcelada em ${s.installments}x.` });
+            navigate(`/parcelamentos/${plan.id}`, { replace: true });
+          },
+        },
+      );
+      return;
+    }
     createTx.mutate(
       {
         ...common,
         type: s.kind,
-        accountId: s.accountId,
+        ...(cardId ? { cardId } : { accountId: s.accountId }),
         categoryId: s.categoryId,
         description: describe(s, category?.name),
-        paymentMethod: s.pix ? 'pix' : null,
-        pixCounterparty: s.pix ? s.pixCounterparty.trim() || null : null,
+        paymentMethod: cardId ? null : s.pix ? 'pix' : null,
+        pixCounterparty: !cardId && s.pix ? s.pixCounterparty.trim() || null : null,
       },
       {
         onSuccess: (t) => {
-          toast({ text: SAVED[s.kind], action: undo([t.id]) });
+          const text = cardId
+            ? s.kind === 'income'
+              ? 'Estorno salvo.'
+              : 'Compra salva.'
+            : SAVED[s.kind];
+          toast({ text, action: undo([t.id]) });
           back();
         },
       },
@@ -141,11 +179,13 @@ export function NewEntryPage() {
           pix: false,
           pixCounterparty: '',
           notes: '',
+          installments: 1,
         }}
         accounts={list}
+        cards={cardList}
         categories={cats}
-        pending={createTx.isPending || createTransfer.isPending}
-        error={createTx.error ?? createTransfer.error}
+        pending={createTx.isPending || createTransfer.isPending || createPlan.isPending}
+        error={createTx.error ?? createTransfer.error ?? createPlan.error}
         onSubmit={submit}
       />
     </>
@@ -162,6 +202,7 @@ export function EditEntryPage() {
   const { id = '' } = useParams();
   const tx = useTransaction(id);
   const accounts = useAccounts({ includeArchived: true });
+  const cards = useCards({ includeArchived: true });
   const categories = useCategories();
   const update = useUpdateTransaction(id);
   const remove = useDeleteTransaction();
@@ -223,7 +264,28 @@ export function EditEntryPage() {
     );
   }
 
+  if (t.installmentPlanId) {
+    return (
+      <>
+        <PageHeader title={t.description} back="/lancamentos" />
+        <section className="card card--pad form">
+          <p>
+            Parcela <strong>{t.installmentNumber}</strong> de um parcelamento, valor{' '}
+            <strong className="num">{money(t.amount)}</strong>.
+          </p>
+          <p className="muted">
+            Valor e data vêm do parcelamento. Para mudar, antecipe ou cancele por lá.
+          </p>
+          <Link to={`/parcelamentos/${t.installmentPlanId}`} className="btn btn--primary">
+            Ver parcelamento
+          </Link>
+        </section>
+      </>
+    );
+  }
+
   const isTransfer = Boolean(t.transferId);
+  const isCardItem = Boolean(t.cardId);
   return (
     <>
       <PageHeader title={isTransfer ? 'Transferência' : t.description} back="/lancamentos" />
@@ -236,19 +298,21 @@ export function EditEntryPage() {
       <EntryForm
         key={t.id}
         lockKind
-        transferAccountsLocked={isTransfer}
+        transferAccountsLocked={isTransfer || isCardItem}
+        cards={cards.data ?? []}
         initial={{
           kind,
           amount: t.amount,
           categoryId: t.categoryId,
           description: t.description,
-          accountId: t.accountId ?? '',
+          accountId: t.cardId ? `${CARD_PREFIX}${t.cardId}` : (t.accountId ?? ''),
           toAccountId: '',
           date: t.date,
           done: t.status === 'settled',
           pix: t.paymentMethod === 'pix',
           pixCounterparty: t.pixCounterparty ?? '',
           notes: t.notes ?? '',
+          installments: 1,
         }}
         accounts={accounts.data ?? []}
         categories={categories.data ?? []}
@@ -266,13 +330,19 @@ export function EditEntryPage() {
           update.mutate(
             isTransfer
               ? common
-              : {
-                  ...common,
-                  accountId: s.accountId,
-                  categoryId: s.categoryId,
-                  paymentMethod: s.pix ? 'pix' : t.paymentMethod === 'pix' ? null : t.paymentMethod,
-                  pixCounterparty: s.pix ? s.pixCounterparty.trim() || null : null,
-                },
+              : isCardItem
+                ? { ...common, categoryId: s.categoryId }
+                : {
+                    ...common,
+                    accountId: s.accountId,
+                    categoryId: s.categoryId,
+                    paymentMethod: s.pix
+                      ? 'pix'
+                      : t.paymentMethod === 'pix'
+                        ? null
+                        : t.paymentMethod,
+                    pixCounterparty: s.pix ? s.pixCounterparty.trim() || null : null,
+                  },
             {
               onSuccess: () => {
                 toast({ text: 'Lançamento salvo.' });
