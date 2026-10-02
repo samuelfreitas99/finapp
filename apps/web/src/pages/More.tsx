@@ -6,6 +6,7 @@ import {
   ChartPie,
   HandCoins,
   Landmark,
+  Layers,
   LogOut,
   Settings,
   Tags,
@@ -20,6 +21,7 @@ import { applyTheme, readTheme } from '../lib/theme';
 
 const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/contas', label: 'Contas', icon: Landmark },
+  { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
   { to: '/categorias', label: 'Categorias', icon: Tags },
 ];
 

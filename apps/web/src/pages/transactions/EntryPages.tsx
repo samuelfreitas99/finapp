@@ -120,11 +120,13 @@ export function NewEntryPage() {
     }
     const category = cats.find((c) => c.id === s.categoryId);
     const cardId = isCardTarget(s.accountId) ? s.accountId.slice(CARD_PREFIX.length) : null;
-    if (cardId && s.kind === 'expense' && s.installments > 1) {
+    if (s.kind === 'expense' && s.installments > 1) {
       createPlan.mutate(
         {
           description: describe(s, category?.name),
-          cardId,
+          ...(cardId
+            ? { cardId }
+            : { accountId: s.accountId, firstDueDate: s.firstDueDate, adjust: s.adjust }),
           totalAmount: s.amount,
           installments: s.installments,
           firstDate: s.date,
@@ -132,7 +134,11 @@ export function NewEntryPage() {
         },
         {
           onSuccess: (plan) => {
-            toast({ text: `Compra parcelada em ${s.installments}x.` });
+            toast({
+              text: cardId
+                ? `Compra parcelada em ${s.installments}x.`
+                : `Carnê de ${s.installments} parcelas criado.`,
+            });
             navigate(`/parcelamentos/${plan.id}`, { replace: true });
           },
         },
@@ -180,6 +186,8 @@ export function NewEntryPage() {
           pixCounterparty: '',
           notes: '',
           installments: 1,
+          firstDueDate: '',
+          adjust: 'none',
         }}
         accounts={list}
         cards={cardList}
@@ -313,6 +321,8 @@ export function EditEntryPage() {
           pixCounterparty: t.pixCounterparty ?? '',
           notes: t.notes ?? '',
           installments: 1,
+          firstDueDate: '',
+          adjust: 'none',
         }}
         accounts={accounts.data ?? []}
         categories={categories.data ?? []}

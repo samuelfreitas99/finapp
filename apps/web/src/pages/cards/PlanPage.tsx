@@ -37,7 +37,7 @@ export function PlanPage() {
     );
   }
   const p = plan.data;
-  const back = p.cardId ? `/cartoes?cartao=${p.cardId}` : '/lancamentos';
+  const back = p.cardId ? `/cartoes?cartao=${p.cardId}` : '/parcelamentos';
   const done = p.summary.paidCount + (p.startInstallment - 1);
   const remainingCount = p.summary.remainingCount;
   const rateNumber = Number(rate.replace(',', '.'));

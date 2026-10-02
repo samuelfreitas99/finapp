@@ -1,4 +1,4 @@
-import { addDays, compareDates } from '@finapp/core';
+import { addDays, addMonths, compareDates } from '@finapp/core';
 import type { Account, Card, Category } from '@finapp/shared';
 import { ChevronDown, ChevronUp, Layers, Zap } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
@@ -25,8 +25,12 @@ export interface EntryState {
   pix: boolean;
   pixCounterparty: string;
   notes: string;
-  /** 1 = à vista; 2+ = parcelado no cartão. */
+  /** 1 = à vista; 2+ = parcelado (no cartão ou em carnê/boleto na conta). */
   installments: number;
+  /** Carnê/boleto: vencimento da 1ª parcela (vazio = um mês depois da compra). */
+  firstDueDate: string;
+  /** Carnê/boleto: vencimento em fim de semana/feriado. */
+  adjust: 'none' | 'previous' | 'next';
 }
 
 export const CARD_PREFIX = 'card:';
@@ -102,12 +106,15 @@ export function EntryForm({
   const isTransfer = form.kind === 'transfer';
   const onCard = !isTransfer && isCardTarget(form.accountId);
   const cardId = onCard ? form.accountId.slice(CARD_PREFIX.length) : null;
-  const splitting = onCard && form.kind === 'expense' && form.installments > 1;
+  const splitting = !isTransfer && form.kind === 'expense' && form.installments > 1;
+  const firstDueDate = form.firstDueDate || addMonths(form.date, 1);
   const preview = useInstallmentPreview(
-    splitting && cardId && form.amount > 0
+    splitting && form.amount > 0 && form.accountId
       ? {
           description: 'prévia',
-          cardId,
+          ...(cardId
+            ? { cardId }
+            : { accountId: form.accountId, firstDueDate, adjust: form.adjust }),
           totalAmount: form.amount,
           installments: form.installments,
           firstDate: form.date,
@@ -122,7 +129,11 @@ export function EntryForm({
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    onSubmit({ ...form, done: onCard ? !future : form.done && !future });
+    onSubmit({
+      ...form,
+      firstDueDate,
+      done: onCard ? !future : form.done && !future,
+    });
   };
 
   const accountOptions = accounts.map((a) => (
@@ -185,7 +196,7 @@ export function EntryForm({
 
       {!isTransfer && (
         <div className="entry__quick">
-          {!onCard && (
+          {!onCard && !splitting && (
             <button
               type="button"
               className="chip"
@@ -196,12 +207,14 @@ export function EntryForm({
               Pix
             </button>
           )}
-          {onCard && form.kind === 'expense' && !lockKind && (
+          {form.kind === 'expense' && !lockKind && (
             <button
               type="button"
               className="chip"
               aria-pressed={form.installments > 1}
-              onClick={() => set('installments', form.installments > 1 ? 1 : 2)}
+              onClick={() =>
+                setForm((f) => ({ ...f, installments: f.installments > 1 ? 1 : 2, pix: false }))
+              }
             >
               <Layers size={16} aria-hidden="true" />
               Parcelar
@@ -227,6 +240,33 @@ export function EntryForm({
               ))}
             </select>
           </div>
+          {!onCard && (
+            <>
+              <div className="field">
+                <label htmlFor="firstDueDate">Vencimento da 1ª parcela</label>
+                <input
+                  id="firstDueDate"
+                  type="date"
+                  className="input"
+                  value={firstDueDate}
+                  onChange={(e) => e.target.value && set('firstDueDate', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="adjust">Se vencer em fim de semana ou feriado</label>
+                <select
+                  id="adjust"
+                  className="input"
+                  value={form.adjust}
+                  onChange={(e) => set('adjust', e.target.value as EntryState['adjust'])}
+                >
+                  <option value="none">Manter a data</option>
+                  <option value="next">Passar para o próximo dia útil</option>
+                  <option value="previous">Antecipar para o dia útil anterior</option>
+                </select>
+              </div>
+            </>
+          )}
           {previewItems.length > 0 && (
             <p className="split__preview" aria-live="polite">
               <strong>
@@ -235,10 +275,18 @@ export function EntryForm({
                   ? ` (1ª de ${formatBRL(previewItems[0].amount)})`
                   : ''}
               </strong>
-              <span>
-                1ª na fatura de {monthLabel(previewItems[0]?.invoiceMonth ?? '')}, última em{' '}
-                {monthLabel(previewItems.at(-1)?.invoiceMonth ?? '')}.
-              </span>
+              {onCard ? (
+                <span>
+                  1ª na fatura de {monthLabel(previewItems[0]?.invoiceMonth ?? '')}, última em{' '}
+                  {monthLabel(previewItems.at(-1)?.invoiceMonth ?? '')}.
+                </span>
+              ) : (
+                <span>
+                  1ª vence em {formatDate(previewItems[0]?.date ?? firstDueDate)}, última em{' '}
+                  {formatDate(previewItems.at(-1)?.date ?? firstDueDate)}. Cada parcela fica
+                  prevista na conta até você confirmar o pagamento.
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -411,7 +459,7 @@ export function EntryForm({
         </p>
       )}
 
-      {onCard ? (
+      {splitting ? null : onCard ? (
         future ? (
           <p className="alert">
             Compra com data futura fica como <strong>prevista</strong> na fatura.
