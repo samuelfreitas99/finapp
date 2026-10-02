@@ -33,3 +33,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build da imagem de produção
         run: docker build -f infra/Dockerfile -t finapp-api:ci .
+      - name: Build da imagem de backup
+        run: docker build -t finapp-backup:ci infra/backup

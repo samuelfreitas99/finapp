@@ -98,8 +98,21 @@ Atualizar: `git pull && docker compose -f infra/docker-compose.yml up -d --build
 Se no futuro comprar um domínio próprio, basta adicionar outro Public Hostname; nada no app muda além de `APP_URL`.
 
 ## Backup
-- `pg_dump -Fc` diário, criptografado e enviado com `restic` para um destino externo (Backblaze B2, Google Drive via rclone, ou outro disco). Retenção 7 diários / 4 semanais / 12 mensais.
-- Script `infra/backup/restore.sh` e teste de restauração documentado; rodar o teste uma vez por mês.
+- Container `finapp-backup` (imagem `infra/backup/`: postgres:17-alpine + restic + rclone, cron do busybox). Todo dia às 03:00 (`BACKUP_CRON`, fuso America/Sao_Paulo) faz `pg_dump -Fc` do `finapp-db` direto para o restic (snapshot com tag `finapp-db`, arquivo `finapp.dump`) e aplica a retenção 7 diários / 4 semanais / 12 mensais com `forget --prune`.
+- Repositório restic criptografado com `RESTIC_PASSWORD` (no `infra/.env`; **guarde uma cópia fora do servidor**, sem ela o backup é ilegível). O container cria o repositório na primeira subida.
+- Destino padrão: local, em `/srv/finapp-backups/restic` (`BACKUP_LOCAL_DIR`), fora do checkout do git. **Ainda falta o destino externo (offsite).**
+- Trocar para destino externo é só `.env`, sem mudar código: `RESTIC_REPOSITORY=b2:<bucket>:finapp` com `B2_ACCOUNT_ID`/`B2_ACCOUNT_KEY`, ou `RESTIC_REPOSITORY=rclone:<remoto>:finapp` com as variáveis `RCLONE_CONFIG_<REMOTO>_*` (geradas pelo `rclone config`), ou qualquer backend do restic (s3, sftp...). Depois: `docker compose -f infra/docker-compose.yml up -d backup`.
+- Comandos úteis:
+  - backup agora: `docker exec finapp-backup sh -c '. /etc/backup.env && backup.sh'`
+  - listar: `docker exec finapp-backup restic snapshots`
+  - teste de restauração (Postgres descartável, não toca na produção): `bash infra/backup/restore.sh [id|latest]`. Rodar uma vez por mês.
+- Restaurar **por cima da produção** (perda real de dados; com aprovação do Samuel):
+  ```
+  docker compose -f infra/docker-compose.yml stop api
+  docker exec finapp-backup restic dump <id|latest> finapp.dump \
+    | docker exec -i finapp-db sh -c 'pg_restore --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+  docker compose -f infra/docker-compose.yml start api
+  ```
 
 ## Segurança
 - Postgres sem porta publicada em produção.

@@ -12,7 +12,8 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] CI no GitHub Actions: lint, typecheck, test, build
 - [ ] Protótipos das telas principais como Artifact para aprovação (DS)
 - [x] Subdomínio no túnel Cloudflare existente apontando para o app "hello world" (ARQ › Deploy)
-- [ ] Backup diário com restic + teste de restauração (ARQ › Backup)
+- [x] Backup diário com restic + teste de restauração (ARQ › Backup)
+  - [ ] destino externo (offsite): escolher B2, Google Drive (rclone) ou outro disco e configurar no `.env`
 
 ## Fase 1: Núcleo (`packages/core`, só funções puras e testes)
 - [ ] `money`: centavos, divisão com resto (5.1), formatação pt-BR (RN 5.1)
@@ -88,3 +89,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 01/10/2026: decisões e documentação inicial (Claude).
 - 01/10/2026: monorepo pnpm (core, shared, api com `/api/health`, web mínima), TS strict, ESLint, Prettier, Vitest, Dockerfile, compose de dev e produção, `.env.example`, CI. Servidor preparado: projeto em `/srv/finapp`, Node 22 via fnm, pnpm via corepack (Claude no servidor). Portas ajustadas por conflito com outros projetos (ver ADR-012).
 - 01/10/2026: produção no ar em https://financas.voleidraft.top (finapp-prod: `finapp-api` em 127.0.0.1:3010, `finapp-db`), rota adicionada ao túnel com `infra/cloudflared/add-financas-hostname.sh` (DNS criado pelo script; o servidor tem `/root/.cloudflared/cert.pem`). Apps financeiros antigos removidos do servidor (Claude).
+- 01/10/2026: backup diário (`finapp-backup`: pg_dump -Fc → restic local em `/srv/finapp-backups/restic`, 03:00, retenção 7/4/12) e `infra/backup/restore.sh`; primeiro backup e teste de restauração OK. Falta destino externo (Claude).
