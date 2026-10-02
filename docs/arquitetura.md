@@ -83,7 +83,7 @@ O servidor já roda `cloudflared` com um túnel para outro site. O FinApp usa **
 O `cloudflared` do servidor roda **no host, como serviço systemd**, com túnel **gerenciado localmente** (`/etc/cloudflared/config.yml` com regras `ingress`; voleidraft.top → `http://localhost:3000`). Por isso o painel da Cloudflare **não** serve para adicionar o hostname: a mudança é no arquivo.
 1. No servidor (repositório em `/srv/finapp`): `cp infra/.env.example infra/.env` e preencher (senha do banco, `BETTER_AUTH_SECRET`, chaves VAPID, `APP_URL`).
 2. `docker compose -f infra/docker-compose.yml up -d --build` (projeto `finapp-prod`: `finapp-api`, `finapp-db`; depois `finapp-backup`). A API fica em `127.0.0.1:3010` (só loopback).
-3. Em `/etc/cloudflared/config.yml` (precisa de sudo), adicionar **antes** da regra final `http_status:404`:
+3. Automático: `sudo bash /srv/finapp/infra/cloudflared/add-financas-hostname.sh` (faz backup, insere, valida, reinicia e testa; os passos 3–5 abaixo são o equivalente manual). Manual: em `/etc/cloudflared/config.yml` (precisa de sudo), adicionar **antes** da regra final `http_status:404`:
    ```yaml
    - hostname: "financas.voleidraft.top"
      service: http://localhost:3010
