@@ -58,14 +58,6 @@ describe.skipIf(!testDatabaseUrl)(
           initialDate: '2026-01-01',
         })
       ).json().id;
-      cardId = (
-        await api('POST', '/cards', {
-          name: 'Nubank',
-          limitAmount: 1000000,
-          closingDay: 3,
-          dueDay: 10,
-        })
-      ).json().id;
     });
 
     afterAll(async () => {
