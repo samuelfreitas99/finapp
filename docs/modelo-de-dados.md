@@ -51,11 +51,11 @@ Itens da fatura = `transactions` com `invoice_id` (e `card_id`). Total da fatura
 ## Dívidas
 | Tabela | Colunas principais |
 |---|---|
-| `debts` | id, space_id, name, direction (`i_owe`/`owed_to_me`), kind, contact_id, institution, principal, payment_account_id, payment_card_id, completion_date (imóvel), asset_value, status, notes |
-| `debt_phases` | id, debt_id, order, name, system (`fixed`/`price`/`sac`/`variable`/`balloon`), principal, rate_monthly, index (`none`/`incc`/`ipca`/`igpm`), installments, start_date, end_date, installment_amount, ends_at_completion, starts_after_completion |
-| `debt_installments` | id, debt_id, phase_id, number, due_date, amount, principal_part, interest_part, estimated, paid_amount, paid_date, discount, status, transaction_id |
-| `debt_events` | id, debt_id, type (`amortization`/`payoff`/`index_correction`/`completion_date_change`), amount, date, data (jsonb) |
-| `index_values` | index, month, value (decimal, ex.: 0.0045) |
+| `debts` | id, space_id, name, direction (`i_owe`/`owed_to_me`), kind (`bank_loan`/`card_loan`/`personal_loan`/`third_party_card`/`financing`/`agreement`/`consortium`/`property`/`other`), contact_id, institution, principal (≥0), payment_account_id, payment_card_id (no máximo um dos dois), completion_date (imóvel), asset_value, status (`active`/`paid_off`/`cancelled`), notes (migração `0005`) |
+| `debt_phases` | id, space_id, debt_id, position (ordem, única na dívida), name, system (`fixed`/`price`/`sac`/`variable`/`balloon`), principal, rate_monthly (numeric, decimal 0–1), index (`none`/`incc`/`ipca`/`igpm`), installments (1–600), start_date, end_date, installment_amount, ends_at_completion, starts_after_completion |
+| `debt_installments` | id, space_id, debt_id, phase_id, number, due_date, amount, principal_part, interest_part, estimated, paid_amount, paid_date, discount, status (`pending`/`paid`/`late`/`partial`), transaction_id, deleted_at (parcelas pendentes regeneradas são excluídas logicamente) |
+| `debt_events` | id, space_id, debt_id, type (`amortization`/`payoff`/`index_correction`/`completion_date_change`), amount, date, data (jsonb), created_by |
+| `index_values` | index (`incc`/`ipca`/`igpm`), month (`YYYY-MM`, único por índice), value (numeric, ex.: 0.0045), global (não pertence a espaço) |
 
 ## Planejamento
 | Tabela | Colunas principais |

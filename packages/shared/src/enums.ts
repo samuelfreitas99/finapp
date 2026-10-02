@@ -68,3 +68,40 @@ export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number];
 
 export const BUSINESS_DAY_ADJUSTS = ['none', 'previous', 'next'] as const;
 export type BusinessDayAdjustValue = (typeof BUSINESS_DAY_ADJUSTS)[number];
+
+/** Dívidas e empréstimos (RN 6). */
+export const DEBT_DIRECTIONS = ['i_owe', 'owed_to_me'] as const;
+export type DebtDirection = (typeof DEBT_DIRECTIONS)[number];
+
+export const DEBT_KINDS = [
+  'bank_loan',
+  'card_loan',
+  'personal_loan',
+  'third_party_card',
+  'financing',
+  'agreement',
+  'consortium',
+  'property',
+  'other',
+] as const;
+export type DebtKind = (typeof DEBT_KINDS)[number];
+
+export const DEBT_STATUSES = ['active', 'paid_off', 'cancelled'] as const;
+export type DebtStatus = (typeof DEBT_STATUSES)[number];
+
+export const DEBT_SYSTEMS = ['fixed', 'price', 'sac', 'variable', 'balloon'] as const;
+export type DebtSystem = (typeof DEBT_SYSTEMS)[number];
+
+export const DEBT_INDEXES = ['none', 'incc', 'ipca', 'igpm'] as const;
+export type DebtIndex = (typeof DEBT_INDEXES)[number];
+
+export const DEBT_INSTALLMENT_STATUSES = ['pending', 'paid', 'late', 'partial'] as const;
+export type DebtInstallmentStatus = (typeof DEBT_INSTALLMENT_STATUSES)[number];
+
+export const DEBT_EVENT_TYPES = [
+  'amortization',
+  'payoff',
+  'index_correction',
+  'completion_date_change',
+] as const;
+export type DebtEventType = (typeof DEBT_EVENT_TYPES)[number];

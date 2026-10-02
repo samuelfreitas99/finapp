@@ -18,6 +18,7 @@ import {
 import { createdAt, deletedAt, id, inList, updatedAt } from './_helpers';
 import { users } from './auth';
 import { creditCards, installmentPlans, invoicePayments, invoices } from './cards';
+import { debtInstallments } from './debts';
 import { recurrences } from './recurrences';
 import { accounts, categories, contacts, tags } from './registry';
 import { spaces } from './spaces';
@@ -27,7 +28,7 @@ import { spaces } from './spaces';
  * o tipo define o sentido; o ajuste guarda a diferença com sinal (ADR-013). Fica numa conta **ou** numa fatura (cartão).
  * As colunas que apontam para tabelas de fases futuras (recorrências, dívidas, racha)
  * ganham chave estrangeira na migração de cada fase; cartões, faturas e parcelamentos
- * já têm (migração 0003), e recorrências também (0004).
+ * já têm (migração 0003), recorrências (0004) e parcelas de dívida (0005).
  * @see RN 1, docs/modelo-de-dados.md
  */
 export const transactions = pgTable(
@@ -66,7 +67,9 @@ export const transactions = pgTable(
     recurrenceKey: text('recurrence_key'),
     /** Ocorrência editada individualmente: o job de recorrência não sobrescreve. */
     detached: boolean('detached').notNull().default(false),
-    debtInstallmentId: uuid('debt_installment_id'),
+    debtInstallmentId: uuid('debt_installment_id').references(
+      (): AnyPgColumn => debtInstallments.id,
+    ),
     invoicePaymentId: uuid('invoice_payment_id').references((): AnyPgColumn => invoicePayments.id),
     splitId: uuid('split_id'),
     /** Valor estimado (conta variável), confirmado com o valor real depois. */
@@ -88,6 +91,7 @@ export const transactions = pgTable(
     index('transactions_card_idx').on(t.cardId),
     uniqueIndex('transactions_recurrence_key_uq').on(t.recurrenceId, t.recurrenceKey),
     index('transactions_installment_plan_idx').on(t.installmentPlanId),
+    index('transactions_debt_installment_idx').on(t.debtInstallmentId),
     check(
       'transactions_installment_check',
       sql`(${t.installmentPlanId} is null) = (${t.installmentNumber} is null)`,
