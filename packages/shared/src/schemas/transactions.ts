@@ -7,8 +7,9 @@ const counterpartySchema = z.string().trim().min(1).max(120);
 
 /**
  * Corpo de `POST /api/spaces/:spaceId/transactions`: receita ou despesa simples numa
- * conta. Pix: `paymentMethod: 'pix'` com `pixCounterparty` (quem recebeu/pagou) e/ou
- * `contactId`.
+ * conta (`accountId`) **ou** no cartão (`cardId`: despesa = compra, receita = estorno,
+ * a fatura é escolhida pela data). Pix: `paymentMethod: 'pix'` com `pixCounterparty`
+ * (quem recebeu/pagou) e/ou `contactId`.
  */
 export const createTransactionBodySchema = z
   .object({
@@ -18,12 +19,21 @@ export const createTransactionBodySchema = z
     date: isoDateSchema,
     description: nameSchema,
     notes: notesSchema.nullish(),
-    accountId: z.uuid(),
+    accountId: z.uuid().optional(),
+    cardId: z.uuid().optional(),
     categoryId: z.uuid().nullish(),
     paymentMethod: z.enum(PAYMENT_METHODS).nullish(),
     pixCounterparty: counterpartySchema.nullish(),
     contactId: z.uuid().nullish(),
     tagIds: z.array(z.uuid()).max(20).default([]),
+  })
+  .refine((b) => Boolean(b.accountId) !== Boolean(b.cardId), {
+    message: 'informe a conta ou o cartão (só um)',
+    path: ['accountId'],
+  })
+  .refine((b) => !b.cardId || !b.paymentMethod || b.paymentMethod === 'credit', {
+    message: 'no cartão a forma de pagamento é crédito',
+    path: ['paymentMethod'],
   })
   .refine((b) => !b.pixCounterparty || b.paymentMethod === 'pix', {
     message: 'pixCounterparty só vale com paymentMethod "pix"',
@@ -95,6 +105,7 @@ export const listTransactionsQuerySchema = z.object({
   from: isoDateSchema.optional(),
   to: isoDateSchema.optional(),
   accountId: z.uuid().optional(),
+  cardId: z.uuid().optional(),
   categoryId: z.uuid().optional(),
   type: z.enum(TRANSACTION_TYPES).optional(),
   status: z.enum(TRANSACTION_STATUSES).optional(),
@@ -117,6 +128,11 @@ export const transactionSchema = z.object({
   description: z.string(),
   notes: z.string().nullable(),
   accountId: z.uuid().nullable(),
+  /** Item de cartão: o cartão e a fatura (sem conta). */
+  cardId: z.uuid().nullable(),
+  invoiceId: z.uuid().nullable(),
+  installmentPlanId: z.uuid().nullable(),
+  installmentNumber: z.int().nullable(),
   categoryId: z.uuid().nullable(),
   paymentMethod: z.enum(PAYMENT_METHODS).nullable(),
   pixCounterparty: z.string().nullable(),

@@ -6,3 +6,4 @@ export * from './schemas/accounts';
 export * from './schemas/categories';
 export * from './schemas/transactions';
 export * from './schemas/dashboard';
+export * from './schemas/cards';
