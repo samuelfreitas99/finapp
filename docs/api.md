@@ -40,9 +40,11 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
   - `POST /cards/:id/invoices/:month/payments` ✅ (`{ accountId?, amount?, date? }`, padrões: conta do cartão, o que falta, hoje; cria a despesa "Fatura <cartão> <mês>" na conta com a categoria técnica `invoice_payment`)
   - `DELETE /cards/:id/invoices/:month/payments/:paymentId` ✅ (excluir o lançamento do pagamento também desfaz o pagamento)
 - Compra no cartão = `POST /transactions` com `cardId` (sem `accountId`): despesa é compra, receita é estorno; a fatura sai da data. Editar a data de um item avulso troca a fatura; parcelas não mudam de fatura pela data.
-- `POST /installment-plans/preview`, `POST /installment-plans`, `GET /installment-plans?status=`
-- `POST /installment-plans/:id/anticipate` (`{ count, discount? }`)
-- `POST /installment-plans/:id/cancel`
+- `POST /installment-plans/preview` ✅ e `POST /installment-plans` ✅ (`{ description, cardId | accountId, totalAmount | installmentAmount, installments, firstDate, firstDueDate? (obrigatório fora do cartão), adjust?, startInstallment?, categoryId?, interestAmount? }`; cria uma parcela por lançamento `"<descrição> (k/N)"`: no cartão, uma por fatura; fora dele, previstas na conta)
+- `GET /installment-plans?status=&cardId=` ✅ e `GET /installment-plans/:id` ✅ (painel RN 5.6: `summary`, `next`, status `active`/`finished`/`cancelled`; o detalhe traz as parcelas)
+- `POST /installment-plans/:id/anticipate` ✅ (`{ count, discount?: { amount } | { monthlyRate } }`, só no cartão; parcelas movidas ganham `anticipated`, desconto vira estorno na fatura aberta)
+- `POST /installment-plans/:id/cancel` ✅ (`{ refundBilled? }`; RN 5.4)
+- Parcelas não são editadas (valor/data/conta) nem excluídas sozinhas: `installment_locked`.
 
 ## Dívidas
 - `POST /debts/preview`, `/debts` CRUD, `GET /debts/:id` (painel + cronograma)
