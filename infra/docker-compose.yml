@@ -41,5 +41,27 @@ services:
       timeout: 5s
       retries: 10
 
+  backup:
+    build: ./backup
+    image: finapp-backup:latest
+    container_name: finapp-backup
+    hostname: finapp-backup
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      # Padrão: repositório local montado em /repo. Para backup externo, troque
+      # RESTIC_REPOSITORY no .env (ex.: b2:bucket:finapp, rclone:remoto:finapp).
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-/repo}
+      TZ: America/Sao_Paulo
+    volumes:
+      - ${BACKUP_LOCAL_DIR:-/srv/finapp-backups/restic}:/repo
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
