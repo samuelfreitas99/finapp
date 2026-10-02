@@ -5,6 +5,8 @@ PostgreSQL 17, schema definido em Drizzle (`apps/api/src/db/schema/*.ts`). Conve
 - Toda tabela de domínio tem `space_id`, `created_at`, `updated_at`, `created_by`, `deleted_at` (exclusão lógica).
 - Enums como `text` + check constraint (mais fácil de migrar) e union types no TS.
 - Índices em `(space_id, date)`, `(space_id, deleted_at)` e chaves estrangeiras.
+- Valores dos enums ficam em `packages/shared/src/enums.ts` (fonte única para Drizzle, Zod e front).
+- Colunas que apontam para tabelas de fases futuras (ex.: `transactions.invoice_id`, `card_id`, `recurrence_id`) existem desde a 1ª migração, sem FK; a FK entra na migração da fase que cria a tabela.
 
 Regras detalhadas em `regras-de-negocio.md`.
 
@@ -13,7 +15,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 ## Identidade e espaços
 | Tabela | Colunas principais |
 |---|---|
-| `users` | id, name, email (unique), email_verified, image, created_at (gerenciada pelo Better Auth, + `user`/`session`/`account`/`verification`/`passkey` dele) |
+| `users` | id, name, email (unique), email_verified, image, created_at (gerenciada pelo Better Auth; as tabelas dele são `sessions`, `auth_accounts` (para não colidir com `accounts`, as carteiras) e `verifications`; `passkeys` na V2) |
 | `invites` | id, code (unique), created_by, space_id (opcional: convite para espaço), email opcional, expires_at, used_by, used_at |
 | `spaces` | id, name, type (`personal`/`shared`), default_split (jsonb), currency (`BRL`), created_by |
 | `space_members` | space_id, user_id, role (`owner`/`member`), split_percent (opcional), joined_at |
@@ -24,7 +26,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 |---|---|
 | `accounts` | id, space_id, name, type (`checking`/`savings`/`cash`/`investment`/`benefit`/`wallet`), initial_balance, initial_date, color, icon, include_in_totals, archived_at, owner_user_id (no espaço compartilhado: de quem é) |
 | `credit_cards` | id, space_id, name, brand, limit_amount, closing_day, due_day, closing_day_goes_to_next, payment_account_id, color, archived_at, parent_card_id (adicional) |
-| `categories` | id, space_id, name, kind (`income`/`expense`), parent_id, icon, color, is_system (técnicas: pagamento de fatura, ajuste, transferência, empréstimo), archived_at |
+| `categories` | id, space_id, name, kind (`income`/`expense`), parent_id, icon, color, is_system, system_key (`invoice_payment`/`adjustment`/`transfer`/`loan`, único por espaço: identifica as técnicas), archived_at |
 | `tags` | id, space_id, name, color |
 | `contacts` | id, space_id, name, pix_key, phone, linked_user_id |
 | `holidays` | id, space_id (null = nacional), date, name |

@@ -3,3 +3,4 @@ dist/
 coverage/
 # Documentação é editada à mão (e por IAs); não reformatar.
 *.md
+apps/api/src/db/migrations/
