@@ -26,6 +26,7 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 
 - Semânticas: transferência violeta (`#6A45A6`; não azul, para não confundir com a marca), previsto em tom atenuado com borda tracejada. Nunca só cor: sempre sinal (+/−) ou ícone.
 - Modo escuro (`apps/web/src/styles/tokens.css`): fundo `#11161F`, superfície `#1A212C`, `--primary` azul-claro `#8EB2EC` (texto `#0B1A33` sobre ele: 8,0:1), cartão de saldo continua azul-marinho. Todos os pares de texto passam AA.
+- Gráficos (skill dataviz): séries `--series-1` azul `#2A78D6` (entradas, saldo positivo) e `--series-2` laranja `#EB6834` (saídas), validadas para daltonismo (ΔE 24,7 claro / 26,8 escuro); saldo negativo usa `--expense` com texto/ícone. Barras finas com ponta arredondada, base no zero, tooltip no toque/hover e "Ver como tabela". Verde e vermelho juntos não passam no teste de daltonismo: nunca como par de séries.
 - Sombras suaves, espaçamento base 4px. Ícones: lucide. Cada categoria tem ícone e cor.
 
 ## Navegação
