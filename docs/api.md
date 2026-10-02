@@ -29,8 +29,12 @@ Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato plan
 Validações comuns: lançamento efetivado não pode ter data futura (`settled_in_future`); data antes do saldo inicial da conta é recusada (`date_before_initial_balance`); conta arquivada não recebe lançamento novo (`account_archived`); categoria tem que ser do mesmo tipo e não técnica. Erros de regra usam `{ error: { code, message } }` com códigos estáveis.
 
 ## Recorrências
-- `/recurrences` CRUD, `POST /recurrences/preview` (gera ocorrências sem salvar)
-- `PATCH /recurrences/:id?from=YYYY-MM` (alterar a partir de um mês)
+- `POST /recurrences/preview?months=12` ✅ (gera ocorrências sem salvar; mesmo corpo do POST)
+- `POST /recurrences` ✅ (`{ type, description, amount, frequency, interval?, dayRule | parts, adjust?, startDate, endDate?, accountId | cardId, categoryId?, paymentMethod?, variableAmount? }`; gera os previstos dos próximos 12 meses, a partir do mês atual), `GET /recurrences` ✅ (ativas, com as 3 próximas ocorrências), `GET /recurrences/:id` ✅
+- `PATCH /recurrences/:id?from=YYYY-MM` ✅ (valor/regra valem a partir do mês, padrão o atual: encerra a atual no mês anterior e cria uma nova; se a recorrência ainda não começou, muda no lugar. Descrição/categoria mudam nos previstos não editados)
+- `DELETE /recurrences/:id` ✅ (encerra; apaga os previstos futuros não editados)
+- `POST /recurrences/generate` ✅ (estende a janela; o job diário faz o mesmo)
+- Editar um lançamento gerado marca `detached` (a recorrência não mexe mais nele); confirmar com valor real tira o `estimated`.
 
 ## Faturas e parcelamentos
 - Faturas são endereçadas pelo **mês de vencimento** e criadas na hora em que precisam existir:

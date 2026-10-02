@@ -43,7 +43,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Limite disponível e melhor dia de compra na UI
 
 ## Fase 4: Recorrências e projeção
-- [ ] Schema e API de recorrências (com prévia e "alterar a partir de")
+- [x] Schema e API de recorrências (com prévia e "alterar a partir de")
 - [ ] Salário em partes e receitas avulsas a receber
 - [ ] Despesas fixas (conta e cartão), confirmar com valor real
 - [ ] Job pg-boss de geração
@@ -83,6 +83,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [ ] Empacotar como app Android (Capacitor/TWA), se fizer falta
 
 ## Dúvidas em aberto
+- Recorrências: a geração começa no **mês atual** (ou no início da regra, se for depois); meses passados não são criados. Usa só os feriados nacionais (os locais do espaço ainda não entram). No cartão, ocorrências com data até hoje viram itens efetivados na fatura; na conta, ficam previstas até confirmar. Ocorrência excluída pelo usuário não volta (`recurrence_key` único).
 - Fatura com pagamento parcial: o restante só vira "Saldo anterior" da fatura do mês seguinte **depois do vencimento** (antes disso ainda dá para completar o pagamento nela). Fatura vencida sem nenhum pagamento (`overdue`) continua cobrando o total nela mesma. O saldo anterior é calculado (`invoiceLedger` no core), não é um lançamento.
 - Override de fechamento numa fatura reposiciona só compras avulsas de faturas vizinhas ainda sem pagamento; parcelas ficam na fatura do plano. Mudar o dia de fechamento/vencimento do cartão recalcula as datas das faturas abertas sem override, mas não move itens já lançados.
 - Cartão adicional (`parent_card_id`) existe no banco, mas ainda não é usado pela API (limite compartilhado e fatura do titular ficam para depois).
@@ -120,4 +121,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: cor principal azul-marinho (ADR-015). API de parcelamentos: prévia e criação no cartão (uma parcela por fatura, plano em andamento) e fora dele (carnê/boleto com ajuste de dia útil), painel com parcelas pagas/restantes e próxima, antecipação com desconto (estorno na fatura aberta) e cancelamento com estorno opcional das já faturadas; parcelas travadas para edição individual. Telas ainda faltam (Claude).
 - 02/10/2026: telas de cartões: carrossel com fatura atual e limite disponível, melhor dia de compra, fatura por mês (status, fechamento/vencimento, saldo anterior, itens, pagamentos com desfazer), pagar fatura total/parcial, cadastro/edição/arquivo de cartão; parcelamentos ativos com progresso e tela do plano (antecipar com taxa, cancelar com estorno); no "+", conta ou cartão no mesmo campo, compra/estorno no cartão e "Parcelar" com prévia (Claude).
 - 02/10/2026: carnê/boleto na tela: "Parcelar" também numa conta, com vencimento da 1ª parcela, ajuste para dia útil e prévia das datas; parcelas ficam previstas na conta. Tela "Parcelamentos e carnês" (ativos/quitados/cancelados) no menu Mais. **Fase 3 concluída** (Claude).
+- 02/10/2026: **Fase 3 concluída** (PR #24). Recorrências: tabela `recurrences` e `transactions.recurrence_key` (migração 0004), prévia, criação com geração idempotente de 12 meses (conta ou cartão, salário em partes, valor variável estimado), edição "a partir de" (divide a recorrência) ou no lugar, metadados propagados, ocorrência editada fica `detached`, encerramento (Claude).
 

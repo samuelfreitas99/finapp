@@ -11,12 +11,14 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createdAt, deletedAt, id, inList, updatedAt } from './_helpers';
 import { users } from './auth';
 import { creditCards, installmentPlans, invoicePayments, invoices } from './cards';
+import { recurrences } from './recurrences';
 import { accounts, categories, contacts, tags } from './registry';
 import { spaces } from './spaces';
 
@@ -25,7 +27,7 @@ import { spaces } from './spaces';
  * o tipo define o sentido; o ajuste guarda a diferença com sinal (ADR-013). Fica numa conta **ou** numa fatura (cartão).
  * As colunas que apontam para tabelas de fases futuras (recorrências, dívidas, racha)
  * ganham chave estrangeira na migração de cada fase; cartões, faturas e parcelamentos
- * já têm (migração 0003).
+ * já têm (migração 0003), e recorrências também (0004).
  * @see RN 1, docs/modelo-de-dados.md
  */
 export const transactions = pgTable(
@@ -56,7 +58,12 @@ export const transactions = pgTable(
     installmentNumber: integer('installment_number'),
     /** Parcela antecipada para a fatura aberta (RN 5.5). */
     anticipated: boolean('anticipated').notNull().default(false),
-    recurrenceId: uuid('recurrence_id'),
+    recurrenceId: uuid('recurrence_id').references((): AnyPgColumn => recurrences.id),
+    /**
+     * Identidade da ocorrência na recorrência (`YYYY-MM#parte` ou a data, no semanal).
+     * Única por recorrência mesmo depois de excluída: o job não recria o que o usuário apagou.
+     */
+    recurrenceKey: text('recurrence_key'),
     /** Ocorrência editada individualmente: o job de recorrência não sobrescreve. */
     detached: boolean('detached').notNull().default(false),
     debtInstallmentId: uuid('debt_installment_id'),
@@ -79,6 +86,7 @@ export const transactions = pgTable(
     index('transactions_invoice_idx').on(t.invoiceId),
     index('transactions_transfer_idx').on(t.transferId),
     index('transactions_card_idx').on(t.cardId),
+    uniqueIndex('transactions_recurrence_key_uq').on(t.recurrenceId, t.recurrenceKey),
     index('transactions_installment_plan_idx').on(t.installmentPlanId),
     check(
       'transactions_installment_check',

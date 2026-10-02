@@ -23,6 +23,8 @@ export function toTransaction(row: TransactionRow, tagIds: string[] = []): Trans
     installmentPlanId: row.installmentPlanId,
     installmentNumber: row.installmentNumber,
     anticipated: row.anticipated,
+    recurrenceId: row.recurrenceId,
+    estimated: row.estimated,
     categoryId: row.categoryId,
     paymentMethod: row.paymentMethod,
     pixCounterparty: row.pixCounterparty,

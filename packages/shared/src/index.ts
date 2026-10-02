@@ -8,3 +8,4 @@ export * from './schemas/transactions';
 export * from './schemas/dashboard';
 export * from './schemas/cards';
 export * from './schemas/installments';
+export * from './schemas/recurrences';

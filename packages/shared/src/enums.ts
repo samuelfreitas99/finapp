@@ -62,3 +62,9 @@ export type InvoiceStatusValue = (typeof INVOICE_STATUSES)[number];
 
 export const INSTALLMENT_PLAN_STATUSES = ['active', 'finished', 'cancelled'] as const;
 export type InstallmentPlanStatus = (typeof INSTALLMENT_PLAN_STATUSES)[number];
+
+export const RECURRENCE_FREQUENCIES = ['monthly', 'weekly', 'yearly', 'every_n_months'] as const;
+export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number];
+
+export const BUSINESS_DAY_ADJUSTS = ['none', 'previous', 'next'] as const;
+export type BusinessDayAdjustValue = (typeof BUSINESS_DAY_ADJUSTS)[number];
