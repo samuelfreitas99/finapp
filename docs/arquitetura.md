@@ -49,7 +49,7 @@ Cada funcionalidade da API é um módulo (`modules/cards`, `modules/debts`...) c
 - Better Auth com e-mail/senha (V1), passkeys e 2FA (V2). Sessão em cookie `HttpOnly; Secure; SameSite=Lax`.
 - Cadastro só com código de convite (`invites`): `POST /api/auth/sign-up/email` com `inviteCode`. Ao criar o usuário nascem o espaço **Pessoal**, as configurações e, se o convite for de um espaço compartilhado, a participação nele.
 - Primeiro acesso / convite pelo servidor: `docker exec finapp-api node server.cjs --create-invite [dias]` (produção) ou `pnpm --filter @finapp/api invite:create [dias]` (dev). Depois, convites pelo app (`POST /api/invites`).
-- A API aplica as migrações pendentes ao subir (desligar com `RUN_MIGRATIONS=false`).
+- A API aplica as migrações pendentes ao subir (desligar com `RUN_MIGRATIONS=false`) e depois o seed idempotente: feriados nacionais do ano anterior até +30 anos e categorias padrão dos espaços que não têm (desligar com `RUN_SEED=false`; manual: `pnpm db:seed`).
 - Rate limit do próprio Better Auth em produção (5 tentativas/min em login e cadastro), IP pelo `cf-connecting-ip`.
 - Front e API no **mesmo domínio** (API em `/api`), sem CORS.
 
@@ -73,7 +73,7 @@ Pré-requisitos: Node 22 (no servidor: via `fnm`), pnpm (via `corepack enable`, 
 ```
 docker compose -f infra/docker-compose.dev.yml up -d   # só o Postgres (finapp-dev-db), 127.0.0.1:5433
 pnpm install
-pnpm db:migrate && pnpm db:seed                        # (Fase 2) categorias padrão, feriados, usuário de teste
+pnpm db:migrate && pnpm db:seed                        # feriados nacionais e categorias padrão (idempotente)
 pnpm dev                                               # api :3001, web :5174 (proxy /api -> 3001)
 ```
 Portas escolhidas para não colidir com outros projetos do servidor (3000 = voleidraft, 5173 = centralsuporte, 5432 reservado). Ver ADR-012.

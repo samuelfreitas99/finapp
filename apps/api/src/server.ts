@@ -4,6 +4,7 @@ import { createAdminInvite } from './cli/create-invite';
 import { loadConfig } from './config';
 import { createDb } from './db/client';
 import { runMigrations } from './db/migrate';
+import { runSeed } from './db/seed';
 
 const port = Number(process.env.PORT ?? 3001);
 const host = process.env.HOST ?? '127.0.0.1';
@@ -26,6 +27,7 @@ async function main() {
   if (config.databaseUrl) {
     if (process.env.RUN_MIGRATIONS !== 'false') await runMigrations(config.databaseUrl);
     db = createDb(config.databaseUrl).db;
+    if (process.env.RUN_SEED !== 'false') await runSeed(db);
     auth = createAuth({
       db,
       secret: config.authSecret ?? 'dev-secret-dev-secret-dev-secret-0000',
