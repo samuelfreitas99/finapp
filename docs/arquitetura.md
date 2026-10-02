@@ -99,6 +99,13 @@ O `cloudflared` do servidor roda **no host, como serviço systemd**, com túnel 
 
 Atualizar: `git pull && docker compose -f infra/docker-compose.yml up -d --build` (ou puxar imagem do GHCR). Migrações rodam automaticamente na subida da API.
 
+**Publicação automática (autorizada pelo Samuel em 02/10/2026):** depois de PRs mesclados que mudam algo visível (telas ou comportamento) e ao fim de cada fase, a IA publica a `main` em produção sem pedir de novo, agrupando PRs pequenos. Procedimento, sempre igual:
+1. Backup: `docker exec finapp-backup sh -c '. /etc/backup.env && backup.sh'` e conferir o snapshot (`restic snapshots --latest 1`, `pg_restore -l` do dump).
+2. Imagem de volta: `docker tag finapp-api:latest finapp-api:rollback-<AAAAMMDD-HHMM>`.
+3. Só a API: `docker compose -f infra/docker-compose.yml build api && docker compose -f infra/docker-compose.yml up -d --no-deps api`.
+4. Conferir: migrações em `drizzle.__drizzle_migrations`, `https://financas.voleidraft.top/api/health` 200, SPA e manifest carregando, logs sem erro.
+5. Se algo falhar: `docker tag finapp-api:rollback-<...> finapp-api:latest && docker compose -f infra/docker-compose.yml up -d --no-deps api` e avisar. Nunca mexer em containers que não são do FinApp (voleidraft, cloudflared...).
+
 Se no futuro comprar um domínio próprio, basta adicionar outro Public Hostname; nada no app muda além de `APP_URL`.
 
 ## Backup
