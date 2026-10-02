@@ -27,7 +27,7 @@ import {
 } from '../../lib/queries';
 import { errorText } from './EntryForm';
 
-type Filter = 'all' | 'expense' | 'income' | 'transfer' | 'planned';
+type Filter = 'all' | 'expense' | 'income' | 'transfer' | 'planned' | 'receivable';
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -35,6 +35,7 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'income', label: 'Receitas' },
   { value: 'transfer', label: 'Transferências' },
   { value: 'planned', label: 'Previstos' },
+  { value: 'receivable', label: 'A receber' },
 ];
 
 /** Efeito no saldo (positivo entra, negativo sai). */
@@ -62,8 +63,13 @@ export function TransactionsPage() {
     ...monthRange(month),
     accountId,
     q: q.length >= 2 ? q : '',
-    status: filter === 'planned' ? 'planned' : '',
-    type: filter === 'expense' || filter === 'income' ? filter : '',
+    status: filter === 'planned' || filter === 'receivable' ? 'planned' : '',
+    type:
+      filter === 'expense' || filter === 'income'
+        ? filter
+        : filter === 'receivable'
+          ? 'income'
+          : '',
   };
   const list = useTransactions(filters);
   const accounts = useAccounts({ includeArchived: true });

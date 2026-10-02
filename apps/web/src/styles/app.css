@@ -1455,3 +1455,58 @@ h3 {
   gap: 2px;
   font-size: 14px;
 }
+
+/* Recorrências */
+.rule-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.parts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.parts__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+}
+
+.preview__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.preview__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}

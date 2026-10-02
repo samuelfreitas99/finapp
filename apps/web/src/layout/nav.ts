@@ -6,6 +6,7 @@ import {
   Landmark,
   ListOrdered,
   Plus,
+  Repeat,
   Tags,
   type LucideIcon,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ export const sideNav: NavItem[] = [
   { to: '/lancamentos', label: 'Lançamentos', icon: ListOrdered },
   { to: '/cartoes', label: 'Cartões', icon: CreditCard },
   { to: '/contas', label: 'Contas', icon: Landmark },
+  { to: '/fixas', label: 'Fixas', icon: Repeat },
   { to: '/categorias', label: 'Categorias', icon: Tags },
   { to: '/mais', label: 'Mais', icon: Ellipsis },
 ];

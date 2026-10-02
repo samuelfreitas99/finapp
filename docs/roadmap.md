@@ -44,7 +44,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 
 ## Fase 4: Recorrências e projeção
 - [x] Schema e API de recorrências (com prévia e "alterar a partir de")
-- [ ] Salário em partes e receitas avulsas a receber
+- [x] Salário em partes e receitas avulsas a receber
 - [ ] Despesas fixas (conta e cartão), confirmar com valor real
 - [ ] Job pg-boss de geração
 - [ ] Tela de Planejamento: projeção 12 meses
@@ -122,4 +122,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: telas de cartões: carrossel com fatura atual e limite disponível, melhor dia de compra, fatura por mês (status, fechamento/vencimento, saldo anterior, itens, pagamentos com desfazer), pagar fatura total/parcial, cadastro/edição/arquivo de cartão; parcelamentos ativos com progresso e tela do plano (antecipar com taxa, cancelar com estorno); no "+", conta ou cartão no mesmo campo, compra/estorno no cartão e "Parcelar" com prévia (Claude).
 - 02/10/2026: carnê/boleto na tela: "Parcelar" também numa conta, com vencimento da 1ª parcela, ajuste para dia útil e prévia das datas; parcelas ficam previstas na conta. Tela "Parcelamentos e carnês" (ativos/quitados/cancelados) no menu Mais. **Fase 3 concluída** (Claude).
 - 02/10/2026: **Fase 3 concluída** (PR #24). Recorrências: tabela `recurrences` e `transactions.recurrence_key` (migração 0004), prévia, criação com geração idempotente de 12 meses (conta ou cartão, salário em partes, valor variável estimado), edição "a partir de" (divide a recorrência) ou no lugar, metadados propagados, ocorrência editada fica `detached`, encerramento (Claude).
+- 02/10/2026: produção atualizada (main `b7b8c82`, migração 0003: cartões e parcelamentos, cor azul). Tela "Fixas" (receitas e despesas fixas): lista por tipo com total mensal, criação/edição com regra do dia (dia fixo com ajuste, N-ésimo dia útil, último dia útil), semanal/anual/a cada N meses, salário em partes (percentuais, mês seguinte), valor variável, conta ou cartão, prévia das próximas ocorrências e "a partir de" na edição; filtro "A receber" em Lançamentos. API: recorrência pode começar antes do saldo inicial da conta (ocorrências anteriores são puladas) (Claude).
 
