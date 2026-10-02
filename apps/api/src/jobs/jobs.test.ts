@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Db } from '../db/client';
 import { accounts, recurrences, spaces, transactions, users } from '../db/schema';
 import { createTempDb, one, testDatabaseUrl } from '../test/temp-db';
-import { RECURRENCES_JOB, startJobs } from './index';
+import { isConnectionShutdown, RECURRENCES_JOB, startJobs } from './index';
 import { generateAllRecurrences } from './recurrences';
 
 describe.skipIf(!testDatabaseUrl)('jobs (integration)', () => {
@@ -83,7 +83,10 @@ describe.skipIf(!testDatabaseUrl)('jobs (integration)', () => {
       connectionString: url,
       log: {
         info: (_o, msg) => logs.push(msg ?? ''),
-        error: (_o, msg) => logs.push(`erro ${msg}`),
+        error: (o, msg) => {
+          const err = (o as { err?: { message?: string; code?: string } }).err;
+          logs.push(`erro ${msg}: ${err?.code ?? ''} ${err?.message ?? ''}`);
+        },
       },
     });
     try {
@@ -94,8 +97,19 @@ describe.skipIf(!testDatabaseUrl)('jobs (integration)', () => {
         options: expect.objectContaining({ tz: 'America/Sao_Paulo' }),
       });
     } finally {
-      await boss.stop({ graceful: false });
+      // Erros só contam enquanto o pg-boss está no ar (o desligamento derruba conexões).
+      const beforeStop = logs.filter((l) => l.startsWith('erro'));
+      await new Promise<void>((resolve) => {
+        boss.once('stopped', () => resolve());
+        void boss.stop({ graceful: true, timeout: 5000 });
+      });
+      expect(beforeStop).toEqual([]);
     }
-    expect(logs.filter((l) => l.startsWith('erro'))).toEqual([]);
+  });
+
+  it('ignores connection shutdown errors from pg-boss', () => {
+    expect(isConnectionShutdown({ code: '57P01', message: 'terminating connection' })).toBe(true);
+    expect(isConnectionShutdown(new Error('Connection terminated unexpectedly'))).toBe(true);
+    expect(isConnectionShutdown(new Error('relation "x" does not exist'))).toBe(false);
   });
 });
