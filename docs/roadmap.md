@@ -26,7 +26,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] `splits`: divisão, saldos, simplificação de dívidas (RN 10, 11)
 
 ## Fase 2: Base usável
-- [ ] Schema Drizzle de identidade, espaços, contas, categorias, tags, contatos, feriados, lançamentos (MD)
+- [x] Schema Drizzle de identidade, espaços, contas, categorias, tags, contatos, feriados, lançamentos (MD)
 - [ ] Better Auth com convite; espaço pessoal criado no cadastro (ARQ › Autenticação)
 - [ ] Seed: categorias padrão brasileiras e feriados
 - [ ] API: contas, categorias, lançamentos, transferências, ajuste, Pix (API)
@@ -103,3 +103,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 01/10/2026: `packages/core/cards` (datas da fatura com overrides, `invoiceForPurchase`, período, melhor dia de compra, status, saldo anterior, limite disponível) e `installments` (parcelas no cartão e fora, plano em andamento, cancelamento, antecipação com desconto, painel), com os exemplos da RN 4 e 5 (Claude).
 - 01/10/2026: `packages/core/debts`: cronogramas fixed, price, sac, variable (estimativa), balloon; correção por índice; amortização extraordinária (reduzir prazo/parcela); desconto por antecipação; quitação; painel; fases do imóvel com data de entrega (Claude).
 - 01/10/2026: `packages/core/projection` (fluxo de caixa mês a mês, comprometido/livre, meses negativos) e `splits` (divisão equal/percent/amount/shares, saldos, acertos, simplificação). **Fase 1 concluída** (Claude).
+- 01/10/2026: schema Drizzle + migração `0000_init` (tabelas do Better Auth `users`/`sessions`/`auth_accounts`/`verifications`, espaços, membros, convites, configurações, contas, categorias, tags, contatos, feriados, lançamentos, tags de lançamento), enums em `packages/shared`, `pnpm db:generate`/`db:migrate`, teste de integração em banco temporário (CI com serviço Postgres) (Claude).
