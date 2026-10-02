@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 0**.
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 1**.
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -10,14 +10,14 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Monorepo pnpm (core, shared, api, web), TypeScript strict, ESLint, Prettier, Vitest (ARQ)
 - [x] `infra/docker-compose.dev.yml` (Postgres) e `docker-compose.yml` de produção, `.env.example` (ARQ)
 - [x] CI no GitHub Actions: lint, typecheck, test, build
-- [ ] Protótipos das telas principais como Artifact para aprovação (DS)
+- [x] Protótipos das telas principais como Artifact para aprovação (DS): https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH (aprovado em 01/10/2026)
 - [x] Subdomínio no túnel Cloudflare existente apontando para o app "hello world" (ARQ › Deploy)
 - [x] Backup diário com restic + teste de restauração (ARQ › Backup)
   - [ ] destino externo (offsite): escolher B2, Google Drive (rclone) ou outro disco e configurar no `.env`
 
 ## Fase 1: Núcleo (`packages/core`, só funções puras e testes)
-- [ ] `money`: centavos, divisão com resto (5.1), formatação pt-BR (RN 5.1)
-- [ ] `dates`: clampDay, addMonths, Páscoa, feriados nacionais, dia útil, nthBusinessDay, lastBusinessDay, adjust (RN 2)
+- [x] `money`: centavos, divisão com resto (5.1), formatação pt-BR (RN 5.1)
+- [x] `dates`: clampDay, addMonths, Páscoa, feriados nacionais, dia útil, nthBusinessDay, lastBusinessDay, adjust (RN 2)
 - [ ] `recurrence`: gerar ocorrências, salário em partes (RN 3)
 - [ ] `cards`: datas da fatura, invoiceForPurchase, melhor dia de compra, status, limite disponível (RN 4)
 - [ ] `installments`: gerar parcelas, plano em andamento, antecipação com desconto (RN 5)
@@ -84,9 +84,11 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 
 ## Dúvidas em aberto
 - Nome definitivo do app (provisório: FinApp)
+- Carnaval (seg/ter) e Corpus Christi contam como **não úteis por padrão** (`nationalHolidays` com `carnival`/`corpusChristi` = `true`), seguindo o calendário bancário: vencimentos adiam e o 5º dia útil do salário fica na data mais tardia (conservador). Configurável por espaço quando houver tela de configurações.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
 - 01/10/2026: monorepo pnpm (core, shared, api com `/api/health`, web mínima), TS strict, ESLint, Prettier, Vitest, Dockerfile, compose de dev e produção, `.env.example`, CI. Servidor preparado: projeto em `/srv/finapp`, Node 22 via fnm, pnpm via corepack (Claude no servidor). Portas ajustadas por conflito com outros projetos (ver ADR-012).
 - 01/10/2026: produção no ar em https://financas.voleidraft.top (finapp-prod: `finapp-api` em 127.0.0.1:3010, `finapp-db`), rota adicionada ao túnel com `infra/cloudflared/add-financas-hostname.sh` (DNS criado pelo script; o servidor tem `/root/.cloudflared/cert.pem`). Apps financeiros antigos removidos do servidor (Claude).
 - 01/10/2026: backup diário (`finapp-backup`: pg_dump -Fc → restic local em `/srv/finapp-backups/restic`, 03:00, retenção 7/4/12) e `infra/backup/restore.sh`; primeiro backup e teste de restauração OK. Falta destino externo (Claude).
+- 01/10/2026: protótipos aprovados; `packages/core`: `money` (centavos, `splitCents`, `formatBRL`, `parseBRL`), `dates` (ISO, `clampDay`, `addMonths` com dia âncora, dias úteis) e `holidays` (Páscoa, feriados nacionais) com testes (Claude).
