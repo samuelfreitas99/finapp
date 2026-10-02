@@ -103,7 +103,7 @@ function PayForm({
       )}
       <div className="field">
         <label htmlFor="pay-amount">Valor</label>
-        <MoneyInput id="pay-amount" value={amount} onChange={setAmount} />
+        <MoneyInput id="pay-amount" value={amount} onChange={setAmount} replaceOnType />
         {partial && (
           <span className="muted field-hint">
             Pagamento parcial: depois do vencimento, o que faltar vai para a próxima fatura como

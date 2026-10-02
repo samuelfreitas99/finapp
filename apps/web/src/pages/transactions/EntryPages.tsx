@@ -1,4 +1,5 @@
-import type { Transaction } from '@finapp/shared';
+import type { Transaction, TransactionList } from '@finapp/shared';
+import { api, spacePath } from '../../lib/api';
 import { Landmark, Trash2 } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageHeader } from '../../components/PageHeader';
@@ -15,6 +16,9 @@ import {
   useCreateTransaction,
   useCreateTransfer,
   useDeleteTransaction,
+  useRecurrenceMutations,
+  useSettleTransaction,
+  useSpaceId,
   useTransaction,
   useUpdateTransaction,
 } from '../../lib/queries';
@@ -61,6 +65,9 @@ export function NewEntryPage() {
   const createTx = useCreateTransaction();
   const createTransfer = useCreateTransfer();
   const createPlan = useCreatePlan();
+  const recurrences = useRecurrenceMutations();
+  const settle = useSettleTransaction();
+  const spaceId = useSpaceId();
   const remove = useDeleteTransaction();
   const navigate = useNavigate();
   const location = useLocation();
@@ -120,6 +127,39 @@ export function NewEntryPage() {
     }
     const category = cats.find((c) => c.id === s.categoryId);
     const cardId = isCardTarget(s.accountId) ? s.accountId.slice(CARD_PREFIX.length) : null;
+    if (s.repeat) {
+      recurrences.create.mutate(
+        {
+          type: s.kind === 'income' ? 'income' : 'expense',
+          description: describe(s, category?.name),
+          amount: s.amount,
+          frequency: 'monthly',
+          dayRule: { kind: 'fixed_day', day: Number(s.date.slice(8, 10)) },
+          startDate: s.date,
+          ...(cardId ? { cardId } : { accountId: s.accountId }),
+          categoryId: s.categoryId,
+          paymentMethod: cardId ? null : s.pix ? 'pix' : null,
+        },
+        {
+          onSuccess: async (rec) => {
+            // Já pago: confirma a ocorrência de hoje (no cartão ela já nasce efetivada).
+            if (!cardId && s.done) {
+              const list = await api<TransactionList>(
+                spacePath(
+                  spaceId,
+                  `/transactions?from=${s.date}&to=${s.date}&accountId=${s.accountId}`,
+                ),
+              );
+              const first = list.items.find((t) => t.recurrenceId === rec.id);
+              if (first) await settle.mutateAsync({ id: first.id });
+            }
+            toast({ text: 'Salvo. Repete todo mês (veja em Fixas).' });
+            back();
+          },
+        },
+      );
+      return;
+    }
     if (s.kind === 'expense' && s.installments > 1) {
       createPlan.mutate(
         {
@@ -192,8 +232,15 @@ export function NewEntryPage() {
         accounts={list}
         cards={cardList}
         categories={cats}
-        pending={createTx.isPending || createTransfer.isPending || createPlan.isPending}
-        error={createTx.error ?? createTransfer.error ?? createPlan.error}
+        pending={
+          createTx.isPending ||
+          createTransfer.isPending ||
+          createPlan.isPending ||
+          recurrences.create.isPending
+        }
+        error={
+          createTx.error ?? createTransfer.error ?? createPlan.error ?? recurrences.create.error
+        }
         onSubmit={submit}
       />
     </>

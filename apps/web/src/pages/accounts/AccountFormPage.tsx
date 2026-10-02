@@ -219,7 +219,7 @@ function AdjustBalance({ account }: { account: Account }) {
       )}
       <div className="field">
         <label htmlFor="realBalance">Saldo real hoje</label>
-        <MoneyInput id="realBalance" value={real} onChange={setReal} allowNegative />
+        <MoneyInput id="realBalance" value={real} onChange={setReal} allowNegative replaceOnType />
       </div>
       <button
         type="button"

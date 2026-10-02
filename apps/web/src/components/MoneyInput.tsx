@@ -1,6 +1,7 @@
 import { formatBRL } from '@finapp/core';
+import { typedCents } from '../lib/money-input';
 import { Minus, Plus } from 'lucide-react';
-import type { ChangeEvent } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 
 interface Props {
   id: string;
@@ -10,10 +11,13 @@ interface Props {
   allowNegative?: boolean;
   large?: boolean;
   autoFocus?: boolean;
+  /**
+   * Valor já preenchido (estimativa, total a pagar): o primeiro dígito digitado depois de
+   * focar começa um valor novo, em vez de se juntar ao que estava.
+   */
+  replaceOnType?: boolean;
   'aria-describedby'?: string;
 }
-
-const MAX_DIGITS = 13; // até R$ 99.999.999.999,99
 
 /**
  * Valor em reais digitado como no app do banco: os dígitos entram pela direita
@@ -26,14 +30,16 @@ export function MoneyInput({
   allowNegative = false,
   large = false,
   autoFocus,
+  replaceOnType = false,
   ...rest
 }: Props) {
+  const fresh = useRef(replaceOnType);
   const negative = value < 0;
   const shown = formatBRL(Math.abs(value));
 
   const handle = (e: ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, MAX_DIGITS);
-    const cents = digits ? Number(digits) : 0;
+    const cents = typedCents(value, e.target.value, fresh.current);
+    fresh.current = false;
     onChange(negative ? -cents : cents);
   };
 
@@ -67,6 +73,9 @@ export function MoneyInput({
         value={negative ? `−${shown}` : shown}
         onChange={handle}
         // O cursor fica sempre no fim: os dígitos entram pela direita, onde quer que se toque.
+        onFocus={() => {
+          if (replaceOnType) fresh.current = true;
+        }}
         onSelect={(e) => {
           const el = e.currentTarget;
           const end = el.value.length;
