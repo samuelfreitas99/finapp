@@ -2,12 +2,12 @@
 
 REST em `/api`, JSON, autenticação por cookie de sessão. Recursos do espaço ficam em `/api/spaces/:spaceId/...`. Valores em centavos, datas `YYYY-MM-DD`. Erros: `{ error: { code, message, details? } }`. Listas paginadas por cursor (`?cursor=&limit=`). Documentação OpenAPI gerada em `/api/docs` (só em dev).
 
-Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato planejado; ao implementar, mantenha esta página atualizada.
+Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato planejado; ao implementar, mantenha esta página atualizada (✅ = implementado).
 
 ## Auth e usuário
-- `POST /api/auth/*` (Better Auth: sign-up com `inviteCode`, sign-in, sign-out, session)
-- `GET/PATCH /api/me`, `GET/PATCH /api/me/settings`
-- `POST /api/invites`, `GET /api/invites`
+- `POST /api/auth/*` (Better Auth: `sign-up/email` com `inviteCode`, `sign-in/email`, `sign-out`, `GET get-session`) ✅
+- `GET /api/me` ✅ (usuário, espaços, espaço ativo); `PATCH /api/me`, `GET/PATCH /api/me/settings`
+- `POST /api/invites` ✅ (`{ spaceId?, email?, expiresInDays? }`; para espaço, só o dono), `GET /api/invites` ✅
 
 ## Espaços
 - `GET/POST /api/spaces`, `PATCH /api/spaces/:id`

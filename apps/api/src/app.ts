@@ -2,19 +2,58 @@ import { existsSync } from 'node:fs';
 import fastifyStatic from '@fastify/static';
 import type { HealthResponse } from '@finapp/shared';
 import Fastify, { type FastifyServerOptions } from 'fastify';
+import { ZodError } from 'zod';
+import type { Auth } from './auth/auth';
+import type { Db } from './db/client';
+import { inviteRoutes } from './modules/invites/routes';
+import { meRoutes } from './modules/me/routes';
+import { registerAuth } from './plugins/auth';
 
 export interface AppOptions {
   /** Pasta com o build do front (apps/web/dist). Se existir, é servida em `/`. */
   webDist?: string | undefined;
   logger?: FastifyServerOptions['logger'];
+  /** Banco e autenticação. Sem eles, só a rota de saúde e o front (útil em testes). */
+  db?: Db;
+  auth?: Auth;
+  appUrl?: string;
 }
 
-export function buildApp({ webDist, logger = false }: AppOptions = {}) {
-  const app = Fastify({ logger });
+export function buildApp({
+  webDist,
+  logger = false,
+  db,
+  auth,
+  appUrl = 'http://localhost:5174',
+}: AppOptions = {}) {
+  const app = Fastify({ logger, trustProxy: true });
+
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof ZodError) {
+      return reply.code(400).send({
+        error: { code: 'validation_error', message: 'Dados inválidos.', details: error.issues },
+      });
+    }
+    request.log.error(error);
+    const { statusCode, message } = error as { statusCode?: number; message?: string };
+    const status = statusCode ?? 500;
+    return reply.code(status).send({
+      error:
+        status >= 500
+          ? { code: 'internal_error', message: 'Erro interno.' }
+          : { code: 'request_error', message: message ?? 'Requisição inválida.' },
+    });
+  });
 
   app.get('/api/health', async (): Promise<HealthResponse> => {
     return { status: 'ok', time: new Date().toISOString() };
   });
+
+  if (db && auth) {
+    registerAuth(app, auth, appUrl);
+    meRoutes(app, db);
+    inviteRoutes(app, db);
+  }
 
   const serveWeb = webDist !== undefined && existsSync(webDist);
   if (serveWeb) {

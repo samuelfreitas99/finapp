@@ -4,22 +4,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env src/server.ts",
     "build": "tsup",
     "start": "node dist/server.cjs",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/db/migrate-cli.ts"
+    "db:migrate": "tsx src/db/migrate-cli.ts",
+    "invite:create": "tsx src/cli/create-invite-cli.ts"
   },
   "dependencies": {
     "@fastify/static": "^10.1.5",
     "@finapp/core": "workspace:*",
     "@finapp/shared": "workspace:*",
+    "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
     "fastify": "^5.12.5",
     "pg": "^8.23.1",
-    "uuidv7": "^1.2.1"
+    "uuidv7": "^1.2.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",

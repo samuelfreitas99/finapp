@@ -58,9 +58,8 @@ export const spaceMembers = pgTable(
 export const invites = pgTable('invites', {
   id: id(),
   code: text('code').notNull().unique(),
-  createdBy: uuid('created_by')
-    .notNull()
-    .references(() => users.id),
+  /** Nulo = convite criado pelo administrador do servidor (CLI). */
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
   spaceId: uuid('space_id').references(() => spaces.id, { onDelete: 'cascade' }),
   email: text('email'),
   expiresAt: timestamp('expires_at', { withTimezone: true }),

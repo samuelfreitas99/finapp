@@ -1,0 +1,60 @@
+import { createInviteBodySchema, type Invite } from '@finapp/shared';
+import { desc, eq } from 'drizzle-orm';
+import type { FastifyInstance } from 'fastify';
+import { generateInviteCode } from '../../auth/onboarding';
+import type { Db } from '../../db/client';
+import { invites } from '../../db/schema';
+import { currentUser, requireUser } from '../../plugins/auth';
+import { spaceRole } from '../spaces/access';
+
+type InviteRow = typeof invites.$inferSelect;
+
+function toInvite(row: InviteRow): Invite {
+  return {
+    id: row.id,
+    code: row.code,
+    spaceId: row.spaceId,
+    email: row.email,
+    expiresAt: row.expiresAt?.toISOString() ?? null,
+    usedAt: row.usedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export function inviteRoutes(app: FastifyInstance, db: Db) {
+  app.get('/api/invites', { preHandler: requireUser }, async (request) => {
+    const user = currentUser(request);
+    const rows = await db
+      .select()
+      .from(invites)
+      .where(eq(invites.createdBy, user.id))
+      .orderBy(desc(invites.createdAt));
+    return { items: rows.map(toInvite) };
+  });
+
+  app.post('/api/invites', { preHandler: requireUser }, async (request, reply) => {
+    const user = currentUser(request);
+    const body = createInviteBodySchema.parse(request.body ?? {});
+    if (body.spaceId) {
+      const role = await spaceRole(db, user.id, body.spaceId);
+      if (role !== 'owner') {
+        return reply
+          .code(403)
+          .send({ error: { code: 'forbidden', message: 'Só o dono do espaço pode convidar.' } });
+      }
+    }
+    const days = body.expiresInDays ?? 7;
+    const [row] = await db
+      .insert(invites)
+      .values({
+        code: generateInviteCode(),
+        createdBy: user.id,
+        spaceId: body.spaceId ?? null,
+        email: body.email?.toLowerCase() ?? null,
+        expiresAt: new Date(Date.now() + days * 86_400_000),
+      })
+      .returning();
+    if (!row) throw new Error('falha ao criar convite');
+    return reply.code(201).send(toInvite(row));
+  });
+}

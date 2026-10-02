@@ -47,8 +47,10 @@ Cada funcionalidade da API é um módulo (`modules/cards`, `modules/debts`...) c
 
 ## Autenticação
 - Better Auth com e-mail/senha (V1), passkeys e 2FA (V2). Sessão em cookie `HttpOnly; Secure; SameSite=Lax`.
-- Cadastro só com código de convite (`invites`).
-- Rate limit no login (`@fastify/rate-limit`).
+- Cadastro só com código de convite (`invites`): `POST /api/auth/sign-up/email` com `inviteCode`. Ao criar o usuário nascem o espaço **Pessoal**, as configurações e, se o convite for de um espaço compartilhado, a participação nele.
+- Primeiro acesso / convite pelo servidor: `docker exec finapp-api node server.cjs --create-invite [dias]` (produção) ou `pnpm --filter @finapp/api invite:create [dias]` (dev). Depois, convites pelo app (`POST /api/invites`).
+- A API aplica as migrações pendentes ao subir (desligar com `RUN_MIGRATIONS=false`).
+- Rate limit do próprio Better Auth em produção (5 tentativas/min em login e cadastro), IP pelo `cf-connecting-ip`.
 - Front e API no **mesmo domínio** (API em `/api`), sem CORS.
 
 ## PWA
