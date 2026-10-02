@@ -8,13 +8,25 @@
 5. **Desfazer > confirmar**: toast com "Desfazer" para exclusões e mudanças de status; confirmação só para ações destrutivas grandes.
 6. **Não genérico**: identidade própria (ver skill `frontend-design`), não o visual padrão de template.
 
-## Identidade visual (tokens iniciais, refinar no protótipo)
-- Tipografia: **Inter** (texto) e números tabulares (`font-variant-numeric: tabular-nums`) para valores; títulos com peso 600.
-- Cor primária: verde-petróleo (confiança, dinheiro sem clichê). Neutros levemente quentes.
-- Semânticas: receita verde, despesa vermelho-coral, transferência azul, previsto em tom atenuado com borda tracejada, alerta âmbar. Nunca só cor: sempre sinal (+/−) ou ícone.
-- Modo claro e escuro com tokens CSS (`--bg`, `--surface`, `--text`, `--muted`, `--primary`, `--income`, `--expense`, `--warning`). Contraste AA mínimo.
-- Raio 12–16px, sombras suaves, espaçamento base 4px.
-- Ícones: lucide. Cada categoria tem ícone e cor.
+## Identidade visual (aprovada no protótipo em 01/10/2026)
+Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
+
+| Token | Valor | Uso |
+|---|---|---|
+| Fonte | **Manrope** (títulos peso 600–700), números com `font-variant-numeric: tabular-nums` | todo o app |
+| `--bg` | `#F4F3EE` | fundo (neutro quente) |
+| `--surface` | `#FFFFFF` | cartões e painéis |
+| `--text` | `#17201F` | texto principal |
+| `--muted` | `#56625F` | texto secundário |
+| `--primary` | `#0F4C5C` | verde-petróleo: ações, destaques |
+| `--income` | `#1B6E45` | receitas |
+| `--expense` | `#A23A28` | despesas |
+| `--warning-bg` / `--warning-text` | `#FBEBD3` / `#6E4100` | alertas |
+| Raio | 16–20px | cartões, botões grandes, sheets |
+
+- Semânticas: transferência azul, previsto em tom atenuado com borda tracejada. Nunca só cor: sempre sinal (+/−) ou ícone.
+- Modo escuro: derivar os mesmos tokens com contraste AA mínimo (definir em `apps/web/src/styles/tokens.css`).
+- Sombras suaves, espaçamento base 4px. Ícones: lucide. Cada categoria tem ícone e cor.
 
 ## Navegação
 - **Mobile**: barra inferior: Início · Lançamentos · **+** (central, destacado) · Cartões · Mais.
