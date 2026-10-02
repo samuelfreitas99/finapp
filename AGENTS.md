@@ -32,7 +32,7 @@ FinApp: app pessoal de controle financeiro (PWA) para o Samuel e amigos. Idioma 
 ## Comandos (após a Fase 0)
 ```
 pnpm install          # dependências
-pnpm dev              # api + web em modo dev (precisa do Postgres: docker compose up -d db)
+pnpm dev              # api :3001 + web :5174 (Postgres: docker compose -f infra/docker-compose.dev.yml up -d)
 pnpm test             # testes (Vitest)
 pnpm lint             # ESLint
 pnpm typecheck        # tsc

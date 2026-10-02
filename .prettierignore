@@ -1,0 +1,5 @@
+pnpm-lock.yaml
+dist/
+coverage/
+# Documentação é editada à mão (e por IAs); não reformatar.
+*.md
