@@ -8,3 +8,4 @@ export * from './holidays';
 export * from './recurrence';
 export * from './cards';
 export * from './installments';
+export * from './debts';
