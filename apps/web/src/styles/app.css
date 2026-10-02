@@ -433,7 +433,7 @@ textarea.input {
 
 .fab:hover {
   color: #ffffff;
-  background: #0a3540;
+  background: var(--hero-hover);
 }
 
 .sidebar {

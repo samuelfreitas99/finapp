@@ -20,12 +20,12 @@ export const ACCOUNT_TYPE_META: Record<AccountType, { label: string; icon: Lucid
 
 /** Cores sugeridas para contas (distintas em claridade, não só no tom). */
 export const ACCOUNT_COLORS = [
-  '#0F4C5C',
+  '#1F3A68',
   '#2F5597',
   '#6B3FA0',
   '#A23A28',
   '#B8652A',
-  '#1B6E45',
-  '#56625F',
-  '#17201F',
+  '#B03A6E',
+  '#556070',
+  '#161D2B',
 ] as const;

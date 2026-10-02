@@ -8,7 +8,7 @@
 5. **Desfazer > confirmar**: toast com "Desfazer" para exclusões e mudanças de status; confirmação só para ações destrutivas grandes.
 6. **Não genérico**: identidade própria (ver skill `frontend-design`), não o visual padrão de template.
 
-## Identidade visual (aprovada no protótipo em 01/10/2026)
+## Identidade visual (protótipo aprovado em 01/10/2026; cor principal trocada para azul-marinho em 02/10/2026, ADR-015)
 Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 
 | Token | Valor | Uso |
@@ -16,16 +16,16 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 | Fonte | **Manrope** (títulos peso 600–700), números com `font-variant-numeric: tabular-nums` | todo o app |
 | `--bg` | `#F4F3EE` | fundo (neutro quente) |
 | `--surface` | `#FFFFFF` | cartões e painéis |
-| `--text` | `#17201F` | texto principal |
-| `--muted` | `#56625F` | texto secundário |
-| `--primary` | `#0F4C5C` | verde-petróleo: ações, destaques |
-| `--income` | `#1B6E45` | receitas |
+| `--text` | `#161D2B` | texto principal |
+| `--muted` | `#556070` | texto secundário (6,4:1 sobre branco) |
+| `--primary` | `#1F3A68` | azul-marinho: ações, destaques, cartão de saldo (branco sobre ele: 11,3:1). Hover `#16294B`, fundo suave `#E7EDF7` |
+| `--income` | `#1B6E45` | receitas (semântica, nunca cor da marca) |
 | `--expense` | `#A23A28` | despesas |
 | `--warning-bg` / `--warning-text` | `#FBEBD3` / `#6E4100` | alertas |
 | Raio | 16–20px | cartões, botões grandes, sheets |
 
-- Semânticas: transferência azul, previsto em tom atenuado com borda tracejada. Nunca só cor: sempre sinal (+/−) ou ícone.
-- Modo escuro: derivar os mesmos tokens com contraste AA mínimo (definir em `apps/web/src/styles/tokens.css`).
+- Semânticas: transferência violeta (`#6A45A6`; não azul, para não confundir com a marca), previsto em tom atenuado com borda tracejada. Nunca só cor: sempre sinal (+/−) ou ícone.
+- Modo escuro (`apps/web/src/styles/tokens.css`): fundo `#11161F`, superfície `#1A212C`, `--primary` azul-claro `#8EB2EC` (texto `#0B1A33` sobre ele: 8,0:1), cartão de saldo continua azul-marinho. Todos os pares de texto passam AA.
 - Sombras suaves, espaçamento base 4px. Ícones: lucide. Cada categoria tem ícone e cor.
 
 ## Navegação
