@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 5** (Fases 1–4 concluídas; Fase 2 aguarda confirmar o uso real).
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 6** (Fases 1–5 concluídas; Fase 2 aguarda confirmar o uso real).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -54,7 +54,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Cadastro com prévia (todos os tipos e sistemas), painel e cronograma
 - [x] Pagar, pagar adiantado, amortizar, quitar
 - [x] Cartão de terceiro, empréstimo no cartão, emprestei/peguei com pessoa
-- [ ] Imóvel na planta com fases e data de entrega
+- [x] Imóvel na planta com fases e data de entrega
 
 ## Fase 6: Alertas
 - [ ] Web Push (VAPID), inscrição e configurações
@@ -131,4 +131,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: telas de dívidas: lista (você deve / te devem / quitadas) com progresso e próxima parcela; cadastro por tipo (empréstimo, financiamento, imóvel na planta com modelo de 4 fases, pessoa, cartão, cartão de outra pessoa...) com editor de fases por sistema (parcelas fixas, Price/SAC com taxa ao mês ou ao ano, juros de obra até a entrega, intermediárias), pago com conta ou cartão, parcelas já pagas e prévia do cronograma; painel com falta pagar, % quitado, para quitar hoje, juros, patrimônio, fases e cronograma (Claude).
 - 02/10/2026: dívidas: pagar parcela (atrasada, parcial ou adiantada com desconto por taxa), amortização extraordinária (menos parcelas ou parcela menor), quitação total, com lançamento na conta, eventos e previstos refeitos; botões "Pagar/Receber" no cronograma e cartões "Amortizar" e "Quitar" no painel. Fluxo novo: a IA mescla na `main` sozinha e publica em lotes (Claude).
 - 02/10/2026: casos especiais de dívida (RN 6.6): valor recebido/emprestado lançado na conta com a categoria técnica "Empréstimo" (`moneyAccountId`), empréstimo no cartão exige o cartão, cartão de outra pessoa não aceita cartão próprio; o Início deixou de contar categorias técnicas (pagamento de fatura, ajuste, transferência, empréstimo) como receita/despesa, o que também tirava a contagem dupla de compra no cartão + pagamento da fatura (Claude).
+- 02/10/2026: imóvel na planta: mudar a entrega das chaves refaz as parcelas pendentes dos juros de obra e do financiamento; valor real do mês nos juros de obra; índices mensais (`/index-values`) e correção das parcelas pendentes da fase; seção "Imóvel" no painel da dívida. **Fase 5 concluída** (Claude).
 

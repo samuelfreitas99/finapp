@@ -551,3 +551,57 @@ export function useDebtActions(id: string) {
     }),
   };
 }
+
+export function usePropertyActions(id: string) {
+  const spaceId = useSpaceId();
+  const { invalidate } = useDebtMutations();
+  return {
+    completion: useMutation({
+      mutationFn: (completionDate: string) =>
+        api<DebtDetail>(spacePath(spaceId, `/debts/${id}/completion-date`), {
+          method: 'PATCH',
+          body: { completionDate },
+        }),
+      onSuccess: invalidate,
+    }),
+    value: useMutation({
+      mutationFn: ({
+        phaseId,
+        month,
+        amount,
+      }: {
+        phaseId: string;
+        month: string;
+        amount: number;
+      }) =>
+        api<DebtDetail>(spacePath(spaceId, `/debts/${id}/phases/${phaseId}/values`), {
+          method: 'POST',
+          body: { month, amount },
+        }),
+      onSuccess: invalidate,
+    }),
+    index: useMutation({
+      mutationFn: async ({
+        phaseId,
+        index,
+        month,
+        value,
+      }: {
+        phaseId: string;
+        index: 'incc' | 'ipca' | 'igpm';
+        month: string;
+        value: number;
+      }) => {
+        await api(spacePath(spaceId, '/index-values'), {
+          method: 'POST',
+          body: { index, month, value },
+        });
+        return api<DebtDetail>(spacePath(spaceId, `/debts/${id}/phases/${phaseId}/index`), {
+          method: 'POST',
+          body: { month },
+        });
+      },
+      onSuccess: invalidate,
+    }),
+  };
+}

@@ -18,6 +18,7 @@ import { systemCategoryId } from '../categories/routes';
 import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 import { assertContact } from '../transactions/service';
 import { debtActionRoutes } from './actions';
+import { debtPropertyRoutes, indexValueRoutes } from './property';
 import {
   findDebt,
   insertDebt,
@@ -95,6 +96,8 @@ export function debtRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
   };
 
   debtActionRoutes(app, { db, today }, detail);
+  debtPropertyRoutes(app, { db, today }, detail);
+  indexValueRoutes(app, { db, today });
 
   /** Cronograma e painel sem gravar. */
   app.post('/debts/preview', async (request): Promise<DebtPreview> => {

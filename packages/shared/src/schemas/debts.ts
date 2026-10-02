@@ -279,3 +279,33 @@ export const debtInstallmentParamsSchema = z.object({
   id: z.uuid(),
   number: z.coerce.number().int().min(1),
 });
+
+/** `PATCH /debts/:id/completion-date`: nova data de entrega das chaves. @see RN 6.7 */
+export const completionDateBodySchema = z.object({ completionDate: isoDateSchema });
+
+/** `POST /debts/:id/phases/:phaseId/values`: valor real do mês numa fase variável. @see RN 6.1 */
+export const phaseValueBodySchema = z.object({ month: yearMonth, amount: z.int().min(0) });
+
+export const debtPhaseParamsSchema = z.object({
+  spaceId: z.uuid(),
+  id: z.uuid(),
+  phaseId: z.uuid(),
+});
+
+/** `POST /index-values`: índice do mês (0.0045 = 0,45%). @see RN 6.2 */
+export const indexValueBodySchema = z.object({
+  index: z.enum(['incc', 'ipca', 'igpm']),
+  month: yearMonth,
+  value: z.number().gt(-1).lt(1),
+});
+export type IndexValueBody = z.infer<typeof indexValueBodySchema>;
+
+export const indexValueSchema = indexValueBodySchema;
+export type IndexValue = z.infer<typeof indexValueSchema>;
+
+/**
+ * `POST /debts/:id/phases/:phaseId/index`: aplica o índice do mês (cadastrado em
+ * `/index-values`) às parcelas pendentes da fase que vencem a partir desse mês.
+ * @see RN 6.2
+ */
+export const applyIndexBodySchema = z.object({ month: yearMonth });

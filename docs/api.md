@@ -56,9 +56,10 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `POST /debts/:id/installments/:n/pay` ✅ (`{ amount?, date?, accountId?, discount? | discountMonthlyRate? }`; padrão: o que falta, hoje; o previsto da parcela vira o pagamento; parcial deixa o resto previsto; desconto por taxa = valor presente arredondado para baixo; última parcela paga = `paid_off`)
 - `POST /debts/:id/amortize` ✅ (`{ amount, mode: reduce_term|reduce_installment, phaseId?, date?, accountId? }`; só fase price/sac, sem parcela parcial; recalcula as pendentes, renumera e registra evento)
 - `POST /debts/:id/payoff` ✅ (`{ date?, accountId? }`; paga o saldo devedor, encerra as pendentes, `paid_off`, evento)
-- `PATCH /debts/:id/completion-date`
-- `POST /debts/:id/phases/:phaseId/values` (valor do mês para fase variável)
-- `GET/POST /index-values`
+- `PATCH /debts/:id/completion-date` ✅ (`{ completionDate }`; refaz só as parcelas pendentes das fases que terminam na entrega ou começam depois dela; pagas ficam; evento)
+- `POST /debts/:id/phases/:phaseId/values` ✅ (`{ month, amount }`; valor real do mês na fase variável; meses seguintes ainda estimados passam a usar esse valor)
+- `GET/POST /index-values` ✅ (`{ index: incc|ipca|igpm, month, value }`, global; reenviar o mesmo mês atualiza)
+- `POST /debts/:id/phases/:phaseId/index` ✅ (`{ month }`; aplica o índice cadastrado às parcelas pendentes da fase com vencimento a partir do mês; uma vez por mês e fase; evento)
 
 ## Planejamento e relatórios
 - `GET /dashboard?month=` ✅ (receitas/despesas sem categorias técnicas; `balance`, `forecastBalance`/`forecastDate`, `income`/`expense` `{ settled, planned }`, `upcoming` (previstos vencidos e dos próximos 7 dias, até 10), `overdueCount`, `hasAccounts`)

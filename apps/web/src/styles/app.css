@@ -1683,3 +1683,25 @@ h3 {
 .list > li.row-link {
   flex-wrap: wrap;
 }
+
+.inline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.inline-form:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.list > li.row-link > .row-link__main {
+  flex: 1 1 0;
+}
+
+.list > li.row-link > .row-link__value,
+.list > li.row-link > .date-tile {
+  flex-shrink: 0;
+}

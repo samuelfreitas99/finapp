@@ -4,7 +4,7 @@ import { MoneyInput } from '../../components/MoneyInput';
 import { useToast } from '../../components/Toast';
 import { today } from '../../lib/dates';
 import { formatDate, money } from '../../lib/format';
-import { useDebtActions } from '../../lib/queries';
+import { useDebtActions, usePropertyActions } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
 
 const percent = (text: string) => Number(text.replace(',', '.')) / 100;
@@ -219,5 +219,190 @@ export function DebtExtraActions({ d }: { d: DebtDetail }) {
         </button>
       </section>
     </>
+  );
+}
+
+const INDEX_LABEL = { incc: 'INCC', ipca: 'IPCA', igpm: 'IGP-M' } as const;
+
+/** Imóvel na planta: entrega das chaves, juros de obra do mês e correção por índice. @see RN 6.2, 6.7 */
+export function PropertyActions({ d }: { d: DebtDetail }) {
+  const { completion, value, index } = usePropertyActions(d.id);
+  const toast = useToast();
+  const [date, setDate] = useState(d.completionDate ?? '');
+  const variable = d.phases.find((p) => p.system === 'variable');
+  const openMonths = variable
+    ? d.installments
+        .filter((i) => i.phaseId === variable.id && i.status !== 'paid')
+        .map((i) => i.dueDate.slice(0, 7))
+    : [];
+  const [month, setMonth] = useState(openMonths[0] ?? '');
+  const [amount, setAmount] = useState(0);
+  const indexed = d.phases.filter((p) => p.index !== 'none' && p.summary.remainingCount > 0);
+  const [phaseId, setPhaseId] = useState(indexed[0]?.id ?? '');
+  const [indexMonth, setIndexMonth] = useState(today().slice(0, 7));
+  const [indexValue, setIndexValue] = useState('');
+  const indexedPhase = indexed.find((p) => p.id === phaseId);
+  const error = completion.error ?? value.error ?? index.error;
+
+  return (
+    <section className="card card--pad form" aria-labelledby="property-title">
+      <h3 id="property-title">Imóvel</h3>
+      {Boolean(error) && (
+        <p className="alert alert--error" role="alert">
+          {errorText(error)}
+        </p>
+      )}
+      {d.completionDate && (
+        <form
+          className="inline-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            completion.mutate(date, {
+              onSuccess: () =>
+                toast({ text: `Entrega alterada para ${formatDate(date)}. Cronograma refeito.` }),
+            });
+          }}
+        >
+          <div className="field">
+            <label htmlFor="completion-date">Entrega das chaves</label>
+            <input
+              id="completion-date"
+              type="date"
+              className="input"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn"
+            disabled={!date || date === d.completionDate || completion.isPending}
+          >
+            Mudar entrega
+          </button>
+        </form>
+      )}
+
+      {variable && openMonths.length > 0 && (
+        <form
+          className="inline-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            value.mutate(
+              { phaseId: variable.id, month, amount },
+              { onSuccess: () => toast({ text: `${variable.name}: valor de ${month} salvo.` }) },
+            );
+          }}
+        >
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="value-month">{variable.name}: mês</label>
+              <select
+                id="value-month"
+                className="input"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              >
+                {openMonths.map((m) => (
+                  <option key={m} value={m}>
+                    {m.slice(5)}/{m.slice(0, 4)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="value-amount">Valor real</label>
+              <MoneyInput
+                id="value-amount"
+                value={amount}
+                onChange={(v) => setAmount(Math.max(0, v))}
+              />
+            </div>
+          </div>
+          <button type="submit" className="btn" disabled={!month || amount <= 0 || value.isPending}>
+            Salvar valor do mês
+          </button>
+        </form>
+      )}
+
+      {indexed.length > 0 && indexedPhase && (
+        <form
+          className="inline-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            index.mutate(
+              {
+                phaseId,
+                index: indexedPhase.index as 'incc' | 'ipca' | 'igpm',
+                month: indexMonth,
+                value: percent(indexValue),
+              },
+              {
+                onSuccess: () => {
+                  setIndexValue('');
+                  toast({
+                    text: `${indexedPhase.name} corrigida pelo ${INDEX_LABEL[indexedPhase.index as 'incc']}.`,
+                  });
+                },
+              },
+            );
+          }}
+        >
+          {indexed.length > 1 && (
+            <div className="field">
+              <label htmlFor="index-phase">Fase</label>
+              <select
+                id="index-phase"
+                className="input"
+                value={phaseId}
+                onChange={(e) => setPhaseId(e.target.value)}
+              >
+                {indexed.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({INDEX_LABEL[p.index as 'incc']})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="index-month">
+                {INDEX_LABEL[indexedPhase.index as 'incc']} do mês
+              </label>
+              <input
+                id="index-month"
+                type="month"
+                className="input"
+                value={indexMonth}
+                onChange={(e) => setIndexMonth(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="index-value">Variação (%)</label>
+              <input
+                id="index-value"
+                className="input num"
+                inputMode="decimal"
+                placeholder="Ex.: 0,45"
+                value={indexValue}
+                onChange={(e) => setIndexValue(e.target.value)}
+              />
+            </div>
+          </div>
+          <span className="muted field-hint">
+            Corrige as parcelas pendentes de {indexedPhase.name} que vencem a partir desse mês. As
+            pagas não mudam.
+          </span>
+          <button
+            type="submit"
+            className="btn"
+            disabled={!indexMonth || indexValue.trim() === '' || index.isPending}
+          >
+            Aplicar correção
+          </button>
+        </form>
+      )}
+    </section>
   );
 }

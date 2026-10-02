@@ -8,7 +8,7 @@ import { formatDate, money } from '../../lib/format';
 import { useHiddenValues } from '../../lib/hidden-values';
 import { useDebt, useDebtMutations } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
-import { DebtExtraActions, PayInstallmentForm } from './DebtActions';
+import { DebtExtraActions, PayInstallmentForm, PropertyActions } from './DebtActions';
 
 const STATUS_PILL: Record<DebtInstallmentDto['status'], string> = {
   pending: 'pill',
@@ -226,6 +226,8 @@ export function DebtPage() {
           )}
         </ul>
       </section>
+
+      {d.status === 'active' && d.kind === 'property' && <PropertyActions d={d} />}
 
       {d.status === 'active' && <DebtExtraActions d={d} />}
 
