@@ -21,7 +21,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] `recurrence`: gerar ocorrências, salário em partes (RN 3)
 - [x] `cards`: datas da fatura, invoiceForPurchase, melhor dia de compra, status, limite disponível (RN 4)
 - [x] `installments`: gerar parcelas, plano em andamento, antecipação com desconto (RN 5)
-- [ ] `debts`: fixed, price, sac, variable, balloon, painel, amortização, quitação, fases e completion_date (RN 6)
+- [x] `debts`: fixed, price, sac, variable, balloon, painel, amortização, quitação, fases e completion_date (RN 6)
 - [ ] `projection`: fluxo de caixa mensal (RN 7)
 - [ ] `splits`: divisão, saldos, simplificação de dívidas (RN 10, 11)
 
@@ -89,6 +89,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Status da fatura depois do fechamento: `paid` se pagamentos ≥ total; `partial` se houve algum pagamento menor (mesmo após o vencimento, porque o restante vira "Saldo anterior" na próxima); `overdue` só quando venceu **sem nenhum** pagamento; senão `closed`.
 - Antecipação com taxa mensal: desconto por valor presente arredondado **para baixo** (não promete economia maior que a real). Só parcelas em faturas depois da aberta podem ser antecipadas.
 - Plano cadastrado em andamento ("parcela 4 de 10"): a parcela 4 vai na fatura em que cai a data de hoje; o painel (`planSummary`) considera só as parcelas existentes.
+- Dívidas: SAC divide a amortização com a regra de 5.1 (resto na 1ª); Price com taxa 0 usa parcela arredondada para cima e a última ajusta. Fase `variable`: antes do primeiro valor informado, usa esse primeiro valor como estimativa. Fases que começam após a entrega usam o mês seguinte ao de `completion_date`, no dia do vencimento cadastrado. Quitação = principal ainda não amortizado das parcelas não pagas (sem juros futuros). Correção por índice é aplicada pelo chamador às parcelas pendentes do mês (aniversário/mensal).
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -98,3 +99,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 01/10/2026: protótipos aprovados; `packages/core`: `money` (centavos, `splitCents`, `formatBRL`, `parseBRL`), `dates` (ISO, `clampDay`, `addMonths` com dia âncora, dias úteis) e `holidays` (Páscoa, feriados nacionais) com testes (Claude).
 - 01/10/2026: `packages/core/recurrence`: `resolveDayRule`, `splitParts`, `generateOccurrences` (mensal, a cada N meses, anual, semanal, salário em partes com `monthOffset`) e `splitRecurrenceFrom` ("alterar a partir de"), com os exemplos da RN 3 (Claude).
 - 01/10/2026: `packages/core/cards` (datas da fatura com overrides, `invoiceForPurchase`, período, melhor dia de compra, status, saldo anterior, limite disponível) e `installments` (parcelas no cartão e fora, plano em andamento, cancelamento, antecipação com desconto, painel), com os exemplos da RN 4 e 5 (Claude).
+- 01/10/2026: `packages/core/debts`: cronogramas fixed, price, sac, variable (estimativa), balloon; correção por índice; amortização extraordinária (reduzir prazo/parcela); desconto por antecipação; quitação; painel; fases do imóvel com data de entrega (Claude).
