@@ -372,4 +372,64 @@ describe.skipIf(!testDatabaseUrl)('accounts, categories and transactions API (in
       200,
     );
   });
+
+  it('summarizes the month on the dashboard', async () => {
+    const me = await signUp('Painel', 'painel@ex.com');
+    const dash = (path = '') =>
+      call('GET', `/api/spaces/${me.spaceId}/dashboard${path}`, undefined, me.cookie);
+    const post = (path: string, body: unknown) =>
+      call('POST', `/api/spaces/${me.spaceId}${path}`, body, me.cookie);
+
+    expect((await dash()).json()).toMatchObject({ hasAccounts: false, balance: 0 });
+
+    const main = (
+      await post('/accounts', {
+        name: 'Conta',
+        type: 'checking',
+        initialBalance: 100000,
+        initialDate: '2026-10-01',
+      })
+    ).json();
+    const reserve = (
+      await post('/accounts', {
+        name: 'Reserva',
+        type: 'savings',
+        initialBalance: 900000,
+        initialDate: '2026-10-01',
+        includeInTotals: false,
+      })
+    ).json();
+    const tx = (body: Record<string, unknown>) =>
+      post('/transactions', { accountId: main.id, description: 'X', ...body });
+    await tx({ type: 'income', amount: 500000, date: '2026-10-05' });
+    await tx({ type: 'expense', amount: 4590, date: '2026-10-10' });
+    await tx({ type: 'expense', status: 'planned', amount: 3000, date: '2026-10-12' }); // vencido
+    await tx({ type: 'expense', status: 'planned', amount: 150000, date: '2026-10-20' }); // em 5 dias
+    await tx({ type: 'expense', status: 'planned', amount: 7000, date: '2026-10-30' }); // depois de 7 dias
+    await post('/transfers', {
+      fromAccountId: main.id,
+      toAccountId: reserve.id,
+      amount: 20000,
+      date: '2026-10-11',
+    });
+
+    const body = (await dash()).json();
+    expect(body).toMatchObject({
+      today: TODAY,
+      month: '2026-10',
+      hasAccounts: true,
+      balance: 100000 + 500000 - 4590 - 20000,
+      forecastBalance: 100000 + 500000 - 4590 - 20000 - 3000 - 150000 - 7000,
+      forecastDate: '2026-10-31',
+      income: { settled: 500000, planned: 0 },
+      expense: { settled: 4590, planned: 160000 },
+      overdueCount: 1,
+    });
+    expect(body.upcoming.map((t: { amount: number }) => t.amount)).toEqual([3000, 150000]);
+
+    const nov = (await dash('?month=2026-11')).json();
+    expect(nov).toMatchObject({ month: '2026-11', forecastDate: '2026-11-30' });
+    expect(nov.income).toEqual({ settled: 0, planned: 0 });
+    expect((await dash('?month=2026-13')).statusCode).toBe(400);
+  });
 });

@@ -70,3 +70,30 @@ export function adjustmentAmount(currentBalance: Cents, realBalance: Cents): Cen
   const diff = realBalance - currentBalance;
   return diff === 0 ? null : diff;
 }
+
+export interface MonthFlow {
+  /** Receitas efetivadas e previstas do período. */
+  income: { settled: Cents; planned: Cents };
+  /** Despesas efetivadas e previstas do período. */
+  expense: { settled: Cents; planned: Cents };
+}
+
+/**
+ * Receitas x despesas de um período. Transferências e ajustes ficam de fora: não são
+ * ganho nem gasto (RN 1).
+ */
+export function monthFlow(
+  entries: Iterable<Pick<LedgerEntry, 'type' | 'status' | 'amount'>>,
+): MonthFlow {
+  const flow: MonthFlow = {
+    income: { settled: 0, planned: 0 },
+    expense: { settled: 0, planned: 0 },
+  };
+  for (const e of entries) {
+    if (e.type !== 'income' && e.type !== 'expense') continue;
+    if (e.amount <= 0) throw new RangeError('valor deve ser > 0');
+    assertCents(e.amount, 'valor');
+    flow[e.type][e.status] += e.amount;
+  }
+  return flow;
+}

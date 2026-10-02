@@ -4,6 +4,7 @@ import type {
   CreateAccountBody,
   CreateAdjustmentBody,
   createTransactionBodySchema,
+  Dashboard,
   createTransferBodySchema,
   SettleTransactionBody,
   Transaction,
@@ -200,5 +201,13 @@ export function useSettleTransaction() {
     mutationFn: ({ id, ...body }: SettleTransactionBody & { id: string }) =>
       api<Transaction>(spacePath(spaceId, `/transactions/${id}/settle`), { method: 'POST', body }),
     onSuccess: invalidate,
+  });
+}
+
+export function useDashboard() {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...keys.transactions(spaceId), 'dashboard'],
+    queryFn: () => api<Dashboard>(spacePath(spaceId, '/dashboard')),
   });
 }
