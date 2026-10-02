@@ -6,7 +6,12 @@ import type { Db } from './client';
 import {
   accounts,
   creditCards,
+  debtEvents,
+  debtInstallments,
+  debtPhases,
+  debts,
   holidays,
+  indexValues,
   installmentPlans,
   invoicePayments,
   invoices,
@@ -249,5 +254,117 @@ describe.skipIf(!testDatabaseUrl)('database schema (integration)', () => {
         installmentNumber: 2,
       }),
     ).rejects.toThrow(); // número sem plano
+  });
+
+  it('stores debts with phases, installments, events and index values (RN 6)', async () => {
+    const { space, account, user } = await seed();
+    const debt = one(
+      await db
+        .insert(debts)
+        .values({
+          spaceId: space.id,
+          name: 'Apartamento',
+          direction: 'i_owe',
+          kind: 'property',
+          principal: 30000000,
+          paymentAccountId: account.id,
+          completionDate: '2028-06-30',
+        })
+        .returning(),
+    );
+    expect(debt.status).toBe('active');
+    const phase = one(
+      await db
+        .insert(debtPhases)
+        .values({
+          spaceId: space.id,
+          debtId: debt.id,
+          position: 1,
+          name: 'Financiamento',
+          system: 'price',
+          principal: 25000000,
+          rateMonthly: 0.0089,
+          index: 'ipca',
+          installments: 360,
+          startDate: '2028-07-10',
+          startsAfterCompletion: true,
+        })
+        .returning(),
+    );
+    expect(phase.rateMonthly).toBe(0.0089);
+    const inst = one(
+      await db
+        .insert(debtInstallments)
+        .values({
+          spaceId: space.id,
+          debtId: debt.id,
+          phaseId: phase.id,
+          number: 1,
+          dueDate: '2028-07-10',
+          amount: 250000,
+          principalPart: 27500,
+          interestPart: 222500,
+        })
+        .returning(),
+    );
+    expect(inst).toMatchObject({ status: 'pending', paidAmount: 0, estimated: false });
+    await db.insert(debtEvents).values({
+      spaceId: space.id,
+      debtId: debt.id,
+      type: 'completion_date_change',
+      date: '2026-10-15',
+      data: { from: '2028-06-30', to: '2028-09-30' },
+      createdBy: user.id,
+    });
+    const iv = one(
+      await db
+        .insert(indexValues)
+        .values({ index: 'incc', month: '2026-09', value: 0.0045 })
+        .returning(),
+    );
+    expect(iv.value).toBe(0.0045);
+    await expect(
+      db.insert(indexValues).values({ index: 'incc', month: '2026-09', value: 0.001 }),
+    ).rejects.toThrow(); // um valor por mês
+    await expect(
+      db.insert(indexValues).values({ index: 'none', month: '2026-09', value: 0.001 }),
+    ).rejects.toThrow();
+    await expect(
+      db.insert(debtPhases).values({
+        spaceId: space.id,
+        debtId: debt.id,
+        position: 1,
+        name: 'Duplicada',
+        system: 'fixed',
+        startDate: '2026-11-10',
+      }),
+    ).rejects.toThrow(); // posição única
+    await expect(
+      db.insert(debtPhases).values({
+        spaceId: space.id,
+        debtId: debt.id,
+        position: 2,
+        name: 'Taxa',
+        system: 'price',
+        rateMonthly: 1.5,
+        startDate: '2026-11-10',
+      }),
+    ).rejects.toThrow();
+    const tx = one(
+      await db
+        .insert(transactions)
+        .values({
+          spaceId: space.id,
+          type: 'expense',
+          status: 'settled',
+          amount: 250000,
+          date: '2026-10-10',
+          description: 'Parcela 1',
+          accountId: account.id,
+          debtInstallmentId: inst.id,
+        })
+        .returning(),
+    );
+    expect(tx.debtInstallmentId).toBe(inst.id);
   });
 });

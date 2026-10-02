@@ -50,7 +50,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Tela de Planejamento: projeção 12 meses
 
 ## Fase 5: Dívidas e empréstimos
-- [ ] Schema de dívidas, fases, parcelas, eventos, índices
+- [x] Schema de dívidas, fases, parcelas, eventos, índices
 - [ ] Cadastro com prévia (todos os tipos e sistemas), painel e cronograma
 - [ ] Pagar, pagar adiantado, amortizar, quitar
 - [ ] Cartão de terceiro, empréstimo no cartão, emprestei/peguei com pessoa
@@ -126,4 +126,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: confirmar previsto com valor real: itens estimados (conta variável) mostram "Estimado" e "Informar valor real" na lista, que efetiva com o valor digitado; campo de valor sugerido é substituído ao digitar (`typedCents`, também no pagar fatura e ajustar saldo). Botão "Repetir" no + cria uma recorrência mensal no dia da data (conta ou cartão) e confirma a ocorrência de hoje se já foi paga (Claude).
 - 02/10/2026: pg-boss (schema `pgboss`) iniciado pela API; job `recurrences-generate` diário às 02:00 (São Paulo) e na subida, estende a janela de 12 meses de todas as recorrências ativas (idempotente); `RUN_JOBS=false` desliga; testado no bundle CJS (Claude).
 - 02/10/2026: Planejamento: `GET /projection?months=` (core `projectCashFlow` com previstos das contas e faturas a pagar) e tela com menor saldo previsto, alerta de meses negativos, gráfico de saldo no fim de cada mês e de entradas x saídas (SVG próprio, paleta validada pela skill dataviz, tooltip, tabela), detalhe do mês e 6/12/24 meses. **Fase 4 concluída** (Claude).
+- 02/10/2026: **Fase 4 concluída** (PR #29). Fase 5: schema `debts`, `debt_phases`, `debt_installments`, `debt_events`, `index_values` e FK `transactions.debt_installment_id` (migração 0005); taxas e índices em `numeric` lidos como número (não são dinheiro) (Claude).
 
