@@ -2,6 +2,7 @@ import { buildApp } from './app';
 import { createAuth } from './auth/auth';
 import { createAdminInvite } from './cli/create-invite';
 import { loadConfig } from './config';
+import { createPushSender } from './modules/notifications/push';
 import { createDb } from './db/client';
 import { runMigrations } from './db/migrate';
 import { runSeed } from './db/seed';
@@ -39,7 +40,9 @@ async function main() {
     });
   }
 
+  const push = db && config.push ? createPushSender(db, config.push) : null;
   const app = buildApp({
+    push,
     webDist: process.env.WEB_DIST,
     logger: { level: process.env.LOG_LEVEL ?? 'info' },
     ...(db && auth ? { db, auth } : {}),

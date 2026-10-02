@@ -40,6 +40,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
+        // Recebe e mostra os Web Push (public/push-sw.js).
+        importScripts: ['push-sw.js'],
       },
     }),
   ],

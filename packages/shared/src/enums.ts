@@ -105,3 +105,18 @@ export const DEBT_EVENT_TYPES = [
   'completion_date_change',
 ] as const;
 export type DebtEventType = (typeof DEBT_EVENT_TYPES)[number];
+
+/** Tipos de alerta (RN 9). */
+export const NOTIFICATION_TYPES = [
+  'due_soon',
+  'overdue',
+  'invoice_closing',
+  'invoice_closed',
+  'invoice_due',
+  'income_unconfirmed',
+  'negative_forecast',
+  'budget',
+  'card_limit',
+  'split_pending',
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

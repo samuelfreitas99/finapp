@@ -1705,3 +1705,27 @@ h3 {
 .list > li.row-link > .date-tile {
   flex-shrink: 0;
 }
+
+/* Configurações */
+.settings-list > li {
+  padding: 10px 0;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-days {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 34px;
+  font-size: 13px;
+}
+
+.settings-days .input {
+  width: auto;
+  min-height: 40px;
+}

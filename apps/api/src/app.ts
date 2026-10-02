@@ -19,6 +19,8 @@ import { spaceScoped } from './modules/spaces/scope';
 import { transactionRoutes } from './modules/transactions/routes';
 import { inviteRoutes } from './modules/invites/routes';
 import { meRoutes } from './modules/me/routes';
+import { notificationRoutes } from './modules/notifications/routes';
+import type { PushSender } from './modules/notifications/push';
 import { registerAuth } from './plugins/auth';
 
 export interface AppOptions {
@@ -29,6 +31,8 @@ export interface AppOptions {
   db?: Db;
   auth?: Auth;
   appUrl?: string;
+  /** Envio de Web Push (null = desligado). */
+  push?: PushSender | null;
   /** "Hoje" (YYYY-MM-DD, America/Sao_Paulo). Injetável nos testes. */
   today?: () => ISODate;
 }
@@ -40,6 +44,7 @@ export function buildApp({
   auth,
   appUrl = 'http://localhost:5174',
   today = () => todayIn(),
+  push = null,
 }: AppOptions = {}) {
   const app = Fastify({ logger, trustProxy: true });
 
@@ -73,6 +78,7 @@ export function buildApp({
     registerAuth(app, auth, appUrl);
     meRoutes(app, db);
     inviteRoutes(app, db);
+    notificationRoutes(app, db, push);
     spaceScoped(app, db, (scoped) => {
       const ctx = { db, today };
       accountRoutes(scoped, ctx);

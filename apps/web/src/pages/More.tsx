@@ -27,13 +27,13 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/fixas', label: 'Receitas e despesas fixas', icon: Repeat },
   { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
   { to: '/categorias', label: 'Categorias', icon: Tags },
+  { to: '/configuracoes', label: 'Notificações e configurações', icon: Settings },
 ];
 
 const later: { label: string; icon: LucideIcon }[] = [
   { label: 'Racha', icon: Users },
   { label: 'Relatórios', icon: ChartPie },
   { label: 'Orçamentos e metas', icon: BadgePercent },
-  { label: 'Configurações', icon: Settings },
 ];
 
 const themes: { value: Theme; label: string }[] = [

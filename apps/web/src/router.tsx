@@ -19,6 +19,7 @@ import { PlanningPage } from './pages/planning/PlanningPage';
 import { DebtPage } from './pages/debts/DebtPage';
 import { DebtsPage } from './pages/debts/DebtsPage';
 import { NewDebtPage } from './pages/debts/NewDebtPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { SignUpPage } from './pages/SignUp';
 
 export const router = createBrowserRouter([
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
           { path: '/contas/:id', element: <EditAccountPage /> },
           { path: '/categorias', element: <CategoriesPage /> },
           { path: '/mais', element: <MorePage /> },
+          { path: '/configuracoes', element: <SettingsPage /> },
         ],
       },
     ],

@@ -74,9 +74,9 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `POST /api/split-groups/:id/settlements`
 
 ## Notificações
-- `POST/DELETE /api/push/subscriptions`, `GET /api/push/vapid-key`
-- `GET /api/notifications`, `POST /api/notifications/:id/read`
-- `GET/PATCH /api/notification-settings`
+- `GET /api/push/vapid-key` ✅ (503 `push_disabled` sem chaves), `POST/DELETE /api/push/subscriptions` ✅ (`PushSubscription.toJSON()`; upsert por endpoint), `POST /api/push/test` ✅
+- `GET /api/notifications` ✅ (50 mais recentes + `unread`), `POST /api/notifications/:id/read` ✅, `POST /api/notifications/read-all` ✅
+- `GET/PATCH /api/notification-settings` ✅ (`{ quietStart, quietEnd, types: [{ type, enabled, daysBefore }] }`; sem linha = ligado, 3 dias)
 
 ## Importação/exportação (V2)
 - `POST /imports` (multipart OFX/CSV) → prévia, `POST /imports/:id/confirm`

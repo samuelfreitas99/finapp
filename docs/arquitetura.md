@@ -57,7 +57,7 @@ Cada funcionalidade da API é um módulo (`modules/cards`, `modules/debts`...) c
 - Manifest com ícones, `display: standalone`, cor do tema.
 - Service worker: cache do app shell (precache) e `StaleWhileRevalidate` para GETs da API, permitindo consultar offline.
 - Lançamentos offline: fila no IndexedDB, reenviados ao reconectar (Fase 6+), com id gerado no cliente para idempotência.
-- Push: VAPID, inscrição salva em `push_subscriptions`. No iPhone só funciona com o app instalado na tela inicial (iOS 16.4+).
+- Push: VAPID (`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT` no `infra/.env`; gerar com `node -e "console.log(require('web-push').generateVAPIDKeys())"` em `apps/api`; trocar as chaves invalida as inscrições), inscrição salva em `push_subscriptions`, envio pela lib `web-push` (inscrição 404/410 é apagada), o service worker importa `public/push-sw.js` (mostra a notificação e abre a URL ao tocar). No iPhone só funciona com o app instalado na tela inicial (iOS 16.4+).
 
 ## Jobs (pg-boss)
 pg-boss no mesmo Postgres (schema `pgboss`), iniciado pela API (`apps/api/src/jobs`); desligar com `RUN_JOBS=false`. Os jobs só chamam serviços idempotentes.
