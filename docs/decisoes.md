@@ -61,3 +61,8 @@ Contexto: a ADR-004 previa Tailwind + shadcn/ui, TanStack Router e react-hook-fo
 Decisão: CSS próprio com variáveis (`styles/tokens.css` com claro/escuro, `styles/app.css` com os componentes base), React Router (modo data) e TanStack Query; formulários com estado do React. Fonte Manrope empacotada (`@fontsource-variable/manrope`, funciona offline no PWA).
 Consequências: menos dependências e build menor; quem mexer no front usa as classes de `app.css` em vez de utilitários. Se surgirem diálogos/menus complexos, adicionar primitivas acessíveis (ex.: Radix) pontualmente.
 
+## ADR-015 Cor principal azul-marinho (02/10/2026)
+Contexto: o Samuel não gosta de verde; o verde-petróleo do protótipo era a cor da marca.
+Decisão: cor principal azul-marinho `#1F3A68` (azul-claro `#8EB2EC` no modo escuro), aplicada aos tokens, ao manifest do PWA e aos ícones. O verde fica só como cor semântica de receita. Transferência passa de azul para violeta, para não se confundir com a marca. Todos os pares de texto conferidos com WCAG AA.
+Consequências: identidade visual difere do protótipo só na cor; layout e tipografia seguem aprovados.
+

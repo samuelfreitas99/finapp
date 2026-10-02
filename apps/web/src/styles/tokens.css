@@ -1,30 +1,33 @@
 /*
- * Tokens do FinApp (protótipo aprovado em 01/10/2026, docs/design.md).
- * Modo escuro: mesmos papéis, contraste AA. O tema segue o sistema, ou o que o
- * usuário escolher (`data-theme` no <html>).
+ * Tokens do FinApp. Cor principal: azul-marinho (ADR-015, substitui o verde-petróleo do
+ * protótipo). Modo escuro: mesmos papéis, contraste AA; o tema segue o sistema, ou o que
+ * o usuário escolher (`data-theme` no <html>).
+ * Contrastes (WCAG): branco sobre --primary 11,3:1; --primary sobre --bg 10,1:1;
+ * --muted sobre --surface 6,4:1; escuro: --on-primary sobre --primary 8,0:1.
  */
 :root {
   --bg: #f4f3ee;
   --surface: #ffffff;
-  --surface-sunken: #ecebe4;
-  --line: #e4e2da;
-  --line-strong: #dad8d0;
-  --text: #17201f;
-  --muted: #56625f;
-  --primary: #0f4c5c;
-  --primary-hover: #0a3540;
+  --surface-sunken: #ecebe6;
+  --line: #e4e2dc;
+  --line-strong: #d9d8d2;
+  --text: #161d2b;
+  --muted: #556070;
+  --primary: #1f3a68;
+  --primary-hover: #16294b;
   --on-primary: #ffffff;
-  --primary-soft: #e7efef;
-  --hero: #0f4c5c;
+  --primary-soft: #e7edf7;
+  --hero: #1f3a68;
+  --hero-hover: #16294b;
   --income: #1b6e45;
   --expense: #a23a28;
-  --transfer: #2f5597;
+  --transfer: #6a45a6;
   --warning-bg: #fbebd3;
   --warning-text: #6e4100;
   --danger-bg: #f8e1dc;
-  --focus: #0f4c5c;
-  --shadow: 0 1px 2px rgb(23 32 31 / 0.06), 0 4px 12px rgb(23 32 31 / 0.05);
-  --shadow-fab: 0 6px 16px rgb(15 76 92 / 0.35);
+  --focus: #1f3a68;
+  --shadow: 0 1px 2px rgb(22 29 43 / 0.06), 0 4px 12px rgb(22 29 43 / 0.05);
+  --shadow-fab: 0 6px 16px rgb(31 58 104 / 0.35);
   --radius-sm: 12px;
   --radius: 16px;
   --radius-lg: 20px;
@@ -34,25 +37,26 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #121a19;
-    --surface: #1b2524;
-    --surface-sunken: #24302e;
-    --line: #2c3836;
-    --line-strong: #3a4846;
-    --text: #e8ece9;
-    --muted: #a3b0ac;
-    --primary: #6fbccb;
-    --primary-hover: #8fcfdb;
-    --on-primary: #0b2228;
-    --primary-soft: #1d3338;
-    --hero: #0f4c5c;
+    --bg: #11161f;
+    --surface: #1a212c;
+    --surface-sunken: #232b38;
+    --line: #2c3542;
+    --line-strong: #3a4452;
+    --text: #e8ecf2;
+    --muted: #a5aebb;
+    --primary: #8eb2ec;
+    --primary-hover: #aecaf3;
+    --on-primary: #0b1a33;
+    --primary-soft: #1e2b44;
+    --hero: #1f3a68;
+    --hero-hover: #284a84;
     --income: #6ccf98;
     --expense: #f2937e;
-    --transfer: #8fb0ef;
+    --transfer: #b9a3e8;
     --warning-bg: #3b2c12;
     --warning-text: #f5cf8f;
     --danger-bg: #3d211b;
-    --focus: #8fcfdb;
+    --focus: #aecaf3;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-fab: 0 6px 16px rgb(0 0 0 / 0.45);
     color-scheme: dark;
@@ -60,25 +64,26 @@
 }
 
 :root[data-theme='dark'] {
-  --bg: #121a19;
-  --surface: #1b2524;
-  --surface-sunken: #24302e;
-  --line: #2c3836;
-  --line-strong: #3a4846;
-  --text: #e8ece9;
-  --muted: #a3b0ac;
-  --primary: #6fbccb;
-  --primary-hover: #8fcfdb;
-  --on-primary: #0b2228;
-  --primary-soft: #1d3338;
-  --hero: #0f4c5c;
+  --bg: #11161f;
+  --surface: #1a212c;
+  --surface-sunken: #232b38;
+  --line: #2c3542;
+  --line-strong: #3a4452;
+  --text: #e8ecf2;
+  --muted: #a5aebb;
+  --primary: #8eb2ec;
+  --primary-hover: #aecaf3;
+  --on-primary: #0b1a33;
+  --primary-soft: #1e2b44;
+  --hero: #1f3a68;
+  --hero-hover: #284a84;
   --income: #6ccf98;
   --expense: #f2937e;
-  --transfer: #8fb0ef;
+  --transfer: #b9a3e8;
   --warning-bg: #3b2c12;
   --warning-text: #f5cf8f;
   --danger-bg: #3d211b;
-  --focus: #8fcfdb;
+  --focus: #aecaf3;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-fab: 0 6px 16px rgb(0 0 0 / 0.45);
   color-scheme: dark;
