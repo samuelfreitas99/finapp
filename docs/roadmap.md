@@ -32,7 +32,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] API: contas, categorias, lançamentos, transferências, ajuste, Pix (API)
 - [x] Web: layout, navegação, tema, login/cadastro, telas de contas e lançamentos, botão + (DS)
 - [x] Dashboard simples (saldo atual, previsto, receitas x despesas)
-- [ ] PWA instalável (manifest, service worker, ícones)
+- [x] PWA instalável (manifest, service worker, ícones)
 - [ ] Deploy no servidor e uso real
 
 ## Fase 3: Cartões e parcelamentos
@@ -111,4 +111,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: web, parte 2: tela de contas (lista com saldo atual e previsto, total, criar/editar, cor, somar nos totais, arquivar com desfazer, excluir, ajustar saldo), campo de valor estilo app de banco (`MoneyInput`), toasts (Claude).
 - 02/10/2026: web, parte 3: lançamentos (lista por dia com seletor de mês, busca, filtros, totais do mês, previstos atenuados com "Confirmar") e o "+" (despesa/receita/transferência, valor grande, categorias mais usadas primeiro, Pix, conta usada por último, Hoje/Ontem/Outra, data futura vira previsto, desfazer), edição e exclusão (Claude).
 - 02/10/2026: Início: `GET /dashboard?month=` (saldo das contas que somam nos totais, previsto no fim do mês, receitas x despesas efetivadas/previstas sem transferências e ajustes, previstos vencidos e dos próximos 7 dias) com `monthFlow` no core; tela com o cartão de saldo do protótipo, alerta de vencidos, próximos vencimentos e entradas/saídas do mês (Claude).
+- 02/10/2026: PWA com `vite-plugin-pwa`: manifest (nome, cores, atalho "Novo lançamento"), ícones 192/512/maskable/apple-touch gerados do glifo da carteira, service worker que guarda só a casca do app (API sempre pela rede, `/api` fora do fallback) e se atualiza sozinho a cada deploy (Claude).
 

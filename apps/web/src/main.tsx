@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
+import { registerSW } from 'virtual:pwa-register';
 import { ToastProvider } from './components/Toast';
 import { HiddenValuesProvider } from './lib/hidden-values';
 import { applyTheme, readTheme } from './lib/theme';
@@ -11,6 +12,8 @@ import './styles/tokens.css';
 import './styles/app.css';
 
 applyTheme(readTheme());
+// Service worker: app instalável e casca disponível offline; atualiza sozinho a cada deploy.
+registerSW({ immediate: true });
 
 const queryClient = new QueryClient({
   defaultOptions: {
