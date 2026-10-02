@@ -17,8 +17,10 @@ WORKDIR /app
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000 \
-    WEB_DIST=/app/web
+    WEB_DIST=/app/web \
+    MIGRATIONS_DIR=/app/migrations
 COPY --from=build /app/apps/api/dist ./
+COPY --from=build /app/apps/api/src/db/migrations ./migrations
 COPY --from=build /app/apps/web/dist ./web
 USER node
 EXPOSE 3000

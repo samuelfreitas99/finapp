@@ -1,44 +1,24 @@
 import { randomBytes } from 'node:crypto';
 import { sql } from 'drizzle-orm';
-import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createDb, type Db } from './client';
-import { runMigrations } from './migrate';
+import { createTempDb, one, testDatabaseUrl } from '../test/temp-db';
+import type { Db } from './client';
 import { accounts, holidays, spaceMembers, spaces, transactions, users } from './schema';
 
 /**
- * Teste de integração do schema: cria um banco temporário no Postgres de
- * `DATABASE_URL` (o de dev, ou o serviço do CI), aplica as migrações e confere as
- * restrições. Pulado se `DATABASE_URL` não estiver definido.
+ * Teste de integração do schema: banco temporário com as migrações aplicadas.
+ * Pulado se `DATABASE_URL` não estiver definido.
  */
-const baseUrl = process.env.DATABASE_URL;
-
-function one<T>(rows: T[]): T {
-  const [row] = rows;
-  if (row === undefined) throw new Error('nenhuma linha retornada');
-  return row;
-}
-
-describe.skipIf(!baseUrl)('database schema (integration)', () => {
-  const dbName = `finapp_test_${randomBytes(4).toString('hex')}`;
-  let admin: pg.Client;
+describe.skipIf(!testDatabaseUrl)('database schema (integration)', () => {
   let db: Db;
-  let pool: pg.Pool;
+  let drop: () => Promise<void>;
 
   beforeAll(async () => {
-    admin = new pg.Client({ connectionString: baseUrl });
-    await admin.connect();
-    await admin.query(`create database ${dbName}`);
-    const url = new URL(baseUrl as string);
-    url.pathname = `/${dbName}`;
-    await runMigrations(url.toString());
-    ({ db, pool } = createDb(url.toString()));
+    ({ db, drop } = await createTempDb());
   });
 
   afterAll(async () => {
-    await pool?.end();
-    await admin?.query(`drop database if exists ${dbName} with (force)`);
-    await admin?.end();
+    await drop?.();
   });
 
   async function seed() {
