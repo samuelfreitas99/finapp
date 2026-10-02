@@ -11,7 +11,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] `infra/docker-compose.dev.yml` (Postgres) e `docker-compose.yml` de produção, `.env.example` (ARQ)
 - [x] CI no GitHub Actions: lint, typecheck, test, build
 - [ ] Protótipos das telas principais como Artifact para aprovação (DS)
-- [ ] Subdomínio no túnel Cloudflare existente apontando para o app "hello world" (ARQ › Deploy)
+- [x] Subdomínio no túnel Cloudflare existente apontando para o app "hello world" (ARQ › Deploy)
 - [ ] Backup diário com restic + teste de restauração (ARQ › Backup)
 
 ## Fase 1: Núcleo (`packages/core`, só funções puras e testes)
@@ -87,3 +87,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
 - 01/10/2026: monorepo pnpm (core, shared, api com `/api/health`, web mínima), TS strict, ESLint, Prettier, Vitest, Dockerfile, compose de dev e produção, `.env.example`, CI. Servidor preparado: projeto em `/srv/finapp`, Node 22 via fnm, pnpm via corepack (Claude no servidor). Portas ajustadas por conflito com outros projetos (ver ADR-012).
+- 01/10/2026: produção no ar em https://financas.voleidraft.top (finapp-prod: `finapp-api` em 127.0.0.1:3010, `finapp-db`), rota adicionada ao túnel com `infra/cloudflared/add-financas-hostname.sh` (DNS criado pelo script; o servidor tem `/root/.cloudflared/cert.pem`). Apps financeiros antigos removidos do servidor (Claude).
