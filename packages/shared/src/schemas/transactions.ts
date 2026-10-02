@@ -133,6 +133,8 @@ export const transactionSchema = z.object({
   invoiceId: z.uuid().nullable(),
   installmentPlanId: z.uuid().nullable(),
   installmentNumber: z.int().nullable(),
+  /** Parcela antecipada para a fatura aberta. */
+  anticipated: z.boolean(),
   categoryId: z.uuid().nullable(),
   paymentMethod: z.enum(PAYMENT_METHODS).nullable(),
   pixCounterparty: z.string().nullable(),

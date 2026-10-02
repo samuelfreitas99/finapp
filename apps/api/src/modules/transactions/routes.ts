@@ -198,6 +198,15 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
           );
         }
       }
+      if (current.installmentPlanId) {
+        const allowed = new Set(['description', 'notes', 'tagIds', 'categoryId', 'status']);
+        if (Object.keys(body).some((k) => !allowed.has(k))) {
+          throw badRequest(
+            'installment_locked',
+            'Parcela: valor, data e conta vêm do parcelamento. Para mudar, cancele ou antecipe.',
+          );
+        }
+      }
       if (current.invoicePaymentId) {
         const allowed = new Set(['description', 'notes', 'tagIds']);
         if (Object.keys(body).some((k) => !allowed.has(k))) {
@@ -378,6 +387,12 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
   app.delete('/transactions/:id', async (request, reply) => {
     const { spaceId, id } = spaceItemParamsSchema.parse(request.params);
     const current = await findTransaction(db, spaceId, id);
+    if (current.installmentPlanId) {
+      throw badRequest(
+        'installment_locked',
+        'Parcela não é excluída sozinha: cancele o parcelamento.',
+      );
+    }
     const now = new Date();
     await db.transaction(async (tx) => {
       await tx

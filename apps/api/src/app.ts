@@ -11,6 +11,7 @@ import { accountRoutes } from './modules/accounts/routes';
 import { cardRoutes } from './modules/cards/routes';
 import { categoryRoutes } from './modules/categories/routes';
 import { dashboardRoutes } from './modules/dashboard/routes';
+import { installmentRoutes } from './modules/installments/routes';
 import { spaceScoped } from './modules/spaces/scope';
 import { transactionRoutes } from './modules/transactions/routes';
 import { inviteRoutes } from './modules/invites/routes';
@@ -76,6 +77,7 @@ export function buildApp({
       transactionRoutes(scoped, ctx);
       dashboardRoutes(scoped, ctx);
       cardRoutes(scoped, ctx);
+      installmentRoutes(scoped, ctx);
     });
   }
 
