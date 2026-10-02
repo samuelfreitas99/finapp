@@ -69,4 +69,17 @@ describe('projectCashFlow (RN 7)', () => {
       }),
     ).toThrow(RangeError);
   });
+
+  it('accepts a negative invoice total as a credit', () => {
+    const [oct] = projectCashFlow({
+      startingBalance: 10000,
+      startMonth: '2026-10',
+      months: 1,
+      entries: [
+        { date: '2026-10-10', amount: -2500, kind: 'invoice' },
+        { date: '2026-10-15', amount: 1000, kind: 'debt' },
+      ],
+    });
+    expect(oct).toMatchObject({ invoices: -2500, committed: -1500, closingBalance: 11500 });
+  });
 });

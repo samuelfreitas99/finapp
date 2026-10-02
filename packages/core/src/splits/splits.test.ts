@@ -101,3 +101,24 @@ describe('simplifyDebts (RN 11)', () => {
     expect(() => simplifyDebts(new Map([['a', 10]]))).toThrow(RangeError);
   });
 });
+
+describe('simplifyDebts input validation', () => {
+  it('rejects non-integer balances', () => {
+    expect(() =>
+      simplifyDebts(
+        new Map([
+          ['a', 0.5],
+          ['b', -0.5],
+        ]),
+      ),
+    ).toThrow(RangeError);
+    expect(() =>
+      simplifyDebts(
+        new Map([
+          ['a', Number.NaN],
+          ['b', 0],
+        ]),
+      ),
+    ).toThrow(RangeError);
+  });
+});

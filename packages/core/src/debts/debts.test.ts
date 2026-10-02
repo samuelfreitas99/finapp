@@ -169,6 +169,14 @@ describe('applyIndexCorrection (RN 6.2)', () => {
     expect(corrected.map((r) => r.balanceAfter)).toEqual([100450, 0]);
     expect(applyIndexCorrection([], 0.01)).toEqual([]);
   });
+
+  it('derives balances from the rounded parts (no understatement, no clamp)', () => {
+    const rows = fixedSchedule({ firstDueDate: '2026-11-10', installments: 3, amount: 1 });
+    const corrected = applyIndexCorrection(rows, 0.5);
+    // Cada parte 1,5 → 2; o saldo fecha na soma das partes (6), não em round(3 × 1,5) = 5.
+    expect(corrected.map((r) => r.principalPart)).toEqual([2, 2, 2]);
+    expect(corrected.map((r) => r.balanceAfter)).toEqual([4, 2, 0]);
+  });
 });
 
 describe('amortizeExtra (RN 6.5)', () => {
@@ -205,6 +213,19 @@ describe('amortizeExtra (RN 6.5)', () => {
     expect(inst[0]?.principalPart).toBe(70_000);
   });
 
+  it('sac reduce_term keeps the pending amortizations, remainder on the first', () => {
+    const rows = amortizeExtra({
+      ...base,
+      balance: 10_001,
+      remainingInstallments: 3,
+      extra: 3_000,
+      system: 'sac',
+      mode: 'reduce_term',
+    });
+    expect(rows.map((r) => r.principalPart)).toEqual([3_335, 3_333, 333]);
+    expect(rows.at(-1)?.balanceAfter).toBe(0);
+  });
+
   it('paying the whole balance leaves nothing; validates extra', () => {
     expect(
       amortizeExtra({ ...base, extra: 1_000_000, system: 'price', mode: 'reduce_term' }),
@@ -222,6 +243,8 @@ describe('earlyPaymentDiscount (RN 6.5)', () => {
   it('present value, floored', () => {
     expect(earlyPaymentDiscount(10000, 0.02, 4)).toBe(761);
     expect(earlyPaymentDiscount(10000, 0.02, 0)).toBe(0);
+    // 0,9999999999 → 0: nunca arredonda um centavo para cima.
+    expect(earlyPaymentDiscount(10000000000, 1e-10, 1)).toBe(0);
   });
 });
 

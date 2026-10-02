@@ -67,6 +67,22 @@ describe('splitParts (RN 3)', () => {
     expect(() => splitParts(400000, parts)).toThrow(RangeError);
   });
 
+  it('computes percent parts exactly for large totals', () => {
+    const total = Number.MAX_SAFE_INTEGER;
+    const dayRule = { kind: 'fixed_day' as const, day: 5 };
+    const parts = [
+      { percent: 66.67, dayRule },
+      { amount: total - 6005099743135818, dayRule },
+    ];
+    expect(splitParts(total, parts)).toEqual([6005099743135818, 3002099511605173]);
+    expect(
+      splitParts(-10001, [
+        { percent: 50, dayRule },
+        { amount: -5000, dayRule },
+      ]),
+    ).toEqual([-5001, -5000]);
+  });
+
   it('rejects invalid parts', () => {
     const dayRule = { kind: 'last_business_day' as const };
     expect(() => splitParts(100, [{ dayRule }])).toThrow(RangeError);
@@ -187,7 +203,7 @@ describe('generateOccurrences: frequências (RN 3)', () => {
     ]);
   });
 
-  it('weekly every 2 weeks with adjust', () => {
+  it('weekly every 2 weeks ignores adjust (only fixed_day adjusts)', () => {
     const rule: RecurrenceRule = {
       frequency: 'weekly',
       interval: 2,
@@ -197,7 +213,7 @@ describe('generateOccurrences: frequências (RN 3)', () => {
     };
     expect(
       generateOccurrences(rule, window('2026-08-01', '2026-09-30')).map((o) => o.date),
-    ).toEqual(['2026-08-24', '2026-09-08', '2026-09-21']);
+    ).toEqual(['2026-08-24', '2026-09-07', '2026-09-21']);
   });
 
   it('last business day', () => {

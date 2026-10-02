@@ -1,4 +1,4 @@
-import { assertCents, splitCents, type Cents } from '../money';
+import { assertCents, presentValueDiscount, splitCents, type Cents } from '../money';
 import {
   addMonths,
   addYearMonths,
@@ -314,20 +314,20 @@ export function applyIndexCorrection(
 ): ScheduleRow[] {
   if (!(indexRate > -1)) throw new RangeError(`índice inválido: ${indexRate}`);
   const factor = 1 + indexRate;
-  const first = rows[0];
-  if (!first) return [];
-  let balance = roundHalfUp((first.balanceAfter + first.principalPart) * factor);
-  return rows.map((r) => {
+  const last = rows.at(-1);
+  if (!last) return [];
+  const corrected = rows.map((r) => {
     const principalPart = roundHalfUp(r.principalPart * factor);
     const interestPart = roundHalfUp(r.interestPart * factor);
-    balance -= principalPart;
-    return {
-      ...r,
-      principalPart,
-      interestPart,
-      amount: principalPart + interestPart,
-      balanceAfter: Math.max(0, balance),
-    };
+    return { ...r, principalPart, interestPart, amount: principalPart + interestPart };
+  });
+  // Saldo derivado das partes já arredondadas (mais o resíduo após a última, se houver):
+  // fecha no centavo, nunca subestima e não precisa de clamp.
+  let balance =
+    roundHalfUp(last.balanceAfter * factor) + corrected.reduce((a, r) => a + r.principalPart, 0);
+  return corrected.map((r) => {
+    balance -= r.principalPart;
+    return { ...r, balanceAfter: balance };
   });
 }
 
@@ -384,10 +384,15 @@ export function amortizeExtra(input: ExtraAmortizationInput): ScheduleRow[] {
     const payment = pricePayment(balance, monthlyRate, n);
     return scheduleWithPayment(newBalance, monthlyRate, payment, nextDueDate, n);
   }
-  const amortization = Math.floor(balance / n);
-  const count = Math.ceil(newBalance / amortization);
-  const amortizations = Array<Cents>(count).fill(amortization);
-  amortizations[count - 1] = newBalance - amortization * (count - 1);
+  // Mantém as amortizações do cronograma pendente (resto na 1ª, RN 5.1) e corta o fim.
+  const amortizations: Cents[] = [];
+  let remaining = newBalance;
+  for (const a of splitCents(balance, n)) {
+    if (remaining === 0) break;
+    const part = Math.min(a, remaining);
+    amortizations.push(part);
+    remaining -= part;
+  }
   return sacWithAmortization(newBalance, monthlyRate, amortizations, nextDueDate);
 }
 
@@ -400,7 +405,7 @@ export function earlyPaymentDiscount(amount: Cents, monthlyRate: number, months:
   assertCents(amount, 'parcela');
   assertRate(monthlyRate);
   if (!Number.isInteger(months) || months < 0) throw new RangeError(`meses inválido: ${months}`);
-  return Math.floor(amount - amount / (1 + monthlyRate) ** months + 1e-9);
+  return presentValueDiscount([{ amount, months }], monthlyRate);
 }
 
 export type InstallmentStatus = 'pending' | 'paid' | 'late' | 'partial';

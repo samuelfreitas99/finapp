@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertCents,
   formatBRL,
+  presentValueDiscount,
   isCents,
   parseBRL,
   splitCents,
@@ -91,6 +92,11 @@ describe('formatBRL', () => {
   it('can omit the symbol', () => {
     expect(formatBRL(123456, { symbol: false })).toBe('1.234,56');
   });
+
+  it('is exact for large amounts (no float division)', () => {
+    expect(formatBRL(Number.MAX_SAFE_INTEGER)).toBe(`R$${nbsp}90.071.992.547.409,91`);
+    expect(formatBRL(-Number.MAX_SAFE_INTEGER, { symbol: false })).toBe('-90.071.992.547.409,91');
+  });
 });
 
 describe('parseBRL', () => {
@@ -116,5 +122,22 @@ describe('parseBRL', () => {
     for (const cents of [0, 1, 99, 123456, -98765]) {
       expect(parseBRL(formatBRL(cents))).toBe(cents);
     }
+  });
+});
+
+describe('presentValueDiscount (RN 5.5, 6.5)', () => {
+  it('sums exact present values and floors once', () => {
+    expect(
+      presentValueDiscount(
+        [
+          { amount: 10000, months: 4 },
+          { amount: 10000, months: 5 },
+        ],
+        0.02,
+      ),
+    ).toBe(1704);
+    expect(presentValueDiscount([{ amount: 10000000000, months: 1 }], 1e-10)).toBe(0);
+    expect(presentValueDiscount([], 0.02)).toBe(0);
+    expect(() => presentValueDiscount([{ amount: 1, months: 1 }], 1)).toThrow(RangeError);
   });
 });
