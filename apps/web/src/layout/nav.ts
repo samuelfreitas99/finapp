@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  CalendarRange,
   CreditCard,
   Ellipsis,
   House,
@@ -36,6 +37,7 @@ export const sideNav: NavItem[] = [
   { to: '/cartoes', label: 'Cartões', icon: CreditCard },
   { to: '/contas', label: 'Contas', icon: Landmark },
   { to: '/fixas', label: 'Fixas', icon: Repeat },
+  { to: '/planejamento', label: 'Planejamento', icon: CalendarRange },
   { to: '/categorias', label: 'Categorias', icon: Tags },
   { to: '/mais', label: 'Mais', icon: Ellipsis },
 ];

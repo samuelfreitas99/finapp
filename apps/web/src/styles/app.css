@@ -1518,3 +1518,135 @@ h3 {
   margin: 0 14px 12px;
   font-size: 13px;
 }
+
+/* Gráficos */
+.chart {
+  position: relative;
+}
+
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart__tick {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.chart__label {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.chart__label--sel {
+  fill: var(--text);
+  font-weight: 800;
+}
+
+.chart__tooltip {
+  position: absolute;
+  top: 0;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.chart__legend {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.chart__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.stat strong {
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert--icon {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.month-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.month-detail__total {
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.table-view summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-view table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table-view th,
+.table-view td {
+  padding: 8px 6px;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.table-view th:first-child {
+  text-align: left;
+}

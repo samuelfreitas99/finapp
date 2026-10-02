@@ -25,3 +25,17 @@ export function monthShort(month: number): string {
 export function formatYearMonth(year: number, month: number): string {
   return `${monthShort(month)}/${year}`;
 }
+
+/** Valor curto para eixos: "R$ 12 mil", "-R$ 1,5 mi". */
+export function compactBRL(cents: number): string {
+  const reais = cents / 100;
+  const abs = Math.abs(reais);
+  const sign = reais < 0 ? '-' : '';
+  if (abs >= 1_000_000) {
+    return `${sign}R$ ${(abs / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`;
+  }
+  if (abs >= 1_000) {
+    return `${sign}R$ ${(abs / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`;
+  }
+  return `${sign}R$ ${abs.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
+}

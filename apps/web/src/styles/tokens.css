@@ -22,6 +22,10 @@
   --income: #1b6e45;
   --expense: #a23a28;
   --transfer: #6a45a6;
+  /* Gráficos (skill dataviz, validados: CVD ΔE 24,7 claro / 26,8 escuro) */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --chart-grid: #e4e2dc;
   --warning-bg: #fbebd3;
   --warning-text: #6e4100;
   --danger-bg: #f8e1dc;
@@ -53,6 +57,9 @@
     --income: #6ccf98;
     --expense: #f2937e;
     --transfer: #b9a3e8;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --chart-grid: #2c3542;
     --warning-bg: #3b2c12;
     --warning-text: #f5cf8f;
     --danger-bg: #3d211b;
@@ -80,6 +87,9 @@
   --income: #6ccf98;
   --expense: #f2937e;
   --transfer: #b9a3e8;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --chart-grid: #2c3542;
   --warning-bg: #3b2c12;
   --warning-text: #f5cf8f;
   --danger-bg: #3d211b;

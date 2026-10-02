@@ -1,5 +1,6 @@
 import type {
   Account,
+  Projection,
   OccurrencePreview,
   Recurrence,
   RecurrenceBody,
@@ -450,4 +451,12 @@ export function useRecurrenceMutations() {
       onSuccess: invalidate,
     }),
   };
+}
+
+export function useProjection(months: number) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...keys.transactions(spaceId), 'projection', months],
+    queryFn: () => api<Projection>(spacePath(spaceId, `/projection?months=${months}`)),
+  });
 }

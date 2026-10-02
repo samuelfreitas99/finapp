@@ -12,6 +12,7 @@ import { cardRoutes } from './modules/cards/routes';
 import { categoryRoutes } from './modules/categories/routes';
 import { dashboardRoutes } from './modules/dashboard/routes';
 import { installmentRoutes } from './modules/installments/routes';
+import { projectionRoutes } from './modules/projection/routes';
 import { recurrenceRoutes } from './modules/recurrences/routes';
 import { spaceScoped } from './modules/spaces/scope';
 import { transactionRoutes } from './modules/transactions/routes';
@@ -80,6 +81,7 @@ export function buildApp({
       cardRoutes(scoped, ctx);
       installmentRoutes(scoped, ctx);
       recurrenceRoutes(scoped, ctx);
+      projectionRoutes(scoped, ctx);
     });
   }
 

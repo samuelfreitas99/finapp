@@ -9,3 +9,4 @@ export * from './schemas/dashboard';
 export * from './schemas/cards';
 export * from './schemas/installments';
 export * from './schemas/recurrences';
+export * from './schemas/projection';
