@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 1**.
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 2** (Fase 1 concluída).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -22,8 +22,8 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] `cards`: datas da fatura, invoiceForPurchase, melhor dia de compra, status, limite disponível (RN 4)
 - [x] `installments`: gerar parcelas, plano em andamento, antecipação com desconto (RN 5)
 - [x] `debts`: fixed, price, sac, variable, balloon, painel, amortização, quitação, fases e completion_date (RN 6)
-- [ ] `projection`: fluxo de caixa mensal (RN 7)
-- [ ] `splits`: divisão, saldos, simplificação de dívidas (RN 10, 11)
+- [x] `projection`: fluxo de caixa mensal (RN 7)
+- [x] `splits`: divisão, saldos, simplificação de dívidas (RN 10, 11)
 
 ## Fase 2: Base usável
 - [ ] Schema Drizzle de identidade, espaços, contas, categorias, tags, contatos, feriados, lançamentos (MD)
@@ -90,6 +90,8 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Antecipação com taxa mensal: desconto por valor presente arredondado **para baixo** (não promete economia maior que a real). Só parcelas em faturas depois da aberta podem ser antecipadas.
 - Plano cadastrado em andamento ("parcela 4 de 10"): a parcela 4 vai na fatura em que cai a data de hoje; o painel (`planSummary`) considera só as parcelas existentes.
 - Dívidas: SAC divide a amortização com a regra de 5.1 (resto na 1ª); Price com taxa 0 usa parcela arredondada para cima e a última ajusta. Fase `variable`: antes do primeiro valor informado, usa esse primeiro valor como estimativa. Fases que começam após a entrega usam o mês seguinte ao de `completion_date`, no dia do vencimento cadastrado. Quitação = principal ainda não amortizado das parcelas não pagas (sem juros futuros). Correção por índice é aplicada pelo chamador às parcelas pendentes do mês (aniversário/mensal).
+- Projeção: despesas previstas já vencidas entram no 1º mês (ainda vão sair da conta); receitas previstas vencidas e não confirmadas ficam de fora (conservador).
+- Divisão (casal e racha): nos modos proporcionais cada parte é arredondada para baixo e o resto inteiro vai para quem pagou (se não participa, para o 1º participante). Simplificação gulosa com desempate por id.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -100,3 +102,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 01/10/2026: `packages/core/recurrence`: `resolveDayRule`, `splitParts`, `generateOccurrences` (mensal, a cada N meses, anual, semanal, salário em partes com `monthOffset`) e `splitRecurrenceFrom` ("alterar a partir de"), com os exemplos da RN 3 (Claude).
 - 01/10/2026: `packages/core/cards` (datas da fatura com overrides, `invoiceForPurchase`, período, melhor dia de compra, status, saldo anterior, limite disponível) e `installments` (parcelas no cartão e fora, plano em andamento, cancelamento, antecipação com desconto, painel), com os exemplos da RN 4 e 5 (Claude).
 - 01/10/2026: `packages/core/debts`: cronogramas fixed, price, sac, variable (estimativa), balloon; correção por índice; amortização extraordinária (reduzir prazo/parcela); desconto por antecipação; quitação; painel; fases do imóvel com data de entrega (Claude).
+- 01/10/2026: `packages/core/projection` (fluxo de caixa mês a mês, comprometido/livre, meses negativos) e `splits` (divisão equal/percent/amount/shares, saldos, acertos, simplificação). **Fase 1 concluída** (Claude).
