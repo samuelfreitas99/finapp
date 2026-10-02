@@ -19,7 +19,7 @@ Celular/PC (PWA) ──HTTPS──> Cloudflare ──túnel──> cloudflared (
 | Núcleo | `packages/core`: funções puras, sem I/O. Testes com Vitest |
 | Contratos | `packages/shared`: schemas Zod e tipos (requests/responses) |
 | API | Fastify 5, `fastify-type-provider-zod`, Drizzle ORM + drizzle-kit, Better Auth, pg-boss, `web-push`, pino (logs) |
-| Web | React 19 + Vite, `vite-plugin-pwa` (Workbox), TanStack Router + TanStack Query, Tailwind CSS v4 + shadcn/ui, react-hook-form, Recharts, date-fns, lucide-react |
+| Web | React 19 + Vite, `vite-plugin-pwa` (Workbox), React Router (modo data) + TanStack Query, CSS próprio com tokens (`apps/web/src/styles`), Manrope via `@fontsource-variable`, lucide-react; gráficos com Recharts quando chegarem (ADR-014) |
 | Testes | Vitest (core, api com Postgres de teste via Testcontainers ou banco do compose), Playwright (E2E dos fluxos críticos) |
 | Qualidade | ESLint (typescript-eslint), Prettier, tsc |
 | CI | GitHub Actions: lint, typecheck, test, build da imagem Docker (GHCR) |

@@ -56,6 +56,6 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 
 ## Processo de design
 1. Protótipos navegáveis das telas 1–6 como Artifact HTML (claude.ai) para aprovação do Samuel.
-2. Aprovado o protótipo, tokens vão para `apps/web/src/styles/tokens.css` e componentes base no shadcn/ui.
+2. Aprovado o protótipo, tokens vão para `apps/web/src/styles/tokens.css` (claro e escuro) e os componentes base são classes em `apps/web/src/styles/app.css` (`.btn`, `.input`, `.card`, `.chip`, `.segmented`, `.list`...), ver ADR-014.
 3. Implementação com a skill `frontend-design`; gráficos com a skill `dataviz`.
 4. Revisão de acessibilidade a cada tela (contraste, foco visível, labels, leitor de tela).

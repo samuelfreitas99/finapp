@@ -1,0 +1,85 @@
+/*
+ * Tokens do FinApp (protótipo aprovado em 01/10/2026, docs/design.md).
+ * Modo escuro: mesmos papéis, contraste AA. O tema segue o sistema, ou o que o
+ * usuário escolher (`data-theme` no <html>).
+ */
+:root {
+  --bg: #f4f3ee;
+  --surface: #ffffff;
+  --surface-sunken: #ecebe4;
+  --line: #e4e2da;
+  --line-strong: #dad8d0;
+  --text: #17201f;
+  --muted: #56625f;
+  --primary: #0f4c5c;
+  --primary-hover: #0a3540;
+  --on-primary: #ffffff;
+  --primary-soft: #e7efef;
+  --hero: #0f4c5c;
+  --income: #1b6e45;
+  --expense: #a23a28;
+  --transfer: #2f5597;
+  --warning-bg: #fbebd3;
+  --warning-text: #6e4100;
+  --danger-bg: #f8e1dc;
+  --focus: #0f4c5c;
+  --shadow: 0 1px 2px rgb(23 32 31 / 0.06), 0 4px 12px rgb(23 32 31 / 0.05);
+  --shadow-fab: 0 6px 16px rgb(15 76 92 / 0.35);
+  --radius-sm: 12px;
+  --radius: 16px;
+  --radius-lg: 20px;
+  --font: 'Manrope Variable', Manrope, system-ui, sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #121a19;
+    --surface: #1b2524;
+    --surface-sunken: #24302e;
+    --line: #2c3836;
+    --line-strong: #3a4846;
+    --text: #e8ece9;
+    --muted: #a3b0ac;
+    --primary: #6fbccb;
+    --primary-hover: #8fcfdb;
+    --on-primary: #0b2228;
+    --primary-soft: #1d3338;
+    --hero: #0f4c5c;
+    --income: #6ccf98;
+    --expense: #f2937e;
+    --transfer: #8fb0ef;
+    --warning-bg: #3b2c12;
+    --warning-text: #f5cf8f;
+    --danger-bg: #3d211b;
+    --focus: #8fcfdb;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-fab: 0 6px 16px rgb(0 0 0 / 0.45);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #121a19;
+  --surface: #1b2524;
+  --surface-sunken: #24302e;
+  --line: #2c3836;
+  --line-strong: #3a4846;
+  --text: #e8ece9;
+  --muted: #a3b0ac;
+  --primary: #6fbccb;
+  --primary-hover: #8fcfdb;
+  --on-primary: #0b2228;
+  --primary-soft: #1d3338;
+  --hero: #0f4c5c;
+  --income: #6ccf98;
+  --expense: #f2937e;
+  --transfer: #8fb0ef;
+  --warning-bg: #3b2c12;
+  --warning-text: #f5cf8f;
+  --danger-bg: #3d211b;
+  --focus: #8fcfdb;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-fab: 0 6px 16px rgb(0 0 0 / 0.45);
+  color-scheme: dark;
+}
