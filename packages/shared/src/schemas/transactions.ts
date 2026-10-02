@@ -135,6 +135,10 @@ export const transactionSchema = z.object({
   installmentNumber: z.int().nullable(),
   /** Parcela antecipada para a fatura aberta. */
   anticipated: z.boolean(),
+  /** Gerado por uma recorrência. */
+  recurrenceId: z.uuid().nullable(),
+  /** Valor estimado (conta variável), a confirmar com o valor real. */
+  estimated: z.boolean(),
   categoryId: z.uuid().nullable(),
   paymentMethod: z.enum(PAYMENT_METHODS).nullable(),
   pixCounterparty: z.string().nullable(),

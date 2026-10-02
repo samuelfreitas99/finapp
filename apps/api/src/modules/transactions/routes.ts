@@ -252,6 +252,9 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
         .update(transactions)
         .set({
           ...fields,
+          // Ocorrência de recorrência editada à mão: a geração não mexe mais nela (RN 3).
+          ...(current.recurrenceId ? { detached: true } : {}),
+          ...(body.amount !== undefined ? { estimated: false } : {}),
           ...(body.status && body.status !== current.status
             ? { settledAt: body.status === 'settled' ? new Date() : null }
             : {}),
@@ -434,6 +437,8 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
       const values = {
         status: 'settled' as const,
         settledAt: new Date(),
+        // Valor variável (conta de luz): ao confirmar, deixa de ser estimado.
+        estimated: false,
         date,
         ...(body.amount !== undefined ? { amount: body.amount } : {}),
       };
