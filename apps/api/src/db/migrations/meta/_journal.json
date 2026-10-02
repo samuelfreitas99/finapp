@@ -15,6 +15,13 @@
       "when": 1790902890818,
       "tag": "0001_invites_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790905635449,
+      "tag": "0002_adjustment_signed_amount",
+      "breakpoints": true
     }
   ]
 }

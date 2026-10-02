@@ -19,8 +19,8 @@ import { accounts, categories, contacts, tags } from './registry';
 import { spaces } from './spaces';
 
 /**
- * Lançamentos (receitas, despesas, transferências, ajustes). Valor sempre positivo em
- * centavos; o tipo define o sentido. Fica numa conta **ou** numa fatura (cartão).
+ * Lançamentos (receitas, despesas, transferências, ajustes). Valor positivo em centavos e
+ * o tipo define o sentido; o ajuste guarda a diferença com sinal (ADR-013). Fica numa conta **ou** numa fatura (cartão).
  * As colunas que apontam para tabelas de fases futuras (faturas, cartões, parcelamentos,
  * recorrências, dívidas, racha) ganham chave estrangeira na migração de cada fase.
  * @see RN 1, docs/modelo-de-dados.md
@@ -77,7 +77,11 @@ export const transactions = pgTable(
       'transactions_payment_method_check',
       sql`${t.paymentMethod} is null or ${inList(t.paymentMethod, PAYMENT_METHODS)}`,
     ),
-    check('transactions_amount_positive', sql`${t.amount} > 0`),
+    // Valor positivo; só o ajuste tem sinal (a diferença para o saldo real). ADR-013.
+    check(
+      'transactions_amount_check',
+      sql`${t.amount} > 0 or (${t.type} = 'adjustment' and ${t.amount} <> 0)`,
+    ),
     check(
       'transactions_account_xor_invoice',
       sql`(${t.accountId} is null) <> (${t.invoiceId} is null)`,

@@ -17,7 +17,9 @@ Fonte da verdade para os cálculos do FinApp. Toda regra aqui vira uma função 
 - `saldo_atual(conta) = saldo_inicial + Σ receitas settled - Σ despesas settled ± transferências settled` (até hoje, inclusive).
 - `saldo_previsto(conta, data) = saldo_atual + Σ lançamentos planned com date <= data` (inclui pagamentos de fatura previstos e parcelas de dívida previstas debitadas daquela conta).
 - Lançamentos de cartão **não** mexem em conta nenhuma; quem mexe é o **pagamento da fatura**.
-- Ajuste de saldo: lançamento do tipo `adjustment` com a diferença, categoria "Ajuste", fora dos relatórios de gasto.
+- Ajuste de saldo: o usuário informa o saldo real; lançamento do tipo `adjustment`, efetivado, com a diferença **com sinal** (`saldo_real − saldo_efetivado_até_a_data`), categoria "Ajuste", fora dos relatórios de gasto. Sem diferença, nada é criado.
+- O saldo inicial vale na `initial_date` da conta e já inclui o que aconteceu antes: lançamentos com data anterior são recusados.
+- Efetivado com data futura é recusado (o que ainda vai acontecer é `planned`). Ao efetivar um previsto sem informar a data, usa a data prevista se já passou, senão hoje.
 
 ### Transferência
 Dois lançamentos ligados por `transfer_id` (saída na origem, entrada no destino), mesmo valor, excluídos de relatórios de receita/despesa.

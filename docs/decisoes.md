@@ -50,3 +50,9 @@ Decisão: Claude Code instalado **no servidor**, ligado ao projeto do claude.ai 
 Contexto: o servidor já usa as portas 3000 (voleidraft), 5173 (centralsuporte) e tem containers antigos parados de um projeto Compose chamado `finapp` (com volume `finapp_postgres_data`). O `cloudflared` roda no host (systemd), não em Docker.
 Decisão: projetos Compose `finapp-dev` e `finapp-prod`; containers `finapp-dev-db`, `finapp-api`, `finapp-db`. Dev: API 3001, web 5174, Postgres `127.0.0.1:5433`. Produção: API publicada só em `127.0.0.1:3010` para o cloudflared do host; banco sem porta publicada.
 Consequências: nenhum conflito com os outros projetos nem reaproveitamento acidental do volume antigo. A API escuta em 3000 dentro do container.
+
+## ADR-013 Ajuste de saldo com valor com sinal (01/10/2026)
+Contexto: `transactions.amount` era sempre positivo e o tipo dava o sentido, mas o ajuste (RN 1) pode aumentar ou diminuir o saldo, e `adjustment` é um tipo só.
+Decisão: só no tipo `adjustment` o `amount` guarda a diferença com sinal (≠ 0); os demais tipos continuam > 0. Check `transactions_amount_check` (migração `0002`). A regra de sinal fica em `packages/core/balances` (`signedAmount`).
+Consequências: um tipo a menos para tratar nos relatórios; quem soma valores precisa usar `signedAmount` em vez de assumir positivo.
+

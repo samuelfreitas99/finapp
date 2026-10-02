@@ -14,17 +14,19 @@ Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato plan
 - `GET/POST/DELETE /api/spaces/:id/members`
 
 ## Cadastros (prefixo `/api/spaces/:spaceId`)
-- `/accounts` CRUD, `GET /accounts/:id/balance?date=`
+- `/accounts` CRUD ✅ (lista com `balance` atual e `forecastBalance` em `forecastDate`, padrão fim do mês; `?includeArchived=`; `PATCH { archived }` arquiva; `DELETE` só sem lançamentos, senão 409), `GET /accounts/:id/balance?date=` ✅
 - `/cards` CRUD, `GET /cards/:id/limit`
-- `/categories` CRUD, `/tags` CRUD, `/contacts` CRUD, `/holidays` CRUD
+- `/categories` CRUD ✅ (`?kind=&includeArchived=&includeSystem=`; subcategoria de um nível; técnicas só mudam nome/ícone/cor), `/tags` CRUD, `/contacts` CRUD, `/holidays` CRUD
 
 ## Lançamentos
-- `GET /transactions?from=&to=&accountId=&cardId=&categoryId=&status=&q=&tag=`
-- `POST /transactions` (receita/despesa simples, Pix)
-- `PATCH /transactions/:id`, `DELETE /transactions/:id`
-- `POST /transactions/:id/settle` (`{ amount?, date?, accountId? }`)
-- `POST /transfers`
-- `POST /adjustments`
+- `GET /transactions?from=&to=&accountId=&cardId=&categoryId=&type=&status=&paymentMethod=&q=&tag=&cursor=&limit=` ✅ (data desc; `cardId` na Fase 3), `GET /transactions/:id` ✅
+- `POST /transactions` ✅ (receita/despesa simples numa conta; Pix = `paymentMethod: "pix"` + `pixCounterparty`/`contactId`; `tagIds`)
+- `PATCH /transactions/:id` ✅ (transferência: valor/data/descrição/status nas duas pontas; ajuste: só descrição/observações/tags), `DELETE /transactions/:id` ✅ (transferência apaga as duas pontas)
+- `POST /transactions/:id/settle` ✅ (`{ amount?, date?, accountId? }`; data padrão: a prevista se já passou, senão hoje)
+- `POST /transfers` ✅ (`{ fromAccountId, toAccountId, amount, date, status?, description?, notes? }` → `{ transferId, items }`)
+- `POST /adjustments` ✅ (`{ accountId, realBalance, date? }` → `{ adjustment | null, balance }`)
+
+Validações comuns: lançamento efetivado não pode ter data futura (`settled_in_future`); data antes do saldo inicial da conta é recusada (`date_before_initial_balance`); conta arquivada não recebe lançamento novo (`account_archived`); categoria tem que ser do mesmo tipo e não técnica. Erros de regra usam `{ error: { code, message } }` com códigos estáveis.
 
 ## Recorrências
 - `/recurrences` CRUD, `POST /recurrences/preview` (gera ocorrências sem salvar)
