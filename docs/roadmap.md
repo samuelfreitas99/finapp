@@ -18,7 +18,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 ## Fase 1: Núcleo (`packages/core`, só funções puras e testes)
 - [x] `money`: centavos, divisão com resto (5.1), formatação pt-BR (RN 5.1)
 - [x] `dates`: clampDay, addMonths, Páscoa, feriados nacionais, dia útil, nthBusinessDay, lastBusinessDay, adjust (RN 2)
-- [ ] `recurrence`: gerar ocorrências, salário em partes (RN 3)
+- [x] `recurrence`: gerar ocorrências, salário em partes (RN 3)
 - [ ] `cards`: datas da fatura, invoiceForPurchase, melhor dia de compra, status, limite disponível (RN 4)
 - [ ] `installments`: gerar parcelas, plano em andamento, antecipação com desconto (RN 5)
 - [ ] `debts`: fixed, price, sac, variable, balloon, painel, amortização, quitação, fases e completion_date (RN 6)
@@ -85,6 +85,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 ## Dúvidas em aberto
 - Nome definitivo do app (provisório: FinApp)
 - Carnaval (seg/ter) e Corpus Christi contam como **não úteis por padrão** (`nationalHolidays` com `carnival`/`corpusChristi` = `true`), seguindo o calendário bancário: vencimentos adiam e o 5º dia útil do salário fica na data mais tardia (conservador). Configurável por espaço quando houver tela de configurações.
+- Recorrência com `parts` (salário dividido): `start_date`/`end_date` delimitam o **mês de referência**, então o salário do último mês ainda é gerado no mês seguinte; sem `parts`, nada é gerado depois de `end_date`. Partes percentuais usam `floor` e a última recebe o resto; partes com valor fixo precisam somar o total. Recorrência semanal usa o dia da semana de `start_date` e não aceita `parts`.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -92,3 +93,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 01/10/2026: produção no ar em https://financas.voleidraft.top (finapp-prod: `finapp-api` em 127.0.0.1:3010, `finapp-db`), rota adicionada ao túnel com `infra/cloudflared/add-financas-hostname.sh` (DNS criado pelo script; o servidor tem `/root/.cloudflared/cert.pem`). Apps financeiros antigos removidos do servidor (Claude).
 - 01/10/2026: backup diário (`finapp-backup`: pg_dump -Fc → restic local em `/srv/finapp-backups/restic`, 03:00, retenção 7/4/12) e `infra/backup/restore.sh`; primeiro backup e teste de restauração OK. Falta destino externo (Claude).
 - 01/10/2026: protótipos aprovados; `packages/core`: `money` (centavos, `splitCents`, `formatBRL`, `parseBRL`), `dates` (ISO, `clampDay`, `addMonths` com dia âncora, dias úteis) e `holidays` (Páscoa, feriados nacionais) com testes (Claude).
+- 01/10/2026: `packages/core/recurrence`: `resolveDayRule`, `splitParts`, `generateOccurrences` (mensal, a cada N meses, anual, semanal, salário em partes com `monthOffset`) e `splitRecurrenceFrom` ("alterar a partir de"), com os exemplos da RN 3 (Claude).
