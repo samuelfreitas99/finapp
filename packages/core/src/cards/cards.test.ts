@@ -9,6 +9,7 @@ import {
   invoiceStatus,
   nextBestPurchaseDate,
   type CardConfig,
+  invoiceLedger,
 } from './index';
 
 const card3x10: CardConfig = { closingDay: 3, dueDay: 10 };
@@ -133,5 +134,77 @@ describe('availableLimit (RN 4)', () => {
     expect(availableLimit({ limit: 500000, unpaidItems: 120000, payments: 20000 })).toBe(400000);
     expect(availableLimit({ limit: 100000, unpaidItems: 150000, payments: 0 })).toBe(-50000);
     expect(() => availableLimit({ limit: 1.5, unpaidItems: 0, payments: 0 })).toThrow(RangeError);
+  });
+});
+
+describe('invoiceLedger (RN 4)', () => {
+  const inv = (
+    referenceMonth: string,
+    closingDate: string,
+    dueDate: string,
+    items: number,
+    paid = 0,
+  ) => ({
+    referenceMonth,
+    closingDate,
+    dueDate,
+    items,
+    paid,
+  });
+
+  it('carries the remainder of a partial invoice to the next month after the due date', () => {
+    const rows = invoiceLedger(
+      [
+        inv('2026-11', '2026-11-03', '2026-11-10', 50000),
+        inv('2026-10', '2026-10-03', '2026-10-10', 100000, 40000),
+      ],
+      '2026-10-20',
+    );
+    expect(rows.map((r) => r.referenceMonth)).toEqual(['2026-10', '2026-11']);
+    expect(rows[0]).toMatchObject({ status: 'partial', carried: 0, total: 100000, remaining: 0 });
+    expect(rows[1]).toMatchObject({
+      status: 'open',
+      carried: 60000,
+      total: 110000,
+      remaining: 110000,
+    });
+  });
+
+  it('keeps the remainder on the invoice before the due date and on overdue invoices', () => {
+    const beforeDue = invoiceLedger(
+      [
+        inv('2026-10', '2026-10-03', '2026-10-10', 100000, 40000),
+        inv('2026-11', '2026-11-03', '2026-11-10', 50000),
+      ],
+      '2026-10-08',
+    );
+    expect(beforeDue[0]).toMatchObject({ status: 'partial', remaining: 60000 });
+    expect(beforeDue[1]?.carried).toBe(0);
+
+    const overdue = invoiceLedger(
+      [
+        inv('2026-10', '2026-10-03', '2026-10-10', 100000),
+        inv('2026-11', '2026-11-03', '2026-11-10', 50000),
+      ],
+      '2026-10-20',
+    );
+    expect(overdue[0]).toMatchObject({ status: 'overdue', remaining: 100000 });
+    expect(overdue[1]?.carried).toBe(0);
+  });
+
+  it('chains carries and treats refunds above purchases as paid', () => {
+    const rows = invoiceLedger(
+      [
+        inv('2026-09', '2026-09-03', '2026-09-10', 30000, 10000),
+        inv('2026-10', '2026-10-03', '2026-10-10', 0, 5000),
+        inv('2026-11', '2026-11-03', '2026-11-10', -2000),
+      ],
+      '2026-11-20',
+    );
+    expect(rows.map((r) => [r.carried, r.total, r.status])).toEqual([
+      [0, 30000, 'partial'],
+      [20000, 20000, 'partial'],
+      [15000, 13000, 'overdue'],
+    ]);
   });
 });

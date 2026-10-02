@@ -8,6 +8,7 @@ import type { Auth } from './auth/auth';
 import type { Db } from './db/client';
 import { ApiError } from './http/errors';
 import { accountRoutes } from './modules/accounts/routes';
+import { cardRoutes } from './modules/cards/routes';
 import { categoryRoutes } from './modules/categories/routes';
 import { dashboardRoutes } from './modules/dashboard/routes';
 import { spaceScoped } from './modules/spaces/scope';
@@ -74,6 +75,7 @@ export function buildApp({
       categoryRoutes(scoped, ctx);
       transactionRoutes(scoped, ctx);
       dashboardRoutes(scoped, ctx);
+      cardRoutes(scoped, ctx);
     });
   }
 

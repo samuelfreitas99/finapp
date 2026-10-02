@@ -25,11 +25,12 @@ import {
 } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { uuidv7 } from 'uuidv7';
-import { transactions, transactionTags } from '../../db/schema';
+import { invoicePayments, transactions, transactionTags } from '../../db/schema';
 import type { DbExecutor } from '../../db/seed';
 import { badRequest } from '../../http/errors';
 import { currentUser } from '../../plugins/auth';
 import { accountForEdit, accountForEntry, balancesFor } from '../accounts/service';
+import { cardForEntry, ensureInvoice, findCard, invoiceMonthFor } from '../cards/service';
 import { categoryForEntry, systemCategoryId } from '../categories/routes';
 import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 import {
@@ -79,6 +80,7 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
       q.from ? gte(transactions.date, q.from) : undefined,
       q.to ? lte(transactions.date, q.to) : undefined,
       q.accountId ? eq(transactions.accountId, q.accountId) : undefined,
+      q.cardId ? eq(transactions.cardId, q.cardId) : undefined,
       q.categoryId ? eq(transactions.categoryId, q.categoryId) : undefined,
       q.type ? eq(transactions.type, q.type) : undefined,
       q.status ? eq(transactions.status, q.status) : undefined,
@@ -133,29 +135,42 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
     return item;
   });
 
-  /** Receita ou despesa simples numa conta (inclusive Pix). */
+  /**
+   * Receita ou despesa simples numa conta (inclusive Pix), ou item de cartão: despesa é
+   * compra e receita é estorno, na fatura em que cai a data (RN 4).
+   */
   app.post('/transactions', async (request, reply) => {
     const spaceId = spaceIdOf(request);
     const body = createTransactionBodySchema.parse(request.body ?? {});
     assertSettledDate(body.status, body.date);
+    const userId = currentUser(request).id;
     const row = await db.transaction(async (tx) => {
-      await accountForEntry(tx, spaceId, body.accountId, body.date);
+      let invoiceId: string | null = null;
+      if (body.cardId) {
+        const card = await cardForEntry(tx, spaceId, body.cardId);
+        const month = await invoiceMonthFor(tx, card, body.date);
+        invoiceId = (await ensureInvoice(tx, card, month, userId)).id;
+      } else if (body.accountId) {
+        await accountForEntry(tx, spaceId, body.accountId, body.date);
+      }
       if (body.categoryId) await categoryForEntry(tx, spaceId, body.categoryId, body.type);
       if (body.contactId) await assertContact(tx, spaceId, body.contactId);
       const [inserted] = await tx
         .insert(transactions)
         .values({
           spaceId,
-          createdBy: currentUser(request).id,
+          createdBy: userId,
           type: body.type,
           status: body.status,
           amount: body.amount,
           date: body.date,
           description: body.description,
           notes: body.notes ?? null,
-          accountId: body.accountId,
+          accountId: body.accountId ?? null,
+          cardId: body.cardId ?? null,
+          invoiceId,
           categoryId: body.categoryId ?? null,
-          paymentMethod: body.paymentMethod ?? null,
+          paymentMethod: body.cardId ? 'credit' : (body.paymentMethod ?? null),
           pixCounterparty: body.pixCounterparty ?? null,
           contactId: body.contactId ?? null,
           settledAt: body.status === 'settled' ? new Date() : null,
@@ -183,7 +198,18 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
           );
         }
       }
+      if (current.invoicePaymentId) {
+        const allowed = new Set(['description', 'notes', 'tagIds']);
+        if (Object.keys(body).some((k) => !allowed.has(k))) {
+          throw badRequest(
+            'invoice_payment_locked',
+            'Pagamento de fatura: para mudar valor, data ou conta, exclua e pague de novo.',
+          );
+        }
+      }
       if (current.transferId) return updateTransfer(tx, spaceId, current, body);
+      if (current.cardId)
+        return updateCardItem(tx, spaceId, current, body, currentUser(request).id);
 
       const next = {
         status: body.status ?? current.status,
@@ -294,18 +320,84 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
     return findTransaction(tx, spaceId, current.id);
   };
 
-  /** Exclusão lógica; numa transferência, apaga as duas pontas. */
+  /**
+   * Item de cartão: valor, data (a fatura acompanha a data, exceto parcelas), descrição,
+   * categoria, status e tags. Não vira lançamento de conta.
+   */
+  const updateCardItem = async (
+    tx: DbExecutor,
+    spaceId: string,
+    current: TransactionRow,
+    body: ReturnType<typeof updateTransactionBodySchema.parse>,
+    userId: string,
+  ) => {
+    if (body.accountId !== undefined || body.pixCounterparty || body.paymentMethod) {
+      throw badRequest(
+        'card_item_field',
+        'Item de cartão não tem conta, Pix ou outra forma de pagamento.',
+      );
+    }
+    const status = body.status ?? current.status;
+    const date = body.date ?? current.date;
+    assertSettledDate(status, date);
+    if (body.categoryId) {
+      await categoryForEntry(
+        tx,
+        spaceId,
+        body.categoryId,
+        current.type === 'income' ? 'income' : 'expense',
+      );
+    }
+    if (body.contactId) await assertContact(tx, spaceId, body.contactId);
+    let invoiceId = current.invoiceId;
+    if (body.date !== undefined && body.date !== current.date && !current.installmentPlanId) {
+      const card = await findCard(tx, spaceId, current.cardId as string);
+      invoiceId = (await ensureInvoice(tx, card, await invoiceMonthFor(tx, card, date), userId)).id;
+    }
+    const { tagIds, ...fields } = body;
+    const [row] = await tx
+      .update(transactions)
+      .set({
+        ...fields,
+        invoiceId,
+        ...(body.status && body.status !== current.status
+          ? { settledAt: body.status === 'settled' ? new Date() : null }
+          : {}),
+      })
+      .where(eq(transactions.id, current.id))
+      .returning();
+    if (!row) throw new Error('falha ao atualizar item do cartão');
+    if (tagIds) await setTags(tx, spaceId, current.id, tagIds);
+    return row;
+  };
+
+  /**
+   * Exclusão lógica; numa transferência, apaga as duas pontas; num pagamento de fatura,
+   * apaga também o registro do pagamento.
+   */
   app.delete('/transactions/:id', async (request, reply) => {
     const { spaceId, id } = spaceItemParamsSchema.parse(request.params);
     const current = await findTransaction(db, spaceId, id);
-    await db
-      .update(transactions)
-      .set({ deletedAt: new Date() })
-      .where(
-        current.transferId
-          ? and(eq(transactions.transferId, current.transferId), eq(transactions.spaceId, spaceId))
-          : eq(transactions.id, id),
-      );
+    const now = new Date();
+    await db.transaction(async (tx) => {
+      await tx
+        .update(transactions)
+        .set({ deletedAt: now })
+        .where(
+          current.transferId
+            ? and(
+                eq(transactions.transferId, current.transferId),
+                eq(transactions.spaceId, spaceId),
+              )
+            : eq(transactions.id, id),
+        );
+      if (current.invoicePaymentId) {
+        await tx
+          .update(invoicePayments)
+          .set({ deletedAt: now })
+          .where(eq(invoicePayments.id, current.invoicePaymentId));
+      }
+    });
     return reply.code(204).send();
   });
 
@@ -348,6 +440,9 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
             ),
           );
         return findTransaction(tx, spaceId, id);
+      }
+      if (current.cardId && body.accountId !== undefined) {
+        throw badRequest('card_item_field', 'Item de cartão não tem conta.');
       }
       const accountId = body.accountId ?? current.accountId;
       if (accountId) {

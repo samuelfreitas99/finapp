@@ -15,11 +15,11 @@ Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato plan
 
 ## Cadastros (prefixo `/api/spaces/:spaceId`)
 - `/accounts` CRUD ✅ (lista com `balance` atual e `forecastBalance` em `forecastDate`, padrão fim do mês; `?includeArchived=`; `PATCH { archived }` arquiva; `DELETE` só sem lançamentos, senão 409), `GET /accounts/:id/balance?date=` ✅
-- `/cards` CRUD, `GET /cards/:id/limit`
+- `/cards` CRUD ✅ (cada cartão traz `availableLimit`, `bestPurchaseDay` e `currentInvoice`; mudar fechamento/vencimento recalcula as faturas ainda abertas sem override; `DELETE` só sem lançamentos, senão 409), `GET /cards/:id/limit` ✅
 - `/categories` CRUD ✅ (`?kind=&includeArchived=&includeSystem=`; subcategoria de um nível; técnicas só mudam nome/ícone/cor), `/tags` CRUD, `/contacts` CRUD, `/holidays` CRUD
 
 ## Lançamentos
-- `GET /transactions?from=&to=&accountId=&cardId=&categoryId=&type=&status=&paymentMethod=&q=&tag=&cursor=&limit=` ✅ (data desc; `cardId` na Fase 3), `GET /transactions/:id` ✅
+- `GET /transactions?from=&to=&accountId=&cardId=&categoryId=&type=&status=&paymentMethod=&q=&tag=&cursor=&limit=` ✅ (data desc), `GET /transactions/:id` ✅
 - `POST /transactions` ✅ (receita/despesa simples numa conta; Pix = `paymentMethod: "pix"` + `pixCounterparty`/`contactId`; `tagIds`)
 - `PATCH /transactions/:id` ✅ (transferência: valor/data/descrição/status nas duas pontas; ajuste: só descrição/observações/tags), `DELETE /transactions/:id` ✅ (transferência apaga as duas pontas)
 - `POST /transactions/:id/settle` ✅ (`{ amount?, date?, accountId? }`; data padrão: a prevista se já passou, senão hoje)
@@ -33,8 +33,13 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `PATCH /recurrences/:id?from=YYYY-MM` (alterar a partir de um mês)
 
 ## Faturas e parcelamentos
-- `GET /cards/:id/invoices?from=&to=`, `GET /invoices/:id` (com itens e total)
-- `POST /invoices/:id/payments`, `PATCH /invoices/:id` (overrides de datas)
+- Faturas são endereçadas pelo **mês de vencimento** e criadas na hora em que precisam existir:
+  - `GET /cards/:id/invoices?from=YYYY-MM&to=YYYY-MM` ✅ (padrão: últimos 6 meses até o mês seguinte ao atual; mais recente primeiro; `items`, `carried` (saldo anterior), `total`, `paid`, `remaining`, `status`)
+  - `GET /cards/:id/invoices/:month` ✅ (resumo + `entries` + `payments`)
+  - `PATCH /cards/:id/invoices/:month` ✅ (`{ closingDateOverride?, dueDateOverride? }`; compras avulsas das faturas vizinhas sem pagamento são reposicionadas)
+  - `POST /cards/:id/invoices/:month/payments` ✅ (`{ accountId?, amount?, date? }`, padrões: conta do cartão, o que falta, hoje; cria a despesa "Fatura <cartão> <mês>" na conta com a categoria técnica `invoice_payment`)
+  - `DELETE /cards/:id/invoices/:month/payments/:paymentId` ✅ (excluir o lançamento do pagamento também desfaz o pagamento)
+- Compra no cartão = `POST /transactions` com `cardId` (sem `accountId`): despesa é compra, receita é estorno; a fatura sai da data. Editar a data de um item avulso troca a fatura; parcelas não mudam de fatura pela data.
 - `POST /installment-plans/preview`, `POST /installment-plans`, `GET /installment-plans?status=`
 - `POST /installment-plans/:id/anticipate` (`{ count, discount? }`)
 - `POST /installment-plans/:id/cancel`

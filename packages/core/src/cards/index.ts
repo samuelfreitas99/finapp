@@ -207,3 +207,60 @@ export function availableLimit({ limit, unpaidItems, payments }: AvailableLimitI
   assertCents(payments, 'pagamentos');
   return limit - unpaidItems + payments;
 }
+
+export interface InvoiceLedgerInput {
+  referenceMonth: YearMonth;
+  closingDate: ISODate;
+  dueDate: ISODate;
+  /** Σ itens da fatura (compras, parcelas, encargos; estornos negativos). */
+  items: Cents;
+  /** Σ pagamentos registrados. */
+  paid: Cents;
+}
+
+export interface InvoiceLedgerRow extends InvoiceLedgerInput {
+  /** "Saldo anterior": o que sobrou da fatura do mês anterior após pagamento parcial. */
+  carried: Cents;
+  /** `carried + items`. */
+  total: Cents;
+  /** `max(0, total − paid)`. */
+  remaining: Cents;
+  status: InvoiceStatus;
+}
+
+/**
+ * Encadeia as faturas de um cartão, mês a mês: o restante de uma fatura `partial` cujo
+ * vencimento já passou vira saldo anterior da fatura do mês seguinte (que deixa de ser
+ * cobrado na anterior). Fatura vencida sem nenhum pagamento (`overdue`) continua cobrando
+ * o total nela mesma. Meses sem fatura no meio da lista recebem o saldo com zero itens.
+ * @see RN 4 (Estados da fatura, Pagamento parcial)
+ */
+export function invoiceLedger(
+  invoices: readonly InvoiceLedgerInput[],
+  today: ISODate,
+): InvoiceLedgerRow[] {
+  const sorted = [...invoices].sort((a, b) => a.referenceMonth.localeCompare(b.referenceMonth));
+  const result: InvoiceLedgerRow[] = [];
+  let carry = 0;
+  let carryTo: YearMonth | null = null;
+  for (const inv of sorted) {
+    assertCents(inv.items, 'itens');
+    assertCents(inv.paid, 'pago');
+    const carried = carryTo === inv.referenceMonth ? carry : 0;
+    const total = carried + inv.items;
+    const status = invoiceStatus({ ...inv, total, paid: inv.paid, today });
+    const pastDue = compareDates(today, inv.dueDate) > 0;
+    const remaining = carriedBalance(total, inv.paid);
+    const carries = status === 'partial' && pastDue && remaining > 0;
+    result.push({
+      ...inv,
+      carried,
+      total,
+      remaining: carries ? 0 : remaining,
+      status,
+    });
+    carry = carries ? remaining : 0;
+    carryTo = carries ? addYearMonths(inv.referenceMonth, 1) : null;
+  }
+  return result;
+}
