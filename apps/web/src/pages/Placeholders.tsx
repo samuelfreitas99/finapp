@@ -1,4 +1,4 @@
-import { CreditCard, Landmark, ListOrdered, Plus, Tags } from 'lucide-react';
+import { CreditCard, ListOrdered, Plus, Tags } from 'lucide-react';
 import { ComingSoon } from '../components/ComingSoon';
 import { TopBar } from '../layout/AppLayout';
 
@@ -39,20 +39,6 @@ export function CardsPage() {
         icon={CreditCard}
         title="Cartões e faturas"
         text="Faturas, limite e parcelamentos entram na fase de cartões."
-      />
-    </>
-  );
-}
-
-export function AccountsPage() {
-  return (
-    <>
-      <TopBar />
-      <h1>Contas</h1>
-      <ComingSoon
-        icon={Landmark}
-        title="Suas contas"
-        text="Cadastro de contas chega na próxima etapa."
       />
     </>
   );

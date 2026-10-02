@@ -4,13 +4,9 @@ import { AppLayout } from './layout/AppLayout';
 import { HomePage } from './pages/Home';
 import { LoginPage } from './pages/Login';
 import { MorePage } from './pages/More';
-import {
-  AccountsPage,
-  CardsPage,
-  CategoriesPage,
-  NewEntryPage,
-  TransactionsPage,
-} from './pages/Placeholders';
+import { EditAccountPage, NewAccountPage } from './pages/accounts/AccountFormPage';
+import { AccountsPage } from './pages/accounts/AccountsPage';
+import { CardsPage, CategoriesPage, NewEntryPage, TransactionsPage } from './pages/Placeholders';
 import { SignUpPage } from './pages/SignUp';
 
 export const router = createBrowserRouter([
@@ -32,6 +28,8 @@ export const router = createBrowserRouter([
           { path: '/lancar', element: <NewEntryPage /> },
           { path: '/cartoes', element: <CardsPage /> },
           { path: '/contas', element: <AccountsPage /> },
+          { path: '/contas/nova', element: <NewAccountPage /> },
+          { path: '/contas/:id', element: <EditAccountPage /> },
           { path: '/categorias', element: <CategoriesPage /> },
           { path: '/mais', element: <MorePage /> },
         ],
