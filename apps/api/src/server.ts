@@ -5,6 +5,9 @@ import { loadConfig } from './config';
 import { createDb } from './db/client';
 import { runMigrations } from './db/migrate';
 import { runSeed } from './db/seed';
+import { startJobs } from './jobs';
+import { generateAllRecurrences } from './jobs/recurrences';
+import { todayIn } from '@finapp/core';
 
 const port = Number(process.env.PORT ?? 3001);
 const host = process.env.HOST ?? '127.0.0.1';
@@ -43,7 +46,17 @@ async function main() {
     appUrl: config.appUrl,
   });
 
+  let boss: Awaited<ReturnType<typeof startJobs>> | null = null;
+  if (db && config.databaseUrl && process.env.RUN_JOBS !== 'false') {
+    boss = await startJobs({ db, connectionString: config.databaseUrl, log: app.log });
+    // Na subida, já completa a janela (o job diário roda às 02:00).
+    generateAllRecurrences(db, todayIn()).catch((err: unknown) =>
+      app.log.error({ err }, 'falha ao gerar recorrências'),
+    );
+  }
+
   const shutdown = async () => {
+    await boss?.stop();
     await app.close();
     process.exit(0);
   };

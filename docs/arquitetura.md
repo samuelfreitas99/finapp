@@ -60,9 +60,11 @@ Cada funcionalidade da API é um módulo (`modules/cards`, `modules/debts`...) c
 - Push: VAPID, inscrição salva em `push_subscriptions`. No iPhone só funciona com o app instalado na tela inicial (iOS 16.4+).
 
 ## Jobs (pg-boss)
+pg-boss no mesmo Postgres (schema `pgboss`), iniciado pela API (`apps/api/src/jobs`); desligar com `RUN_JOBS=false`. Os jobs só chamam serviços idempotentes.
+
 | Job | Quando |
 |---|---|
-| `recurrences.generate` | diário 02:00, mantém 12 meses gerados |
+| `recurrences-generate` ✅ | diário 02:00 (America/Sao_Paulo, `missed: once`), mantém 12 meses gerados; também roda na subida da API |
 | `invoices.updateStatus` | diário 00:05 |
 | `alerts.daily` | diário 08:00 |
 | `debts.markLate` | diário 00:10 |
