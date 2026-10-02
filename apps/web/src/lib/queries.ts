@@ -1,5 +1,14 @@
 import type {
   Account,
+  Card,
+  CreateCardBody,
+  InstallmentPlan,
+  InstallmentPlanBody,
+  InstallmentPlanDetail,
+  InstallmentPreview,
+  InvoiceDetail,
+  PayInvoiceBody,
+  UpdateCardBody,
   Category,
   CreateAccountBody,
   CreateAdjustmentBody,
@@ -209,5 +218,164 @@ export function useDashboard() {
   return useQuery({
     queryKey: [...keys.transactions(spaceId), 'dashboard'],
     queryFn: () => api<Dashboard>(spacePath(spaceId, '/dashboard')),
+  });
+}
+
+export const cardKeys = {
+  all: (spaceId: string) => ['cards', spaceId] as const,
+  plans: (spaceId: string) => ['installment-plans', spaceId] as const,
+};
+
+/** Mexer em cartão, fatura ou parcelamento muda saldos, listas e limites. */
+function useInvalidateCards() {
+  const qc = useQueryClient();
+  const spaceId = useSpaceId();
+  const money = useInvalidateMoney();
+  return () =>
+    Promise.all([
+      money(),
+      qc.invalidateQueries({ queryKey: cardKeys.all(spaceId) }),
+      qc.invalidateQueries({ queryKey: cardKeys.plans(spaceId) }),
+    ]);
+}
+
+export function useCards({ includeArchived = false } = {}) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...cardKeys.all(spaceId), 'list', { includeArchived }],
+    queryFn: () =>
+      api<{ items: Card[] }>(
+        spacePath(spaceId, `/cards${includeArchived ? '?includeArchived=true' : ''}`),
+      ).then((r) => r.items),
+  });
+}
+
+export function useCard(id: string | undefined) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...cardKeys.all(spaceId), id],
+    queryFn: () => api<Card>(spacePath(spaceId, `/cards/${id}`)),
+    enabled: Boolean(id),
+  });
+}
+
+export function useSaveCard(id?: string) {
+  const spaceId = useSpaceId();
+  const invalidate = useInvalidateCards();
+  return useMutation({
+    mutationFn: (body: CreateCardBody | UpdateCardBody) =>
+      id
+        ? api<Card>(spacePath(spaceId, `/cards/${id}`), { method: 'PATCH', body })
+        : api<Card>(spacePath(spaceId, '/cards'), { method: 'POST', body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteCard(id: string) {
+  const spaceId = useSpaceId();
+  const invalidate = useInvalidateCards();
+  return useMutation({
+    mutationFn: () => api<undefined>(spacePath(spaceId, `/cards/${id}`), { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useInvoice(cardId: string | undefined, month: string | undefined) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...cardKeys.all(spaceId), cardId, 'invoice', month],
+    queryFn: () => api<InvoiceDetail>(spacePath(spaceId, `/cards/${cardId}/invoices/${month}`)),
+    enabled: Boolean(cardId && month),
+  });
+}
+
+export function usePayInvoice(cardId: string, month: string) {
+  const spaceId = useSpaceId();
+  const invalidate = useInvalidateCards();
+  return useMutation({
+    mutationFn: (body: PayInvoiceBody) =>
+      api<InvoiceDetail>(spacePath(spaceId, `/cards/${cardId}/invoices/${month}/payments`), {
+        method: 'POST',
+        body,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUndoPayment(cardId: string, month: string) {
+  const spaceId = useSpaceId();
+  const invalidate = useInvalidateCards();
+  return useMutation({
+    mutationFn: (paymentId: string) =>
+      api<InvoiceDetail>(
+        spacePath(spaceId, `/cards/${cardId}/invoices/${month}/payments/${paymentId}`),
+        { method: 'DELETE' },
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+export function useInstallmentPlans(
+  filters: { status?: string | undefined; cardId?: string | undefined } = {},
+) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...cardKeys.plans(spaceId), filters],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(filters)) if (v) params.set(k, v);
+      return api<{ items: InstallmentPlan[] }>(
+        spacePath(spaceId, `/installment-plans?${params}`),
+      ).then((r) => r.items);
+    },
+  });
+}
+
+export function useInstallmentPlan(id: string | undefined) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...cardKeys.plans(spaceId), 'one', id],
+    queryFn: () => api<InstallmentPlanDetail>(spacePath(spaceId, `/installment-plans/${id}`)),
+    enabled: Boolean(id),
+  });
+}
+
+export function useInstallmentPreview(body: InstallmentPlanBody | null) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...cardKeys.plans(spaceId), 'preview', body],
+    queryFn: () =>
+      api<InstallmentPreview>(spacePath(spaceId, '/installment-plans/preview'), {
+        method: 'POST',
+        body,
+      }),
+    enabled: body !== null,
+    staleTime: 60_000,
+  });
+}
+
+export function useCreatePlan() {
+  const spaceId = useSpaceId();
+  const invalidate = useInvalidateCards();
+  return useMutation({
+    mutationFn: (body: InstallmentPlanBody) =>
+      api<InstallmentPlanDetail>(spacePath(spaceId, '/installment-plans'), {
+        method: 'POST',
+        body,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function usePlanAction(id: string) {
+  const spaceId = useSpaceId();
+  const invalidate = useInvalidateCards();
+  return useMutation({
+    mutationFn: ({ action, body }: { action: 'anticipate' | 'cancel'; body: unknown }) =>
+      api<InstallmentPlanDetail & { discount?: number }>(
+        spacePath(spaceId, `/installment-plans/${id}/${action}`),
+        { method: 'POST', body },
+      ),
+    onSuccess: invalidate,
   });
 }

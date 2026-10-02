@@ -1,13 +1,14 @@
 import { addDays, compareDates } from '@finapp/core';
-import type { Account, Category } from '@finapp/shared';
-import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import type { Account, Card, Category } from '@finapp/shared';
+import { ChevronDown, ChevronUp, Layers, Zap } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { MoneyInput } from '../../components/MoneyInput';
 import { ApiError } from '../../lib/api';
 import { categoryIcon } from '../../lib/category-icons';
 import { sortByUsage } from '../../lib/category-usage';
-import { today } from '../../lib/dates';
-import { formatDate } from '../../lib/format';
+import { monthLabel, today } from '../../lib/dates';
+import { formatBRL, formatDate } from '../../lib/format';
+import { useInstallmentPreview } from '../../lib/queries';
 
 export type EntryKind = 'expense' | 'income' | 'transfer';
 
@@ -24,7 +25,12 @@ export interface EntryState {
   pix: boolean;
   pixCounterparty: string;
   notes: string;
+  /** 1 = à vista; 2+ = parcelado no cartão. */
+  installments: number;
 }
+
+export const CARD_PREFIX = 'card:';
+export const isCardTarget = (value: string) => value.startsWith(CARD_PREFIX);
 
 const KIND_LABEL: Record<EntryKind, string> = {
   expense: 'Despesa',
@@ -55,6 +61,7 @@ export function errorText(err: unknown) {
 export function EntryForm({
   initial,
   accounts,
+  cards = [],
   categories,
   lockKind = false,
   transferAccountsLocked = false,
@@ -65,6 +72,7 @@ export function EntryForm({
 }: {
   initial: EntryState;
   accounts: Account[];
+  cards?: Card[];
   categories: Category[];
   lockKind?: boolean;
   transferAccountsLocked?: boolean;
@@ -92,6 +100,21 @@ export function EntryForm({
       : kindCategories.slice(0, VISIBLE_CATEGORIES);
   const future = isFuture(form.date);
   const isTransfer = form.kind === 'transfer';
+  const onCard = !isTransfer && isCardTarget(form.accountId);
+  const cardId = onCard ? form.accountId.slice(CARD_PREFIX.length) : null;
+  const splitting = onCard && form.kind === 'expense' && form.installments > 1;
+  const preview = useInstallmentPreview(
+    splitting && cardId && form.amount > 0
+      ? {
+          description: 'prévia',
+          cardId,
+          totalAmount: form.amount,
+          installments: form.installments,
+          firstDate: form.date,
+        }
+      : null,
+  );
+  const previewItems = preview.data?.items ?? [];
   const sameAccounts = isTransfer && form.accountId === form.toAccountId;
   const ready =
     form.amount > 0 && form.accountId && (!isTransfer || (form.toAccountId && !sameAccounts));
@@ -99,7 +122,7 @@ export function EntryForm({
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    onSubmit({ ...form, done: form.done && !future });
+    onSubmit({ ...form, done: onCard ? !future : form.done && !future });
   };
 
   const accountOptions = accounts.map((a) => (
@@ -107,6 +130,21 @@ export function EntryForm({
       {a.name}
     </option>
   ));
+  const targetOptions =
+    cards.length > 0 && !isTransfer ? (
+      <>
+        <optgroup label="Contas">{accountOptions}</optgroup>
+        <optgroup label="Cartões">
+          {cards.map((c) => (
+            <option key={c.id} value={`${CARD_PREFIX}${c.id}`}>
+              {c.name}
+            </option>
+          ))}
+        </optgroup>
+      </>
+    ) : (
+      accountOptions
+    );
 
   return (
     <form className="entry" onSubmit={submit} noValidate>
@@ -147,19 +185,66 @@ export function EntryForm({
 
       {!isTransfer && (
         <div className="entry__quick">
-          <button
-            type="button"
-            className="chip"
-            aria-pressed={form.pix}
-            onClick={() => set('pix', !form.pix)}
-          >
-            <Zap size={16} aria-hidden="true" />
-            Pix
-          </button>
+          {!onCard && (
+            <button
+              type="button"
+              className="chip"
+              aria-pressed={form.pix}
+              onClick={() => set('pix', !form.pix)}
+            >
+              <Zap size={16} aria-hidden="true" />
+              Pix
+            </button>
+          )}
+          {onCard && form.kind === 'expense' && !lockKind && (
+            <button
+              type="button"
+              className="chip"
+              aria-pressed={form.installments > 1}
+              onClick={() => set('installments', form.installments > 1 ? 1 : 2)}
+            >
+              <Layers size={16} aria-hidden="true" />
+              Parcelar
+            </button>
+          )}
         </div>
       )}
 
-      {!isTransfer && form.pix && (
+      {splitting && (
+        <div className="split card card--pad">
+          <div className="field">
+            <label htmlFor="installments">Parcelas</label>
+            <select
+              id="installments"
+              className="input"
+              value={form.installments}
+              onChange={(e) => set('installments', Number(e.target.value))}
+            >
+              {Array.from({ length: 23 }, (_, i) => i + 2).map((n) => (
+                <option key={n} value={n}>
+                  {n}x {form.amount > 0 ? `de ${formatBRL(Math.floor(form.amount / n))}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          {previewItems.length > 0 && (
+            <p className="split__preview" aria-live="polite">
+              <strong>
+                {previewItems.length}x de {formatBRL(previewItems.at(-1)?.amount ?? 0)}
+                {previewItems[0] && previewItems[0].amount !== previewItems.at(-1)?.amount
+                  ? ` (1ª de ${formatBRL(previewItems[0].amount)})`
+                  : ''}
+              </strong>
+              <span>
+                1ª na fatura de {monthLabel(previewItems[0]?.invoiceMonth ?? '')}, última em{' '}
+                {monthLabel(previewItems.at(-1)?.invoiceMonth ?? '')}.
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {!isTransfer && !onCard && form.pix && (
         <div className="field">
           <label htmlFor="pixCounterparty">
             {form.kind === 'expense' ? 'Pix para quem' : 'Pix de quem'}
@@ -235,15 +320,22 @@ export function EntryForm({
           />
         </div>
         <div className="entry__row">
-          <label htmlFor="account">{isTransfer ? 'De' : 'Conta'}</label>
+          <label htmlFor="account">{isTransfer ? 'De' : 'Onde'}</label>
           <select
             id="account"
             className="entry__input"
             value={form.accountId}
             disabled={transferAccountsLocked}
-            onChange={(e) => set('accountId', e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setForm((f) => ({
+                ...f,
+                accountId: value,
+                ...(isCardTarget(value) ? { pix: false } : { installments: 1 }),
+              }));
+            }}
           >
-            {accountOptions}
+            {targetOptions}
           </select>
         </div>
         {isTransfer && (
@@ -319,7 +411,13 @@ export function EntryForm({
         </p>
       )}
 
-      {future ? (
+      {onCard ? (
+        future ? (
+          <p className="alert">
+            Compra com data futura fica como <strong>prevista</strong> na fatura.
+          </p>
+        ) : null
+      ) : future ? (
         <p className="alert">
           {formatDate(form.date)} ainda não chegou: fica como <strong>previsto</strong> e entra no
           saldo previsto. Confirme quando acontecer.
@@ -354,7 +452,16 @@ export function EntryForm({
         className={`btn btn--primary btn--block entry__save entry__save--${form.kind}`}
         disabled={pending || !ready}
       >
-        {pending ? 'Salvando…' : (submitLabel ?? `Salvar ${KIND_LABEL[form.kind].toLowerCase()}`)}
+        {pending
+          ? 'Salvando…'
+          : (submitLabel ??
+            (splitting
+              ? `Parcelar em ${form.installments}x`
+              : onCard
+                ? form.kind === 'income'
+                  ? 'Salvar estorno'
+                  : 'Salvar compra'
+                : `Salvar ${KIND_LABEL[form.kind].toLowerCase()}`))}
       </button>
     </form>
   );
