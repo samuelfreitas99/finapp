@@ -295,4 +295,48 @@ describe.skipIf(!testDatabaseUrl)('debts API (integration)', () => {
     });
     expect(await planned(debt.id)).toHaveLength(0);
   });
+
+  it('moves the borrowed or lent money without counting it as income or spending (RN 6.6)', async () => {
+    const before = (await api('GET', `/accounts/${accountId}`)).json().balance;
+    const dashBefore = (await api('GET', '/dashboard')).json();
+    const cardLoan = await api('POST', '/debts', {
+      name: 'Saque no cartão',
+      kind: 'card_loan',
+      principal: 30000,
+      paymentCardId: cardId,
+      moneyAccountId: accountId,
+      phases: [{ system: 'fixed', installments: 3, total: 33000, firstDueDate: '2026-11-05' }],
+    });
+    expect(cardLoan.statusCode).toBe(201);
+    const lent = await api('POST', '/debts', {
+      name: 'Emprestei à Maria',
+      kind: 'personal_loan',
+      direction: 'owed_to_me',
+      principal: 10000,
+      moneyAccountId: accountId,
+      paymentAccountId: accountId,
+      phases: [
+        { system: 'fixed', installments: 1, installmentAmount: 10000, firstDueDate: '2026-12-01' },
+      ],
+    });
+    expect(lent.statusCode).toBe(201);
+    expect((await api('GET', `/accounts/${accountId}`)).json().balance).toBe(
+      before + 30000 - 10000,
+    );
+    const dash = (await api('GET', '/dashboard')).json();
+    expect(dash.income.settled).toBe(dashBefore.income.settled);
+    expect(dash.expense.settled).toBe(dashBefore.expense.settled);
+
+    const bad = (body: Record<string, unknown>) =>
+      api('POST', '/debts/preview', {
+        name: 'X',
+        phases: [
+          { system: 'fixed', installments: 1, installmentAmount: 100, firstDueDate: '2026-11-05' },
+        ],
+        ...body,
+      });
+    expect((await bad({ kind: 'third_party_card', paymentCardId: cardId })).statusCode).toBe(400);
+    expect((await bad({ kind: 'card_loan' })).statusCode).toBe(400);
+    expect((await bad({ kind: 'bank_loan', moneyAccountId: accountId })).statusCode).toBe(400);
+  });
 });

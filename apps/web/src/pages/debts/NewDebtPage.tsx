@@ -39,8 +39,13 @@ interface FormState {
   completionDate: string;
   assetValue: number;
   paidInstallments: number;
+  /** Valor recebido (devo) ou emprestado (me devem) e onde entrou/saiu. */
+  moneyAmount: number;
+  moneyAccountId: string;
   phases: PhaseState[];
 }
+
+const MONEY_KINDS: DebtKind[] = ['bank_loan', 'card_loan', 'personal_loan', 'financing', 'other'];
 
 const KINDS: DebtKind[] = [
   'bank_loan',
@@ -160,6 +165,9 @@ function toBody(f: FormState): DebtBody {
     completionDate: f.kind === 'property' && f.completionDate ? f.completionDate : null,
     assetValue: f.kind === 'property' && f.assetValue > 0 ? f.assetValue : null,
     paidInstallments: f.paidInstallments,
+    ...(MONEY_KINDS.includes(f.kind) && f.moneyAccountId && f.moneyAmount > 0
+      ? { moneyAccountId: f.moneyAccountId, principal: f.moneyAmount }
+      : {}),
     phases: f.phases.map(phaseBody),
   };
 }
@@ -452,6 +460,8 @@ export function NewDebtPage() {
     completionDate: '',
     assetValue: 0,
     paidInstallments: 0,
+    moneyAmount: 0,
+    moneyAccountId: '',
     phases: [phase({ system: 'price' })],
   });
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -598,20 +608,54 @@ export function NewDebtPage() {
                   </option>
                 ))}
               </optgroup>
-              {form.direction === 'i_owe' && (cards.data ?? []).length > 0 && (
-                <optgroup label="Cartões (parcelas na fatura)">
-                  {(cards.data ?? []).map((c) => (
-                    <option key={c.id} value={`${CARD_PREFIX}${c.id}`}>
-                      {c.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
+              {form.direction === 'i_owe' &&
+                form.kind !== 'third_party_card' &&
+                (cards.data ?? []).length > 0 && (
+                  <optgroup label="Cartões (parcelas na fatura)">
+                    {(cards.data ?? []).map((c) => (
+                      <option key={c.id} value={`${CARD_PREFIX}${c.id}`}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
             </select>
             <span className="muted field-hint">
               Cada parcela vira um lançamento previsto e entra no Planejamento.
             </span>
           </div>
+          {MONEY_KINDS.includes(form.kind) && (
+            <div className="field-row">
+              <div className="field">
+                <label htmlFor="money-amount">
+                  {form.direction === 'owed_to_me' ? 'Valor emprestado' : 'Valor que recebi'}
+                </label>
+                <MoneyInput
+                  id="money-amount"
+                  value={form.moneyAmount}
+                  onChange={(v) => set('moneyAmount', Math.max(0, v))}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="money-account">
+                  {form.direction === 'owed_to_me' ? 'Saiu da conta' : 'Entrou na conta'}
+                </label>
+                <select
+                  id="money-account"
+                  className="input"
+                  value={form.moneyAccountId}
+                  onChange={(e) => set('moneyAccountId', e.target.value)}
+                >
+                  <option value="">Não lançar</option>
+                  {(accounts.data ?? []).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
           {isProperty && (
             <div className="field-row">
               <div className="field">

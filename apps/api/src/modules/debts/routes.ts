@@ -8,11 +8,13 @@ import {
 } from '@finapp/shared';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+import { compareDates } from '@finapp/core';
 import { debts, transactions } from '../../db/schema';
 import { badRequest } from '../../http/errors';
 import { currentUser } from '../../plugins/auth';
 import { accountForEntry } from '../accounts/service';
 import { cardForEntry } from '../cards/service';
+import { systemCategoryId } from '../categories/routes';
 import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 import { assertContact } from '../transactions/service';
 import { debtActionRoutes } from './actions';
@@ -140,6 +142,29 @@ export function debtRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
       if (body.paymentCardId) await cardForEntry(tx, spaceId, body.paymentCardId);
       if (body.contactId) await assertContact(tx, spaceId, body.contactId);
       const debt = await insertDebt(tx, spaceId, userId, body, rows);
+      if (body.moneyAccountId && debt.principal > 0) {
+        // Dinheiro que entrou (devo) ou saiu (me devem): não é renda nem gasto (RN 6.6).
+        const date = body.moneyDate ?? t;
+        if (compareDates(date, t) > 0) {
+          throw badRequest('settled_in_future', 'A data do dinheiro não pode ser futura.');
+        }
+        await accountForEntry(tx, spaceId, body.moneyAccountId, date);
+        const owedToMe = debt.direction === 'owed_to_me';
+        await tx.insert(transactions).values({
+          spaceId,
+          createdBy: userId,
+          type: owedToMe ? 'expense' : 'income',
+          status: 'settled',
+          amount: debt.principal,
+          date,
+          description: owedToMe
+            ? `Empréstimo concedido: ${debt.name}`
+            : `Empréstimo recebido: ${debt.name}`,
+          accountId: body.moneyAccountId,
+          categoryId: await systemCategoryId(tx, spaceId, 'loan'),
+          settledAt: new Date(),
+        });
+      }
       await syncPlannedEntries(tx, debt, t, userId);
       return debt.id;
     });

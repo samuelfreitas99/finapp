@@ -1,8 +1,8 @@
 import { addDays, endOfMonth, monthFlow, yearMonthOf } from '@finapp/core';
 import { dashboardQuerySchema, type Dashboard } from '@finapp/shared';
-import { and, asc, count, eq, gte, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, count, eq, gte, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { accounts, transactions } from '../../db/schema';
+import { accounts, categories, transactions } from '../../db/schema';
 import { balancesFor } from '../accounts/service';
 import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 import { tagsOf, toTransaction } from '../transactions/service';
@@ -39,7 +39,17 @@ export function dashboardRoutes(app: FastifyInstance, { db, today }: SpaceContex
           amount: sql<string>`sum(${transactions.amount})`,
         })
         .from(transactions)
-        .where(and(live, gte(transactions.date, from), lte(transactions.date, forecastDate)))
+        // Categorias técnicas (pagamento de fatura, ajuste, transferência, empréstimo) não
+        // são receita nem gasto: a compra no cartão já conta, o dinheiro emprestado não é renda.
+        .leftJoin(categories, eq(categories.id, transactions.categoryId))
+        .where(
+          and(
+            live,
+            gte(transactions.date, from),
+            lte(transactions.date, forecastDate),
+            or(isNull(categories.id), eq(categories.isSystem, false)),
+          ),
+        )
         .groupBy(transactions.type, transactions.status),
       db
         .select()

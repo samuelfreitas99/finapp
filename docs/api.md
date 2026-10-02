@@ -51,7 +51,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - Parcelas não são editadas (valor/data/conta) nem excluídas sozinhas: `installment_locked`.
 
 ## Dívidas
-- `POST /debts/preview` ✅ (cronograma + painel sem gravar), `POST /debts` ✅ (`{ name, direction?, kind, contactId?, institution?, principal?, paymentAccountId | paymentCardId, completionDate?, assetValue?, notes?, paidInstallments?, phases: [{ name, system, firstDueDate, installments?, installmentAmount | total, principal, rateMonthly | rateAnnual, index?, values?, lastMonth?, endsAtCompletion?, startsAfterCompletion?, payments? }] }`; cria as parcelas e os lançamentos previstos de cada parcela pendente na conta (despesa se devo, receita se me devem) ou como itens das faturas do cartão)
+- `POST /debts/preview` ✅ (cronograma + painel sem gravar), `POST /debts` ✅ (`{ name, direction?, kind, contactId?, institution?, principal?, paymentAccountId | paymentCardId, completionDate?, assetValue?, notes?, paidInstallments?, phases: [{ name, system, firstDueDate, installments?, installmentAmount | total, principal, rateMonthly | rateAnnual, index?, values?, lastMonth?, endsAtCompletion?, startsAfterCompletion?, payments? }] }`; `moneyAccountId`/`moneyDate` lançam o valor recebido (devo) ou emprestado (me devem) na conta, fora dos relatórios; `card_loan` exige `paymentCardId`; `third_party_card` não aceita cartão; cria as parcelas e os lançamentos previstos de cada parcela pendente na conta (despesa se devo, receita se me devem) ou como itens das faturas do cartão)
 - `GET /debts` ✅ (com painel e próxima parcela), `GET /debts/:id` ✅ (painel geral e por fase, patrimônio líquido `assetValue − saldo devedor`, cronograma com status do dia), `PATCH /debts/:id` ✅ (nome, contato, instituição, valor do bem, observações), `DELETE /debts/:id` ✅ (cancela; apaga os previstos não pagos)
 - `POST /debts/:id/installments/:n/pay` ✅ (`{ amount?, date?, accountId?, discount? | discountMonthlyRate? }`; padrão: o que falta, hoje; o previsto da parcela vira o pagamento; parcial deixa o resto previsto; desconto por taxa = valor presente arredondado para baixo; última parcela paga = `paid_off`)
 - `POST /debts/:id/amortize` ✅ (`{ amount, mode: reduce_term|reduce_installment, phaseId?, date?, accountId? }`; só fase price/sac, sem parcela parcial; recalcula as pendentes, renumera e registra evento)
@@ -61,7 +61,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `GET/POST /index-values`
 
 ## Planejamento e relatórios
-- `GET /dashboard?month=` ✅ (`balance`, `forecastBalance`/`forecastDate`, `income`/`expense` `{ settled, planned }`, `upcoming` (previstos vencidos e dos próximos 7 dias, até 10), `overdueCount`, `hasAccounts`)
+- `GET /dashboard?month=` ✅ (receitas/despesas sem categorias técnicas; `balance`, `forecastBalance`/`forecastDate`, `income`/`expense` `{ settled, planned }`, `upcoming` (previstos vencidos e dos próximos 7 dias, até 10), `overdueCount`, `hasAccounts`)
 - `GET /projection?months=12` ✅ (1–36; saldo atual das contas que somam nos totais + previstos dessas contas por tipo (receita, fixa = recorrência, parcela = carnê, outras) + o que falta pagar de cada fatura no vencimento; transferências fora; RN 7)
 - `GET /reports/by-category?from=&to=`, `/reports/monthly?from=&to=`, `/reports/net-worth`
 - `/budgets` CRUD, `/goals` CRUD

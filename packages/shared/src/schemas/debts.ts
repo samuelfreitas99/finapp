@@ -97,11 +97,31 @@ export const debtBodySchema = z
     notes: z.string().trim().max(2000).nullish(),
     /** Dívida em andamento: as primeiras N parcelas já foram pagas (sem lançamento). */
     paidInstallments: z.int().min(0).default(0),
+    /**
+     * Conta onde o dinheiro entrou (peguei, empréstimo no cartão/banco) ou de onde saiu
+     * (emprestei), na data `moneyDate` (padrão hoje). Fica fora dos relatórios de renda e
+     * gasto (categoria técnica "Empréstimo"). Usa o `principal`.
+     * @see RN 6.6
+     */
+    moneyAccountId: z.uuid().nullish(),
+    moneyDate: isoDateSchema.optional(),
     phases: z.array(debtPhaseBodySchema).min(1).max(8),
   })
   .refine((b) => !(b.paymentAccountId && b.paymentCardId), {
     message: 'pague por conta ou por cartão (só um)',
     path: ['paymentCardId'],
+  })
+  .refine((b) => b.kind !== 'third_party_card' || !b.paymentCardId, {
+    message: 'cartão de outra pessoa não entra nas suas faturas: pague por uma conta',
+    path: ['paymentCardId'],
+  })
+  .refine((b) => b.kind !== 'card_loan' || Boolean(b.paymentCardId), {
+    message: 'empréstimo no cartão: escolha o cartão que recebe as parcelas',
+    path: ['paymentCardId'],
+  })
+  .refine((b) => !b.moneyAccountId || (b.principal ?? 0) > 0, {
+    message: 'informe o valor recebido ou emprestado',
+    path: ['principal'],
   })
   .refine(
     (b) =>
