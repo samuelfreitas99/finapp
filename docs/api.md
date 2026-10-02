@@ -49,7 +49,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `GET/POST /index-values`
 
 ## Planejamento e relatórios
-- `GET /dashboard?month=`
+- `GET /dashboard?month=` ✅ (`balance`, `forecastBalance`/`forecastDate`, `income`/`expense` `{ settled, planned }`, `upcoming` (previstos vencidos e dos próximos 7 dias, até 10), `overdueCount`, `hasAccounts`)
 - `GET /projection?months=12`
 - `GET /reports/by-category?from=&to=`, `/reports/monthly?from=&to=`, `/reports/net-worth`
 - `/budgets` CRUD, `/goals` CRUD

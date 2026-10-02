@@ -9,6 +9,7 @@ import type { Db } from './db/client';
 import { ApiError } from './http/errors';
 import { accountRoutes } from './modules/accounts/routes';
 import { categoryRoutes } from './modules/categories/routes';
+import { dashboardRoutes } from './modules/dashboard/routes';
 import { spaceScoped } from './modules/spaces/scope';
 import { transactionRoutes } from './modules/transactions/routes';
 import { inviteRoutes } from './modules/invites/routes';
@@ -72,6 +73,7 @@ export function buildApp({
       accountRoutes(scoped, ctx);
       categoryRoutes(scoped, ctx);
       transactionRoutes(scoped, ctx);
+      dashboardRoutes(scoped, ctx);
     });
   }
 

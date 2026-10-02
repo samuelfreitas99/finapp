@@ -1145,3 +1145,115 @@ select.entry__input {
 .month-summary strong {
   white-space: nowrap;
 }
+
+/* Início */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--hero);
+  color: #ffffff;
+}
+
+.hero__label,
+.hero__split span {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.hero__value {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.hero__split {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 0.22);
+}
+
+.hero__split > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero__split > div:last-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.hero__split strong {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.alert--link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.alert--link:hover {
+  color: var(--warning-text);
+  filter: brightness(0.97);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty--compact {
+  flex-direction: row;
+  justify-content: center;
+  padding: 18px 20px;
+}
+
+.date-tile {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-sunken);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.date-tile strong {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.date-tile span {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.date-tile--late {
+  background: var(--danger-bg);
+  color: var(--expense);
+}
+
+.date-tile--late span {
+  color: var(--expense);
+}
+
+.month-summary .card > span:last-child:not(:first-child) {
+  font-size: 12px;
+}

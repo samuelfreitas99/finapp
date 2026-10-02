@@ -30,8 +30,8 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Better Auth com convite; espaço pessoal criado no cadastro (ARQ › Autenticação)
 - [x] Seed: categorias padrão brasileiras e feriados
 - [x] API: contas, categorias, lançamentos, transferências, ajuste, Pix (API)
-- [ ] Web: layout, navegação, tema, login/cadastro, telas de contas e lançamentos, botão + (DS)
-- [ ] Dashboard simples (saldo atual, previsto, receitas x despesas)
+- [x] Web: layout, navegação, tema, login/cadastro, telas de contas e lançamentos, botão + (DS)
+- [x] Dashboard simples (saldo atual, previsto, receitas x despesas)
 - [ ] PWA instalável (manifest, service worker, ícones)
 - [ ] Deploy no servidor e uso real
 
@@ -110,4 +110,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 01/10/2026: web, parte 1 (casca): tokens claro/escuro, tema, login e cadastro com convite, layout com barra inferior e "+" (mobile) e barra lateral (desktop), ocultar valores, tela "Mais"; telas de contas e lançamentos ainda são provisórias (ADR-014) (Claude).
 - 02/10/2026: web, parte 2: tela de contas (lista com saldo atual e previsto, total, criar/editar, cor, somar nos totais, arquivar com desfazer, excluir, ajustar saldo), campo de valor estilo app de banco (`MoneyInput`), toasts (Claude).
 - 02/10/2026: web, parte 3: lançamentos (lista por dia com seletor de mês, busca, filtros, totais do mês, previstos atenuados com "Confirmar") e o "+" (despesa/receita/transferência, valor grande, categorias mais usadas primeiro, Pix, conta usada por último, Hoje/Ontem/Outra, data futura vira previsto, desfazer), edição e exclusão (Claude).
+- 02/10/2026: Início: `GET /dashboard?month=` (saldo das contas que somam nos totais, previsto no fim do mês, receitas x despesas efetivadas/previstas sem transferências e ajustes, previstos vencidos e dos próximos 7 dias) com `monthFlow` no core; tela com o cartão de saldo do protótipo, alerta de vencidos, próximos vencimentos e entradas/saídas do mês (Claude).
 

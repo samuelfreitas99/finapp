@@ -5,3 +5,4 @@ export * from './schemas/common';
 export * from './schemas/accounts';
 export * from './schemas/categories';
 export * from './schemas/transactions';
+export * from './schemas/dashboard';
