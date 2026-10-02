@@ -12,17 +12,20 @@ import {
   text,
   timestamp,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { createdAt, deletedAt, id, inList, updatedAt } from './_helpers';
 import { users } from './auth';
+import { creditCards, installmentPlans, invoicePayments, invoices } from './cards';
 import { accounts, categories, contacts, tags } from './registry';
 import { spaces } from './spaces';
 
 /**
  * Lançamentos (receitas, despesas, transferências, ajustes). Valor positivo em centavos e
  * o tipo define o sentido; o ajuste guarda a diferença com sinal (ADR-013). Fica numa conta **ou** numa fatura (cartão).
- * As colunas que apontam para tabelas de fases futuras (faturas, cartões, parcelamentos,
- * recorrências, dívidas, racha) ganham chave estrangeira na migração de cada fase.
+ * As colunas que apontam para tabelas de fases futuras (recorrências, dívidas, racha)
+ * ganham chave estrangeira na migração de cada fase; cartões, faturas e parcelamentos
+ * já têm (migração 0003).
  * @see RN 1, docs/modelo-de-dados.md
  */
 export const transactions = pgTable(
@@ -40,20 +43,24 @@ export const transactions = pgTable(
     notes: text('notes'),
     categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
     accountId: uuid('account_id').references(() => accounts.id),
-    invoiceId: uuid('invoice_id'),
-    cardId: uuid('card_id'),
+    invoiceId: uuid('invoice_id').references((): AnyPgColumn => invoices.id),
+    cardId: uuid('card_id').references((): AnyPgColumn => creditCards.id),
     paymentMethod: text('payment_method', { enum: PAYMENT_METHODS }),
     pixCounterparty: text('pix_counterparty'),
     contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
     /** Liga as duas pontas de uma transferência. */
     transferId: uuid('transfer_id'),
-    installmentPlanId: uuid('installment_plan_id'),
+    installmentPlanId: uuid('installment_plan_id').references(
+      (): AnyPgColumn => installmentPlans.id,
+    ),
     installmentNumber: integer('installment_number'),
+    /** Parcela antecipada para a fatura aberta (RN 5.5). */
+    anticipated: boolean('anticipated').notNull().default(false),
     recurrenceId: uuid('recurrence_id'),
     /** Ocorrência editada individualmente: o job de recorrência não sobrescreve. */
     detached: boolean('detached').notNull().default(false),
     debtInstallmentId: uuid('debt_installment_id'),
-    invoicePaymentId: uuid('invoice_payment_id'),
+    invoicePaymentId: uuid('invoice_payment_id').references((): AnyPgColumn => invoicePayments.id),
     splitId: uuid('split_id'),
     /** Valor estimado (conta variável), confirmado com o valor real depois. */
     estimated: boolean('estimated').notNull().default(false),
@@ -71,6 +78,12 @@ export const transactions = pgTable(
     index('transactions_category_idx').on(t.categoryId),
     index('transactions_invoice_idx').on(t.invoiceId),
     index('transactions_transfer_idx').on(t.transferId),
+    index('transactions_card_idx').on(t.cardId),
+    index('transactions_installment_plan_idx').on(t.installmentPlanId),
+    check(
+      'transactions_installment_check',
+      sql`(${t.installmentPlanId} is null) = (${t.installmentNumber} is null)`,
+    ),
     check('transactions_type_check', inList(t.type, TRANSACTION_TYPES)),
     check('transactions_status_check', inList(t.status, TRANSACTION_STATUSES)),
     check(

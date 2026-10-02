@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 2** (Fase 1 concluída).
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 3** (Fases 1 e 2 concluídas, exceto confirmar o uso real).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -36,7 +36,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [ ] Deploy no servidor e uso real
 
 ## Fase 3: Cartões e parcelamentos
-- [ ] Schema: cartões, faturas, pagamentos, planos de parcelamento
+- [x] Schema: cartões, faturas, pagamentos, planos de parcelamento
 - [ ] API e telas de cartões e faturas, pagar fatura (total/parcial), estorno
 - [ ] Compra parcelada com prévia, parcelamentos ativos, antecipar, cancelar
 - [ ] Parcelamento fora do cartão (carnê/boleto)
@@ -112,4 +112,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: web, parte 3: lançamentos (lista por dia com seletor de mês, busca, filtros, totais do mês, previstos atenuados com "Confirmar") e o "+" (despesa/receita/transferência, valor grande, categorias mais usadas primeiro, Pix, conta usada por último, Hoje/Ontem/Outra, data futura vira previsto, desfazer), edição e exclusão (Claude).
 - 02/10/2026: Início: `GET /dashboard?month=` (saldo das contas que somam nos totais, previsto no fim do mês, receitas x despesas efetivadas/previstas sem transferências e ajustes, previstos vencidos e dos próximos 7 dias) com `monthFlow` no core; tela com o cartão de saldo do protótipo, alerta de vencidos, próximos vencimentos e entradas/saídas do mês (Claude).
 - 02/10/2026: PWA com `vite-plugin-pwa`: manifest (nome, cores, atalho "Novo lançamento"), ícones 192/512/maskable/apple-touch gerados do glifo da carteira, service worker que guarda só a casca do app (API sempre pela rede, `/api` fora do fallback) e se atualiza sozinho a cada deploy (Claude).
+- 02/10/2026: produção atualizada (main `5f71f6a`): migrações 0001–0002 e seed aplicados, convite do Samuel criado. Fase 3: schema `credit_cards`, `invoices`, `invoice_payments`, `installment_plans`, FKs de `transactions` para cartão/fatura/parcelamento/pagamento e coluna `anticipated` (migração `0003`), com testes de restrições (Claude).
 

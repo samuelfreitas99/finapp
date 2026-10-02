@@ -52,3 +52,13 @@ export const PAYMENT_METHODS = [
   'other',
 ] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export const CARD_BRANDS = ['visa', 'mastercard', 'elo', 'amex', 'hipercard', 'other'] as const;
+export type CardBrand = (typeof CARD_BRANDS)[number];
+
+/** Estados da fatura (RN 4). `open` até o fechamento; depois `closed`, `paid`, `partial` ou `overdue`. */
+export const INVOICE_STATUSES = ['open', 'closed', 'paid', 'partial', 'overdue'] as const;
+export type InvoiceStatusValue = (typeof INVOICE_STATUSES)[number];
+
+export const INSTALLMENT_PLAN_STATUSES = ['active', 'finished', 'cancelled'] as const;
+export type InstallmentPlanStatus = (typeof INSTALLMENT_PLAN_STATUSES)[number];
