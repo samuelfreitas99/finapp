@@ -46,7 +46,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Schema e API de recorrências (com prévia e "alterar a partir de")
 - [x] Salário em partes e receitas avulsas a receber
 - [x] Despesas fixas (conta e cartão), confirmar com valor real
-- [ ] Job pg-boss de geração
+- [x] Job pg-boss de geração
 - [ ] Tela de Planejamento: projeção 12 meses
 
 ## Fase 5: Dívidas e empréstimos
@@ -124,4 +124,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: **Fase 3 concluída** (PR #24). Recorrências: tabela `recurrences` e `transactions.recurrence_key` (migração 0004), prévia, criação com geração idempotente de 12 meses (conta ou cartão, salário em partes, valor variável estimado), edição "a partir de" (divide a recorrência) ou no lugar, metadados propagados, ocorrência editada fica `detached`, encerramento (Claude).
 - 02/10/2026: produção atualizada (main `b7b8c82`, migração 0003: cartões e parcelamentos, cor azul). Tela "Fixas" (receitas e despesas fixas): lista por tipo com total mensal, criação/edição com regra do dia (dia fixo com ajuste, N-ésimo dia útil, último dia útil), semanal/anual/a cada N meses, salário em partes (percentuais, mês seguinte), valor variável, conta ou cartão, prévia das próximas ocorrências e "a partir de" na edição; filtro "A receber" em Lançamentos. API: recorrência pode começar antes do saldo inicial da conta (ocorrências anteriores são puladas) (Claude).
 - 02/10/2026: confirmar previsto com valor real: itens estimados (conta variável) mostram "Estimado" e "Informar valor real" na lista, que efetiva com o valor digitado; campo de valor sugerido é substituído ao digitar (`typedCents`, também no pagar fatura e ajustar saldo). Botão "Repetir" no + cria uma recorrência mensal no dia da data (conta ou cartão) e confirma a ocorrência de hoje se já foi paga (Claude).
+- 02/10/2026: pg-boss (schema `pgboss`) iniciado pela API; job `recurrences-generate` diário às 02:00 (São Paulo) e na subida, estende a janela de 12 meses de todas as recorrências ativas (idempotente); `RUN_JOBS=false` desliga; testado no bundle CJS (Claude).
 
