@@ -8,12 +8,14 @@ export const testDatabaseUrl = process.env.DATABASE_URL;
 
 /**
  * Cria um banco temporário no servidor de `DATABASE_URL`, aplica as migrações e
- * devolve o cliente e a função de limpeza.
+ * devolve o cliente e a função de limpeza. Feche o app (Fastify) antes de chamar
+ * `drop()`: ela encerra o pool e só depois apaga o banco.
  */
 export async function createTempDb(): Promise<{ db: Db; url: string; drop: () => Promise<void> }> {
   if (!testDatabaseUrl) throw new Error('DATABASE_URL não definido');
   const name = `finapp_test_${randomBytes(4).toString('hex')}`;
   const admin = new pg.Client({ connectionString: testDatabaseUrl });
+  admin.on('error', () => undefined);
   await admin.connect();
   await admin.query(`create database ${name}`);
   const url = new URL(testDatabaseUrl);
@@ -25,8 +27,11 @@ export async function createTempDb(): Promise<{ db: Db; url: string; drop: () =>
     url: url.toString(),
     drop: async () => {
       await pool.end();
-      await admin.query(`drop database if exists ${name} with (force)`);
-      await admin.end();
+      try {
+        await admin.query(`drop database if exists ${name} with (force)`);
+      } finally {
+        await admin.end();
+      }
     },
   };
 }

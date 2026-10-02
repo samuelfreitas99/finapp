@@ -56,3 +56,8 @@ Contexto: `transactions.amount` era sempre positivo e o tipo dava o sentido, mas
 Decisão: só no tipo `adjustment` o `amount` guarda a diferença com sinal (≠ 0); os demais tipos continuam > 0. Check `transactions_amount_check` (migração `0002`). A regra de sinal fica em `packages/core/balances` (`signedAmount`).
 Consequências: um tipo a menos para tratar nos relatórios; quem soma valores precisa usar `signedAmount` em vez de assumir positivo.
 
+## ADR-014 Front sem Tailwind/shadcn e com React Router (01/10/2026)
+Contexto: a ADR-004 previa Tailwind + shadcn/ui, TanStack Router e react-hook-form. Na hora de implementar, a identidade já aprovada no protótipo cabe em poucos tokens e componentes, e os formulários são curtos.
+Decisão: CSS próprio com variáveis (`styles/tokens.css` com claro/escuro, `styles/app.css` com os componentes base), React Router (modo data) e TanStack Query; formulários com estado do React. Fonte Manrope empacotada (`@fontsource-variable/manrope`, funciona offline no PWA).
+Consequências: menos dependências e build menor; quem mexer no front usa as classes de `app.css` em vez de utilitários. Se surgirem diálogos/menus complexos, adicionar primitivas acessíveis (ex.: Radix) pontualmente.
+
