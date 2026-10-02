@@ -6,7 +6,9 @@ import { LoginPage } from './pages/Login';
 import { MorePage } from './pages/More';
 import { EditAccountPage, NewAccountPage } from './pages/accounts/AccountFormPage';
 import { AccountsPage } from './pages/accounts/AccountsPage';
-import { CardsPage, CategoriesPage, NewEntryPage, TransactionsPage } from './pages/Placeholders';
+import { CardsPage, CategoriesPage } from './pages/Placeholders';
+import { EditEntryPage, NewEntryPage } from './pages/transactions/EntryPages';
+import { TransactionsPage } from './pages/transactions/TransactionsPage';
 import { SignUpPage } from './pages/SignUp';
 
 export const router = createBrowserRouter([
@@ -25,6 +27,7 @@ export const router = createBrowserRouter([
         children: [
           { path: '/', element: <HomePage /> },
           { path: '/lancamentos', element: <TransactionsPage /> },
+          { path: '/lancamentos/:id', element: <EditEntryPage /> },
           { path: '/lancar', element: <NewEntryPage /> },
           { path: '/cartoes', element: <CardsPage /> },
           { path: '/contas', element: <AccountsPage /> },

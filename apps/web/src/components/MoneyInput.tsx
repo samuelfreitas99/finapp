@@ -66,9 +66,11 @@ export function MoneyInput({
         autoFocus={autoFocus}
         value={negative ? `−${shown}` : shown}
         onChange={handle}
-        onFocus={(e) => {
+        // O cursor fica sempre no fim: os dígitos entram pela direita, onde quer que se toque.
+        onSelect={(e) => {
           const el = e.currentTarget;
-          requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+          const end = el.value.length;
+          if (el.selectionStart !== end || el.selectionEnd !== end) el.setSelectionRange(end, end);
         }}
         aria-describedby={rest['aria-describedby']}
       />

@@ -858,3 +858,290 @@ textarea.input {
   letter-spacing: -0.5px;
   min-height: 64px;
 }
+
+/* Lançar */
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.entry__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.segmented button.segmented--expense[aria-pressed='true'] {
+  color: var(--expense);
+}
+
+.segmented button.segmented--income[aria-pressed='true'] {
+  color: var(--income);
+}
+
+.segmented button.segmented--transfer[aria-pressed='true'] {
+  color: var(--transfer);
+}
+
+.entry__quick {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .category-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.category {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 72px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.category[aria-pressed='true'] {
+  border: 2px solid var(--primary);
+  padding: 7px 3px;
+  background: var(--primary-soft);
+}
+
+.category__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+}
+
+.category__icon--more {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.category__name {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.entry__details {
+  display: flex;
+  flex-direction: column;
+}
+
+.entry__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 14px;
+}
+
+.entry__row + .entry__row {
+  border-top: 1px solid var(--line);
+}
+
+.entry__row > label,
+.entry__label {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.entry__input {
+  flex-grow: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  text-align: right;
+  font-weight: 700;
+}
+
+select.entry__input {
+  text-align-last: right;
+  cursor: pointer;
+}
+
+.entry__dates {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.entry__more summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.entry__save--income {
+  background: var(--income);
+}
+
+.entry__save--income:hover:not(:disabled) {
+  background: var(--income);
+  filter: brightness(0.92);
+}
+
+/* Lista de lançamentos */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.month-nav__label {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search svg {
+  position: absolute;
+  left: 14px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search .input {
+  padding-left: 42px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  scrollbar-width: none;
+}
+
+.chip--select {
+  appearance: none;
+  padding-right: 14px;
+}
+
+.month-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.month-summary .card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.month-summary span {
+  font-size: 12px;
+}
+
+.month-summary strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.day__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 4px;
+}
+
+.day__head h2 {
+  font-size: 14px;
+}
+
+.day__head span {
+  font-size: 13px;
+}
+
+.tx {
+  display: flex;
+  flex-direction: column;
+}
+
+.tx--planned .row-link__title,
+.tx--planned strong {
+  opacity: 0.72;
+}
+
+.tx--planned .avatar {
+  opacity: 0.6;
+}
+
+.pill {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px dashed var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tx__confirm {
+  align-self: flex-end;
+  min-height: 40px;
+  margin: 0 14px 12px;
+  font-size: 14px;
+}
+
+.entry {
+  width: 100%;
+  max-width: 640px;
+}
+
+.money--large .money__input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -3px 0 var(--focus);
+  border-radius: 0;
+}
+
+.month-summary strong {
+  white-space: nowrap;
+}
