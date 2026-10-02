@@ -12,6 +12,7 @@ import {
   type BusinessDayAdjust,
   type HolidaySet,
   type ISODate,
+  type YearMonth,
 } from '../dates';
 
 /**
@@ -19,9 +20,6 @@ import {
  * previstas dentro de uma janela de datas.
  * @see RN 3
  */
-
-/** Mês de referência no formato `YYYY-MM`. */
-export type YearMonth = string;
 
 export type Frequency = 'monthly' | 'weekly' | 'yearly' | 'every_n_months';
 
