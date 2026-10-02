@@ -1,5 +1,10 @@
 import type {
   Account,
+  Debt,
+  DebtBody,
+  DebtDetail,
+  DebtPreview,
+  UpdateDebtBody,
   Projection,
   OccurrencePreview,
   Recurrence,
@@ -459,4 +464,65 @@ export function useProjection(months: number) {
     queryKey: [...keys.transactions(spaceId), 'projection', months],
     queryFn: () => api<Projection>(spacePath(spaceId, `/projection?months=${months}`)),
   });
+}
+
+export const debtKeys = (spaceId: string) => ['debts', spaceId] as const;
+
+export function useDebts() {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: debtKeys(spaceId),
+    queryFn: () => api<{ items: Debt[] }>(spacePath(spaceId, '/debts')).then((r) => r.items),
+  });
+}
+
+export function useDebt(id: string | undefined) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...debtKeys(spaceId), id],
+    queryFn: () => api<DebtDetail>(spacePath(spaceId, `/debts/${id}`)),
+    enabled: Boolean(id),
+  });
+}
+
+export function useDebtPreview(body: DebtBody | null) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...debtKeys(spaceId), 'preview', body],
+    queryFn: () => api<DebtPreview>(spacePath(spaceId, '/debts/preview'), { method: 'POST', body }),
+    enabled: body !== null,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+/** Mexer em dívidas muda saldos previstos, faturas e a projeção. */
+export function useDebtMutations() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  const money = useInvalidateMoney();
+  const invalidate = () =>
+    Promise.all([
+      money(),
+      qc.invalidateQueries({ queryKey: debtKeys(spaceId) }),
+      qc.invalidateQueries({ queryKey: cardKeys.all(spaceId) }),
+    ]);
+  return {
+    create: useMutation({
+      mutationFn: (body: DebtBody) =>
+        api<DebtDetail>(spacePath(spaceId, '/debts'), { method: 'POST', body }),
+      onSuccess: invalidate,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, body }: { id: string; body: UpdateDebtBody }) =>
+        api<DebtDetail>(spacePath(spaceId, `/debts/${id}`), { method: 'PATCH', body }),
+      onSuccess: invalidate,
+    }),
+    cancel: useMutation({
+      mutationFn: (id: string) =>
+        api<undefined>(spacePath(spaceId, `/debts/${id}`), { method: 'DELETE' }),
+      onSuccess: invalidate,
+    }),
+    invalidate,
+  };
 }

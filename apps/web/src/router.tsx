@@ -16,6 +16,9 @@ import { TransactionsPage } from './pages/transactions/TransactionsPage';
 import { EditRecurrencePage, NewRecurrencePage } from './pages/recurrences/RecurrenceFormPage';
 import { RecurrencesPage } from './pages/recurrences/RecurrencesPage';
 import { PlanningPage } from './pages/planning/PlanningPage';
+import { DebtPage } from './pages/debts/DebtPage';
+import { DebtsPage } from './pages/debts/DebtsPage';
+import { NewDebtPage } from './pages/debts/NewDebtPage';
 import { SignUpPage } from './pages/SignUp';
 
 export const router = createBrowserRouter([
@@ -40,6 +43,9 @@ export const router = createBrowserRouter([
           { path: '/cartoes/novo', element: <NewCardPage /> },
           { path: '/cartoes/:id/editar', element: <EditCardPage /> },
           { path: '/planejamento', element: <PlanningPage /> },
+          { path: '/dividas', element: <DebtsPage /> },
+          { path: '/dividas/nova', element: <NewDebtPage /> },
+          { path: '/dividas/:id', element: <DebtPage /> },
           { path: '/fixas', element: <RecurrencesPage /> },
           { path: '/fixas/nova', element: <NewRecurrencePage /> },
           { path: '/fixas/:id', element: <EditRecurrencePage /> },

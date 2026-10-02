@@ -1650,3 +1650,28 @@ h3 {
 .table-view th:first-child {
   text-align: left;
 }
+
+/* Dívidas */
+.hero__bar {
+  display: block;
+  height: 8px;
+  margin: 6px 0 2px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.22);
+  overflow: hidden;
+}
+
+.hero__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.balloon-row {
+  align-items: end;
+}
+
+.timeline .row-link__main {
+  gap: 4px;
+}

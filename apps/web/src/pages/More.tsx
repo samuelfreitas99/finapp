@@ -22,6 +22,7 @@ import { applyTheme, readTheme } from '../lib/theme';
 
 const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/contas', label: 'Contas', icon: Landmark },
+  { to: '/dividas', label: 'Dívidas e empréstimos', icon: HandCoins },
   { to: '/planejamento', label: 'Planejamento', icon: CalendarRange },
   { to: '/fixas', label: 'Receitas e despesas fixas', icon: Repeat },
   { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
@@ -29,7 +30,6 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
 ];
 
 const later: { label: string; icon: LucideIcon }[] = [
-  { label: 'Dívidas', icon: HandCoins },
   { label: 'Racha', icon: Users },
   { label: 'Relatórios', icon: ChartPie },
   { label: 'Orçamentos e metas', icon: BadgePercent },
