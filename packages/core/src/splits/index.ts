@@ -143,6 +143,7 @@ export function groupBalances(
  * @see RN 11 (Simplificar dívidas)
  */
 export function simplifyDebts(balances: ReadonlyMap<string, Cents>): Settlement[] {
+  for (const [id, v] of balances) assertCents(v, `saldo de ${id}`);
   const total = [...balances.values()].reduce((a, b) => a + b, 0);
   if (total !== 0) throw new RangeError(`saldos não fecham em zero (${total})`);
   const creditors = [...balances].filter(([, v]) => v > 0).map(([id, v]) => ({ id, v }));

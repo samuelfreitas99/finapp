@@ -145,3 +145,12 @@ describe('business days (RN 2)', () => {
     expect(businessDayAdjust('2026-04-03', 'next', holidays)).toBe('2026-04-06');
   });
 });
+
+describe('years 1-99 (no Date.UTC remap)', () => {
+  it('does day arithmetic across year 99 → 100', () => {
+    expect(addDays('0099-12-31', 1)).toBe('0100-01-01');
+    expect(diffDays('0099-12-31', '0100-01-01')).toBe(1);
+    // 0001-01-01 (proleptic Gregorian) foi segunda-feira.
+    expect(dayOfWeek('0001-01-01')).toBe(1);
+  });
+});

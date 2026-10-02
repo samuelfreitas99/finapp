@@ -1,4 +1,4 @@
-import { assertCents, splitCents, type Cents } from '../money';
+import { assertCents, presentValueDiscount, splitCents, type Cents } from '../money';
 import {
   addMonths,
   addYearMonths,
@@ -180,8 +180,8 @@ export interface AnticipationResult {
 /**
  * Antecipa as **últimas** `count` parcelas ainda em faturas futuras para a fatura aberta
  * (`openMonth`). Desconto: valor informado, ou taxa mensal `i` com valor presente
- * `parcela / (1+i)^m` (m = meses antecipados). O desconto por taxa é arredondado para
- * baixo, para não prometer economia maior que a real.
+ * `parcela / (1+i)^m` (m = meses antecipados). O desconto por taxa é calculado com
+ * frações exatas e arredondado para baixo, para não prometer economia maior que a real.
  * @see RN 5.5
  */
 export function anticipateInstallments(
@@ -209,12 +209,10 @@ export function anticipateInstallments(
   } else if (discount) {
     const rate = discount.monthlyRate;
     if (!(rate >= 0 && rate < 1)) throw new RangeError(`taxa mensal inválida: ${rate}`);
-    let exact = 0;
-    for (const [idx, i] of chosen.entries()) {
-      const m = moved[idx]?.months ?? 0;
-      exact += i.amount - i.amount / (1 + rate) ** m;
-    }
-    total = Math.floor(exact + 1e-9);
+    total = presentValueDiscount(
+      chosen.map((i, idx) => ({ amount: i.amount, months: moved[idx]?.months ?? 0 })),
+      rate,
+    );
   }
   const chosenSum = chosen.reduce((a, i) => a + i.amount, 0);
   if (total < 0 || total > chosenSum) throw new RangeError('desconto fora do intervalo');

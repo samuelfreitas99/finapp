@@ -167,6 +167,17 @@ describe('anticipateInstallments (RN 5.5)', () => {
     expect(r.discount).toBe(1704);
   });
 
+  it('never rounds the rate discount up by a cent', () => {
+    const big: PlannedInstallment[] = [1, 2].map((n) => ({
+      number: n,
+      amount: 10000000000,
+      invoiceMonth: addYearMonths('2026-10', n - 1),
+      invoiceStatus: n === 1 ? 'open' : 'future',
+    }));
+    // 10000000000 − 10000000000/(1 + 1e-10) = 0,9999999999 → 0 (não 1).
+    expect(anticipateInstallments(big, 1, '2026-10', { monthlyRate: 1e-10 }).discount).toBe(0);
+  });
+
   it('accepts a fixed discount and validates count', () => {
     expect(anticipateInstallments(plan, 1, '2026-10', { amount: 500 }).discount).toBe(500);
     expect(() => anticipateInstallments(plan, 6, '2026-10')).toThrow(RangeError);

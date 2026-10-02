@@ -64,11 +64,53 @@ export function totalFromInstallment(installment: Cents, n: number): Cents {
   return total;
 }
 
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-const decimal = new Intl.NumberFormat('pt-BR', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+/** Converte um número decimal (como digitado, ex.: 0.0199 ou 1e-7) em fração exata p/q. */
+function decimalToRational(x: number): [bigint, bigint] {
+  const [mantissa = '0', exponent = '0'] = String(x).split('e');
+  const [intPart = '0', fracPart = ''] = mantissa.split('.');
+  let numerator = BigInt(intPart + fracPart);
+  let denominator = 10n ** BigInt(fracPart.length);
+  const exp = Number(exponent);
+  if (exp >= 0) numerator *= 10n ** BigInt(exp);
+  else denominator *= 10n ** BigInt(-exp);
+  return [numerator, denominator];
+}
+
+function floorDiv(a: bigint, b: bigint): bigint {
+  const q = a / b;
+  return a % b !== 0n && a < 0n !== b < 0n ? q - 1n : q;
+}
+
+/**
+ * Desconto por valor presente de valores antecipados: `Σ valor − valor/(1+i)^m`, com
+ * frações exatas (BigInt) e **arredondado para baixo** uma única vez no total, para
+ * nunca prometer um centavo a mais. A taxa é lida como o decimal que ela representa.
+ * @see RN 5.5, RN 6.5
+ */
+export function presentValueDiscount(
+  items: readonly { amount: Cents; months: number }[],
+  monthlyRate: number,
+): Cents {
+  if (!(monthlyRate >= 0 && monthlyRate < 1)) {
+    throw new RangeError(`taxa mensal inválida: ${monthlyRate}`);
+  }
+  if (items.length === 0) return 0;
+  const [p, q] = decimalToRational(monthlyRate);
+  const base = q + p;
+  const maxMonths = Math.max(...items.map((i) => i.months));
+  let numerator = 0n;
+  for (const { amount, months } of items) {
+    assertCents(amount, 'valor');
+    if (!Number.isSafeInteger(months) || months < 0) {
+      throw new RangeError(`meses inválido: ${months}`);
+    }
+    const m = BigInt(months);
+    numerator += BigInt(amount) * (base ** m - q ** m) * base ** (BigInt(maxMonths) - m);
+  }
+  return Number(floorDiv(numerator, base ** BigInt(maxMonths)));
+}
+
+const integerReais = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 
 export interface FormatBRLOptions {
   /** Sem o símbolo "R$" (ex.: "1.234,56"). */
@@ -79,15 +121,18 @@ export interface FormatBRLOptions {
 
 /**
  * Formata centavos em reais no padrão brasileiro: 123456 → "R$ 1.234,56".
- * O separador entre "R$" e o número é o espaço não separável (U+00A0) do `Intl`.
+ * O separador entre "R$" e o número é o espaço não separável (U+00A0), como no `Intl`.
+ * Reais e centavos são formatados separadamente, sem divisão em ponto flutuante.
  */
 export function formatBRL(
   cents: Cents,
   { symbol = true, signed = false }: FormatBRLOptions = {},
 ): string {
   assertCents(cents);
-  const value = cents / 100;
-  const text = symbol ? brl.format(Math.abs(value)) : decimal.format(Math.abs(value));
+  const abs = Math.abs(cents);
+  const reais = (abs - (abs % 100)) / 100;
+  const number = `${integerReais.format(reais)},${String(abs % 100).padStart(2, '0')}`;
+  const text = symbol ? `R$\u00a0${number}` : number;
   if (cents < 0) return `-${text}`;
   if (signed && cents > 0) return `+${text}`;
   return text;

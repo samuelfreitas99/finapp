@@ -22,6 +22,16 @@ function pad(n: number, width: number): string {
   return String(n).padStart(width, '0');
 }
 
+/**
+ * Milissegundos UTC de uma data. Usa `setUTCFullYear` porque `Date.UTC`
+ * remapeia os anos 0–99 para 1900–1999.
+ */
+function utcMs(year: number, monthIndex: number, day: number): number {
+  const d = new Date(0);
+  d.setUTCFullYear(year, monthIndex, day);
+  return d.getTime();
+}
+
 function assertYearMonth(year: number, month: number): void {
   if (!Number.isInteger(year) || year < 1 || year > 9999) {
     throw new RangeError(`ano inválido: ${year}`);
@@ -34,7 +44,7 @@ function assertYearMonth(year: number, month: number): void {
 /** Quantidade de dias do mês (considera ano bissexto). */
 export function daysInMonth(year: number, month: number): number {
   assertYearMonth(year, month);
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return new Date(utcMs(year, month, 0)).getUTCDate();
 }
 
 /** Verifica se o texto é uma data `YYYY-MM-DD` existente. */
@@ -77,7 +87,7 @@ export function clampDay(year: number, month: number, day: number): ISODate {
 
 function toEpochDay(date: ISODate): number {
   const { year, month, day } = parseISODate(date);
-  return Date.UTC(year, month - 1, day) / MS_PER_DAY;
+  return utcMs(year, month - 1, day) / MS_PER_DAY;
 }
 
 function fromEpochDay(epochDay: number): ISODate {

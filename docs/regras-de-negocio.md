@@ -126,7 +126,7 @@ Parcelamento fora do cartão: parcela k vence em `first_due_date + (k-1) meses` 
 Cancela as parcelas ainda não faturadas (faturas `open` e futuras) com `deleted_at`, e cria estorno na fatura aberta para parcelas já em faturas fechadas, se o banco devolver.
 
 ### 5.5 Antecipar parcelas
-Escolher K parcelas (as últimas, padrão dos bancos) para trazer à fatura aberta atual. Desconto opcional (valor informado ou taxa mensal: valor presente `parcela / (1+i)^m`, m = meses de antecipação). As parcelas antecipadas mudam de fatura e ganham `anticipated = true`; o desconto vira item negativo "Desconto antecipação".
+Escolher K parcelas (as últimas, padrão dos bancos) para trazer à fatura aberta atual. Desconto opcional (valor informado ou taxa mensal: valor presente `parcela / (1+i)^m`, m = meses de antecipação), somado em frações exatas e arredondado para baixo (nunca a favor do usuário em 1 centavo). As parcelas antecipadas mudam de fatura e ganham `anticipated = true`; o desconto vira item negativo "Desconto antecipação".
 
 ### 5.6 Painel do parcelamento
 `pagas` = parcelas em faturas `paid`; `restantes = N - pagas`; `valor_pago`, `valor_restante`, `% por valor`, `% por parcelas`.
@@ -194,7 +194,7 @@ Exemplo de cadastro:
 Para cada mês dos próximos 12 (configurável até 36):
 - `receitas_previstas` (recorrências, avulsas planned, parcelas a receber)
 - `despesas_fixas` (recorrências de despesa em conta)
-- `faturas` (total de cada fatura com vencimento no mês, incluindo parcelas já lançadas e assinaturas)
+- `faturas` (total de cada fatura com vencimento no mês, incluindo parcelas já lançadas e assinaturas). Fatura com total negativo (estornos maiores que as compras) entra como crédito, reduzindo o comprometido.
 - `dívidas` (parcelas pendentes pagas por conta)
 - `saldo_final = saldo_inicial_do_mês + receitas - despesas`; o saldo inicial do mês 1 é o saldo atual somado das contas marcadas `include_in_totals`.
 - **Comprometido** = faturas futuras + dívidas + fixas. **Livre** = receitas - comprometido.

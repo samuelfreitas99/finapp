@@ -7,7 +7,8 @@ import { addYearMonths, diffYearMonths, yearMonthOf, type ISODate, type YearMont
  */
 
 /**
- * Tipo do lançamento previsto. Valores sempre positivos; o tipo define o sinal.
+ * Tipo do lançamento previsto. Valores positivos; o tipo define o sinal. Exceção:
+ * `invoice` pode ser negativo (estornos maiores que as compras), virando crédito.
  * - `income`: receitas previstas (recorrências, avulsas, parcelas a receber)
  * - `fixed_expense`: despesas fixas em conta (recorrências)
  * - `invoice`: total da fatura, no mês do vencimento
@@ -75,7 +76,9 @@ export function projectCashFlow({
   }));
   for (const e of entries) {
     assertCents(e.amount, 'valor');
-    if (e.amount < 0) throw new RangeError('valores da projeção devem ser positivos');
+    if (e.amount < 0 && e.kind !== 'invoice') {
+      throw new RangeError('valores da projeção devem ser positivos (exceto fatura com crédito)');
+    }
     let idx = diffYearMonths(startMonth, yearMonthOf(e.date));
     if (idx >= months) continue;
     if (idx < 0) {

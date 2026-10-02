@@ -48,7 +48,7 @@ export interface RecurrenceRule {
   interval?: number;
   /** Ignorado em `weekly` (o dia da semana é o de `startDate`) e quando há `parts`. */
   dayRule?: DayRule;
-  /** Só para `fixed_day`. Padrão `none`. */
+  /** Só para `fixed_day` (ignorado em `weekly`). Padrão `none`. */
   adjust?: BusinessDayAdjust;
   startDate: ISODate;
   endDate?: ISODate | null;
@@ -129,8 +129,12 @@ export function splitParts(total: Cents, parts: readonly RecurrencePart[]): Cent
     if (!(percent >= 0 && percent <= 100)) {
       throw new RangeError(`parte ${i + 1}: percent fora de 0–100`);
     }
-    // Percentual em centésimos de ponto, para não acumular erro de float.
-    return Math.floor((total * Math.round(percent * 100)) / 10000);
+    // Percentual em centésimos de ponto; produto em BigInt para ser exato mesmo com
+    // totais grandes (total × pontos-base passa de 2^53).
+    const product = BigInt(total) * BigInt(Math.round(percent * 100));
+    const quotient = product / 10000n;
+    const floored = product < 0n && quotient * 10000n !== product ? quotient - 1n : quotient;
+    return Number(floored);
   });
   if (allPercent) {
     const others = amounts.slice(0, -1).reduce((a, b) => a + b, 0);
@@ -193,7 +197,8 @@ export function generateOccurrences(rule: RecurrenceRule, options: GenerateOptio
       const base = addDays(start, k * stepDays);
       if (compareDates(base, to) > 0) break;
       if (end && compareDates(base, end) > 0) break;
-      const date = businessDayAdjust(base, rule.adjust ?? 'none', holidays);
+      // `adjust` só vale para `fixed_day` (RN 3): semanal cai sempre no dia da semana.
+      const date = base;
       if (compareDates(date, start) >= 0 && inRange(date, from, to)) {
         const { year, month } = parseISODate(base);
         result.push({
