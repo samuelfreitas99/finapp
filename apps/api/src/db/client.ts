@@ -12,6 +12,13 @@ pg.types.setTypeParser(pg.types.builtins.INT8, (v) => {
 
 export function createDb(connectionString: string) {
   const pool = new pg.Pool({ connectionString, max: 10 });
+  // Conexão ociosa derrubada pelo servidor (restart do Postgres, DROP DATABASE nos
+  // testes): sem este listener o `pg` transforma o erro em exceção não tratada e
+  // derruba o processo. O pool descarta o cliente e abre outro na próxima consulta.
+  pool.on('error', (err) => {
+    if ((err as { code?: string }).code === '57P01') return; // admin_shutdown
+    console.error('Erro em conexão ociosa do Postgres:', err.message);
+  });
   return { db: drizzle(pool, { schema }), pool };
 }
 
