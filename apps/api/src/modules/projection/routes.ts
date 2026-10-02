@@ -68,7 +68,7 @@ export function projectionRoutes(app: FastifyInstance, { db, today }: SpaceConte
               ? 'income'
               : p.recurrenceId
                 ? 'fixed_expense'
-                : p.installmentPlanId
+                : p.installmentPlanId || p.debtInstallmentId
                   ? 'debt'
                   : 'other_expense',
         });
