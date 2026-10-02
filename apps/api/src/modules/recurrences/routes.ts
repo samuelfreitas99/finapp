@@ -118,7 +118,11 @@ export function recurrenceRoutes(app: FastifyInstance, { db, today }: SpaceConte
     const body = recurrenceBodySchema.parse(request.body ?? {});
     const userId = currentUser(request).id;
     const row = await db.transaction(async (tx) => {
-      if (body.accountId) await accountForEntry(tx, spaceId, body.accountId, body.startDate);
+      // A conta só recebe as ocorrências geradas (do mês atual em diante).
+      if (body.accountId) {
+        const t = today();
+        await accountForEntry(tx, spaceId, body.accountId, body.startDate > t ? body.startDate : t);
+      }
       if (body.cardId) await cardForEntry(tx, spaceId, body.cardId);
       if (body.categoryId) await categoryForEntry(tx, spaceId, body.categoryId, body.type);
       // Valida a regra antes de gravar.

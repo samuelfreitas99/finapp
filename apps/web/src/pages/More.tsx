@@ -7,6 +7,7 @@ import {
   HandCoins,
   Landmark,
   Layers,
+  Repeat,
   LogOut,
   Settings,
   Tags,
@@ -21,6 +22,7 @@ import { applyTheme, readTheme } from '../lib/theme';
 
 const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/contas', label: 'Contas', icon: Landmark },
+  { to: '/fixas', label: 'Receitas e despesas fixas', icon: Repeat },
   { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
   { to: '/categorias', label: 'Categorias', icon: Tags },
 ];

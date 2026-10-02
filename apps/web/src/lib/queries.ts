@@ -1,5 +1,9 @@
 import type {
   Account,
+  OccurrencePreview,
+  Recurrence,
+  RecurrenceBody,
+  UpdateRecurrenceBody,
   Card,
   CreateCardBody,
   InstallmentPlan,
@@ -378,4 +382,72 @@ export function usePlanAction(id: string) {
       ),
     onSuccess: invalidate,
   });
+}
+
+export const recurrenceKeys = (spaceId: string) => ['recurrences', spaceId] as const;
+
+export function useRecurrences() {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: recurrenceKeys(spaceId),
+    queryFn: () =>
+      api<{ items: Recurrence[] }>(spacePath(spaceId, '/recurrences')).then((r) => r.items),
+  });
+}
+
+export function useRecurrence(id: string | undefined) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...recurrenceKeys(spaceId), id],
+    queryFn: () => api<Recurrence>(spacePath(spaceId, `/recurrences/${id}`)),
+    enabled: Boolean(id),
+  });
+}
+
+export function useRecurrencePreview(body: RecurrenceBody | null) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: [...recurrenceKeys(spaceId), 'preview', body],
+    queryFn: () =>
+      api<{ items: OccurrencePreview[] }>(spacePath(spaceId, '/recurrences/preview?months=12'), {
+        method: 'POST',
+        body,
+      }).then((r) => r.items),
+    enabled: body !== null,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+/** Criar, editar ("a partir de") e encerrar recorrências mexe em listas, saldos e faturas. */
+export function useRecurrenceMutations() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  const money = useInvalidateMoney();
+  const invalidate = () =>
+    Promise.all([
+      money(),
+      qc.invalidateQueries({ queryKey: recurrenceKeys(spaceId) }),
+      qc.invalidateQueries({ queryKey: cardKeys.all(spaceId) }),
+    ]);
+  return {
+    create: useMutation({
+      mutationFn: (body: RecurrenceBody) =>
+        api<Recurrence>(spacePath(spaceId, '/recurrences'), { method: 'POST', body }),
+      onSuccess: invalidate,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, from, body }: { id: string; from?: string; body: UpdateRecurrenceBody }) =>
+        api<Recurrence>(spacePath(spaceId, `/recurrences/${id}${from ? `?from=${from}` : ''}`), {
+          method: 'PATCH',
+          body,
+        }),
+      onSuccess: invalidate,
+    }),
+    end: useMutation({
+      mutationFn: (id: string) =>
+        api<undefined>(spacePath(spaceId, `/recurrences/${id}`), { method: 'DELETE' }),
+      onSuccess: invalidate,
+    }),
+  };
 }

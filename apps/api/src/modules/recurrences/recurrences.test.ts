@@ -267,4 +267,25 @@ describe.skipIf(!testDatabaseUrl)('recurrences API (integration)', () => {
     const list = (await api('GET', '/recurrences')).json().items;
     expect(list.map((r: { id: string }) => r.id)).not.toContain(rec.id);
   });
+
+  it('accepts a start before the account balance date and skips earlier occurrences', async () => {
+    const late = (
+      await api('POST', '/accounts', {
+        name: 'Nova',
+        type: 'checking',
+        initialBalance: 0,
+        initialDate: '2026-10-12',
+      })
+    ).json();
+    const rec = await api('POST', '/recurrences', {
+      ...bill,
+      description: 'Plano',
+      startDate: '2026-01-01',
+      accountId: late.id,
+    });
+    expect(rec.statusCode).toBe(201);
+    const dates = (await occurrences(rec.json().id)).map((o) => o.date);
+    expect(dates).not.toContain('2026-10-10');
+    expect(dates.at(-1)).toBe('2026-11-10');
+  });
 });

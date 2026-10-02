@@ -13,6 +13,8 @@ import { PlansPage } from './pages/cards/PlansPage';
 import { CategoriesPage } from './pages/Placeholders';
 import { EditEntryPage, NewEntryPage } from './pages/transactions/EntryPages';
 import { TransactionsPage } from './pages/transactions/TransactionsPage';
+import { EditRecurrencePage, NewRecurrencePage } from './pages/recurrences/RecurrenceFormPage';
+import { RecurrencesPage } from './pages/recurrences/RecurrencesPage';
 import { SignUpPage } from './pages/SignUp';
 
 export const router = createBrowserRouter([
@@ -36,6 +38,9 @@ export const router = createBrowserRouter([
           { path: '/cartoes', element: <CardsPage /> },
           { path: '/cartoes/novo', element: <NewCardPage /> },
           { path: '/cartoes/:id/editar', element: <EditCardPage /> },
+          { path: '/fixas', element: <RecurrencesPage /> },
+          { path: '/fixas/nova', element: <NewRecurrencePage /> },
+          { path: '/fixas/:id', element: <EditRecurrencePage /> },
           { path: '/parcelamentos', element: <PlansPage /> },
           { path: '/parcelamentos/:id', element: <PlanPage /> },
           { path: '/contas', element: <AccountsPage /> },

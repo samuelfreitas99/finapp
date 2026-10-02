@@ -13,6 +13,7 @@ import { and, eq, gte, isNull, sql } from 'drizzle-orm';
 import { recurrences, transactions, type RecurrencePartJson } from '../../db/schema';
 import type { DbExecutor } from '../../db/seed';
 import { badRequest } from '../../http/errors';
+import { findAccount } from '../accounts/service';
 import { ensureInvoice, findCard, invoiceMonthFor } from '../cards/service';
 
 export type RecurrenceRow = typeof recurrences.$inferSelect;
@@ -106,8 +107,11 @@ export async function materialize(
   const to = windowEnd(today);
   const occurrences = occurrencesOf(rule, windowStart(rule, today), to);
   const card = row.cardId ? await findCard(db, row.spaceId, row.cardId) : null;
+  const account = row.accountId ? await findAccount(db, row.spaceId, row.accountId) : null;
   let created = 0;
   for (const occ of occurrences) {
+    // Antes do saldo inicial da conta, o valor já está no saldo inicial.
+    if (account && occ.date < account.initialDate) continue;
     const invoiceId = card
       ? (await ensureInvoice(db, card, await invoiceMonthFor(db, card, occ.date), userId)).id
       : null;
