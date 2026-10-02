@@ -1510,3 +1510,11 @@ h3 {
   justify-content: space-between;
   gap: 12px;
 }
+
+.tx__real {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 14px 12px;
+  font-size: 13px;
+}

@@ -1,6 +1,6 @@
 import { addDays, addMonths, compareDates } from '@finapp/core';
 import type { Account, Card, Category } from '@finapp/shared';
-import { ChevronDown, ChevronUp, Layers, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, Layers, Repeat, Zap } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { MoneyInput } from '../../components/MoneyInput';
 import { ApiError } from '../../lib/api';
@@ -31,6 +31,8 @@ export interface EntryState {
   firstDueDate: string;
   /** Carnê/boleto: vencimento em fim de semana/feriado. */
   adjust: 'none' | 'previous' | 'next';
+  /** Repetir todo mês (vira uma recorrência). */
+  repeat?: boolean;
 }
 
 export const CARD_PREFIX = 'card:';
@@ -207,7 +209,18 @@ export function EntryForm({
               Pix
             </button>
           )}
-          {form.kind === 'expense' && !lockKind && (
+          {!lockKind && !splitting && (
+            <button
+              type="button"
+              className="chip"
+              aria-pressed={Boolean(form.repeat)}
+              onClick={() => set('repeat', !form.repeat)}
+            >
+              <Repeat size={16} aria-hidden="true" />
+              Repetir
+            </button>
+          )}
+          {form.kind === 'expense' && !lockKind && !form.repeat && (
             <button
               type="button"
               className="chip"
@@ -221,6 +234,13 @@ export function EntryForm({
             </button>
           )}
         </div>
+      )}
+
+      {form.repeat && !splitting && !isTransfer && (
+        <p className="alert" aria-live="polite">
+          Repete todo mês no dia {Number(form.date.slice(8, 10))}, a partir de{' '}
+          {formatDate(form.date)}. Dá para mudar a regra ou encerrar em Fixas.
+        </p>
       )}
 
       {splitting && (
@@ -503,13 +523,15 @@ export function EntryForm({
         {pending
           ? 'Salvando…'
           : (submitLabel ??
-            (splitting
-              ? `Parcelar em ${form.installments}x`
-              : onCard
-                ? form.kind === 'income'
-                  ? 'Salvar estorno'
-                  : 'Salvar compra'
-                : `Salvar ${KIND_LABEL[form.kind].toLowerCase()}`))}
+            (form.repeat && !isTransfer
+              ? 'Salvar e repetir todo mês'
+              : splitting
+                ? `Parcelar em ${form.installments}x`
+                : onCard
+                  ? form.kind === 'income'
+                    ? 'Salvar estorno'
+                    : 'Salvar compra'
+                  : `Salvar ${KIND_LABEL[form.kind].toLowerCase()}`))}
       </button>
     </form>
   );

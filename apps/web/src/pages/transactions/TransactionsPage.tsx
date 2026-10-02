@@ -12,7 +12,6 @@ import {
 import { useDeferredValue, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { PageHeader } from '../../components/PageHeader';
-import { useToast } from '../../components/Toast';
 import { categoryIcon } from '../../lib/category-icons';
 import { currentMonth, dayLabel, monthLabel, monthRange, today } from '../../lib/dates';
 import { money } from '../../lib/format';
@@ -21,10 +20,10 @@ import {
   useAccounts,
   useCards,
   useCategories,
-  useSettleTransaction,
   useTransactions,
   type TransactionFilters,
 } from '../../lib/queries';
+import { ConfirmPlanned } from './ConfirmPlanned';
 import { errorText } from './EntryForm';
 
 type Filter = 'all' | 'expense' | 'income' | 'transfer' | 'planned' | 'receivable';
@@ -57,7 +56,6 @@ export function TransactionsPage() {
   const [search, setSearch] = useState('');
   const q = useDeferredValue(search.trim());
   const { hidden } = useHiddenValues();
-  const toast = useToast();
 
   const filters: TransactionFilters = {
     ...monthRange(month),
@@ -74,7 +72,6 @@ export function TransactionsPage() {
   const list = useTransactions(filters);
   const accounts = useAccounts({ includeArchived: true });
   const categories = useCategories();
-  const settle = useSettleTransaction();
 
   const cards = useCards({ includeArchived: true });
   const accountName = useMemo(
@@ -253,7 +250,9 @@ export function TransactionsPage() {
                       <span className="row-link__main">
                         <span className="row-link__title">{t.description}</span>
                         <span className="row-link__meta">
-                          {planned && <span className="pill">Previsto</span>}
+                          {planned && (
+                            <span className="pill">{t.estimated ? 'Estimado' : 'Previsto'}</span>
+                          )}
                           {meta}
                         </span>
                       </span>
@@ -261,24 +260,7 @@ export function TransactionsPage() {
                         {money(signed(t), hidden, true)}
                       </strong>
                     </Link>
-                    {planned && (
-                      <button
-                        type="button"
-                        className="btn tx__confirm"
-                        disabled={settle.isPending}
-                        onClick={() =>
-                          settle.mutate(
-                            { id: t.id },
-                            {
-                              onSuccess: () => toast({ text: `"${t.description}" confirmado.` }),
-                              onError: (err) => toast({ text: errorText(err) }),
-                            },
-                          )
-                        }
-                      >
-                        Confirmar
-                      </button>
-                    )}
+                    {planned && <ConfirmPlanned t={t} />}
                   </li>
                 );
               })}
