@@ -1997,3 +1997,15 @@ h3 {
 .backup-codes code {
   font-size: 15px;
 }
+
+.topbar__select {
+  max-width: 220px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+}

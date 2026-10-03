@@ -32,6 +32,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/orcamentos', label: 'Orçamentos', icon: BadgePercent },
   { to: '/metas', label: 'Metas', icon: Flag },
   { to: '/importar', label: 'Importar extrato', icon: FileUp },
+  { to: '/espacos', label: 'Espaços e membros', icon: Users },
   { to: '/historico', label: 'Histórico de alterações', icon: History },
   { to: '/exportar', label: 'Exportar dados', icon: Download },
   { to: '/relatorios', label: 'Relatórios', icon: ChartPie },

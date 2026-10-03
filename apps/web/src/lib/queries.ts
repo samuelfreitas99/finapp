@@ -11,6 +11,10 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  Consolidated,
+  Invite,
+  SpaceMember,
+  SpaceSummary,
   AuditItem,
   CategoryRule,
   ImportCommitBody,
@@ -824,4 +828,68 @@ export function useAuditLog() {
       ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
+}
+
+/** Troca o espaço ativo e refaz todas as consultas (cada uma é por espaço). */
+export function useSwitchSpace() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (spaceId: string) =>
+      api('/api/me/active-space', { method: 'PUT', body: { spaceId } }),
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+export function useConsolidated(enabled: boolean) {
+  return useQuery({
+    queryKey: ['consolidated'],
+    queryFn: () => api<Consolidated>('/api/consolidated'),
+    enabled,
+  });
+}
+
+export function useSpaceMembers(spaceId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['space-members', spaceId],
+    queryFn: () =>
+      api<{ items: SpaceMember[] }>(`/api/spaces/${spaceId}/members`).then((r) => r.items),
+    enabled,
+  });
+}
+
+export function useSpaceMutations() {
+  const qc = useQueryClient();
+  const refreshMe = () => qc.invalidateQueries({ queryKey: ['me'] });
+  return {
+    create: useMutation({
+      mutationFn: (name: string) =>
+        api<SpaceSummary>('/api/spaces', { method: 'POST', body: { name } }),
+      onSuccess: refreshMe,
+    }),
+    rename: useMutation({
+      mutationFn: ({ id, name }: { id: string; name: string }) =>
+        api<SpaceSummary>(`/api/spaces/${id}`, { method: 'PATCH', body: { name } }),
+      onSuccess: refreshMe,
+    }),
+    invite: useMutation({
+      mutationFn: ({ spaceId, email }: { spaceId: string; email?: string }) =>
+        api<Invite>('/api/invites', {
+          method: 'POST',
+          body: { spaceId, ...(email ? { email } : {}) },
+        }),
+    }),
+    accept: useMutation({
+      mutationFn: (code: string) =>
+        api<SpaceSummary>('/api/invites/accept', { method: 'POST', body: { code } }),
+      onSuccess: refreshMe,
+    }),
+    removeMember: useMutation({
+      mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
+        api(`/api/spaces/${spaceId}/members/${userId}`, { method: 'DELETE' }),
+      onSuccess: async () => {
+        await qc.invalidateQueries({ queryKey: ['space-members'] });
+        await refreshMe();
+      },
+    }),
+  };
 }

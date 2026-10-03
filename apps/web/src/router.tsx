@@ -25,6 +25,7 @@ import { ReportsPage } from './pages/reports/ReportsPage';
 import { ImportPage } from './pages/import/ImportPage';
 import { ExportPage } from './pages/export/ExportPage';
 import { AuditPage } from './pages/audit/AuditPage';
+import { SpacesPage } from './pages/spaces/SpacesPage';
 import { BudgetsPage } from './pages/planning/BudgetsPage';
 import { RemindersPage } from './pages/RemindersPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
           { path: '/mais', element: <MorePage /> },
           { path: '/configuracoes', element: <SettingsPage /> },
           { path: '/notificacoes', element: <NotificationsPage /> },
+          { path: '/espacos', element: <SpacesPage /> },
           { path: '/historico', element: <AuditPage /> },
           { path: '/exportar', element: <ExportPage /> },
           { path: '/importar', element: <ImportPage /> },

@@ -1,9 +1,9 @@
 import { Bell, Eye, EyeOff, Wallet } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router';
-import { useActiveSpace } from '../auth/session';
+import { useActiveSpace, useMe } from '../auth/session';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { useHiddenValues } from '../lib/hidden-values';
-import { useNotifications } from '../lib/queries';
+import { useNotifications, useSwitchSpace } from '../lib/queries';
 import { bottomNav, newEntry, sideNav, type NavItem } from './nav';
 
 function Item({ item, size = 22 }: { item: NavItem; size?: number }) {
@@ -38,12 +38,32 @@ function NotificationBell() {
 /** Topo das telas: espaço atual, notificações e ocultar valores. */
 export function TopBar({ title }: { title?: string }) {
   const space = useActiveSpace();
+  const { data: me } = useMe();
+  const switchSpace = useSwitchSpace();
   const { hidden, toggle } = useHiddenValues();
+  const many = (me?.spaces.length ?? 0) > 1;
   return (
     <header className="topbar">
       <div className="topbar__space">
         <span>{title ? 'FinApp' : 'Espaço'}</span>
-        <span>{title ?? space?.name ?? 'Pessoal'}</span>
+        {title || !many ? (
+          <span>{title ?? space?.name ?? 'Pessoal'}</span>
+        ) : (
+          <select
+            className="topbar__select"
+            aria-label="Espaço ativo"
+            value={space?.id ?? ''}
+            disabled={switchSpace.isPending}
+            onChange={(e) => switchSpace.mutate(e.target.value)}
+          >
+            {me?.spaces.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+                {s.type === 'shared' ? ' (compartilhado)' : ''}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
       <div className="topbar__actions">
         <NotificationBell />

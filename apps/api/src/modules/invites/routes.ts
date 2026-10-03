@@ -3,7 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { generateInviteCode } from '../../auth/onboarding';
 import type { Db } from '../../db/client';
-import { invites } from '../../db/schema';
+import { invites, spaces } from '../../db/schema';
 import { currentUser, requireUser } from '../../plugins/auth';
 import { spaceRole } from '../spaces/access';
 
@@ -37,6 +37,18 @@ export function inviteRoutes(app: FastifyInstance, db: Db) {
     const body = createInviteBodySchema.parse(request.body ?? {});
     if (body.spaceId) {
       const role = await spaceRole(db, user.id, body.spaceId);
+      const [space] = await db
+        .select({ type: spaces.type })
+        .from(spaces)
+        .where(eq(spaces.id, body.spaceId));
+      if (space?.type !== 'shared') {
+        return reply.code(400).send({
+          error: {
+            code: 'personal_space',
+            message: 'O espaço pessoal não pode ser compartilhado.',
+          },
+        });
+      }
       if (role !== 'owner') {
         return reply
           .code(403)

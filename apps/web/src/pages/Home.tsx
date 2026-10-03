@@ -6,13 +6,14 @@ import { TopBar } from '../layout/AppLayout';
 import { dayLabel } from '../lib/dates';
 import { money, monthShort } from '../lib/format';
 import { useHiddenValues } from '../lib/hidden-values';
-import { useAccounts, useDashboard } from '../lib/queries';
+import { useAccounts, useConsolidated, useDashboard } from '../lib/queries';
 import { errorText } from './transactions/EntryForm';
 
 export function HomePage() {
   const { data: me } = useMe();
   const dash = useDashboard();
   const accounts = useAccounts();
+  const consolidated = useConsolidated((me?.spaces.length ?? 0) > 1);
   const { hidden } = useHiddenValues();
   const firstName = me?.user.name.split(' ')[0] ?? '';
 
@@ -83,6 +84,31 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      {consolidated.data && (
+        <section className="card card--pad stack" aria-labelledby="all-spaces">
+          <h2 id="all-spaces">Todos os espaços</h2>
+          <dl className="invoice-head__rows">
+            {consolidated.data.spaces.map((s) => (
+              <div key={s.id}>
+                <dt>
+                  {s.name}
+                  {s.type === 'shared' ? ' (compartilhado)' : ''}
+                </dt>
+                <dd className="num">{money(s.balance, hidden)}</dd>
+              </div>
+            ))}
+            <div className="month-detail__total">
+              <dt>Saldo total</dt>
+              <dd className="num">{money(consolidated.data.totals.balance, hidden)}</dd>
+            </div>
+            <div>
+              <dt>Previsto fim de {monthShort(month)}</dt>
+              <dd className="num">{money(consolidated.data.totals.forecastBalance, hidden)}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
 
       {d.overdueCount > 0 && (
         <Link to="/lancamentos" className="alert alert--link">

@@ -18,3 +18,4 @@ export * from './schemas/goals';
 export * from './schemas/reports';
 export * from './schemas/attachments';
 export * from './schemas/import';
+export * from './schemas/spaces';
