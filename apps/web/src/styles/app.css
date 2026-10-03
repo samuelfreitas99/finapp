@@ -518,6 +518,20 @@ textarea.input {
 .menu-row__label {
   flex-grow: 1;
   font-weight: 600;
+  padding: 8px 0;
+}
+
+.menu-row__hint {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.menu-section__title {
+  font-size: 15px;
+  color: var(--muted);
+  margin: 8px 4px 0;
 }
 
 .menu-row[aria-disabled='true'] {

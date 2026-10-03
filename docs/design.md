@@ -31,7 +31,7 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 
 ## Navegação
 - **Mobile**: barra inferior: Início · Lançamentos · **+** (central, destacado) · Cartões · Mais.
-  - "Mais": Dívidas, Planejamento (projeção, orçamentos, metas), Racha, Relatórios, Contas, Categorias, Configurações.
+  - "Mais": quatro grupos, cada item com uma linha curta do que tem lá: **Dia a dia** (Contas, Fixas, Parcelamentos, Dívidas, Lembretes), **Planejar e acompanhar** (Planejamento, Orçamentos, Metas, Relatórios, Simuladores), **Dividir com pessoas** (Espaços, Casal, Racha, Convidar), **Dados e configurações** (Categorias, Importar, Exportar, Histórico, Notificações e configurações); depois Tema e Sair.
   - Dívidas pode substituir Cartões na barra conforme preferência do usuário.
 - **Desktop** (≥1024px): barra lateral com todos os itens, conteúdo em 2 colunas.
 - Seletor de espaço (Pessoal / Casa) no topo, com opção "Consolidado".
