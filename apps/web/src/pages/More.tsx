@@ -16,6 +16,7 @@ import {
   LogOut,
   Settings,
   Tags,
+  Scale,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/orcamentos', label: 'Orçamentos', icon: BadgePercent },
   { to: '/metas', label: 'Metas', icon: Flag },
   { to: '/importar', label: 'Importar extrato', icon: FileUp },
+  { to: '/casal', label: 'Divisão do espaço (casal)', icon: Scale },
   { to: '/espacos', label: 'Espaços e membros', icon: Users },
   { to: '/historico', label: 'Histórico de alterações', icon: History },
   { to: '/exportar', label: 'Exportar dados', icon: Download },

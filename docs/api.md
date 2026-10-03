@@ -82,6 +82,8 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - Passkeys (Better Auth, `/api/auth/passkey/*`): `GET generate-register-options` e `POST verify-registration` (`{ response, name }`, logado), `GET generate-authenticate-options` e `POST verify-authentication` (`{ response }`, cria a sessão), `GET list-user-passkeys`, `POST delete-passkey` (`{ id }`)
 
+- Divisão no espaço compartilhado ✅: `GET/PUT /transactions/:id/split` (`{ mode: equal|percent|amount|none, paidByUserId?, parts? }`; 204; resto vai para quem pagou), `GET/PUT /split-settings` (padrão; PUT só o dono), `GET /couple/balance` (saldo por membro, pagamentos simplificados, acertos, `staleCount`), `POST /couple/settlements` (`{ fromUserId?, toUserId, amount, date?, notes? }`), `DELETE /couple/settlements/:id`. Espaço pessoal responde 400 `not_shared_space`.
+
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
 - `/api/split-groups/:id/expenses` CRUD

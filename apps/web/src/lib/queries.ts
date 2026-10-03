@@ -11,6 +11,12 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  CoupleBalance,
+  CoupleSplit,
+  CoupleSplitBody,
+  SettlementBody,
+  SplitSettings,
+  SplitSettingsBody,
   Consolidated,
   Invite,
   SpaceMember,
@@ -890,6 +896,61 @@ export function useSpaceMutations() {
         await qc.invalidateQueries({ queryKey: ['space-members'] });
         await refreshMe();
       },
+    }),
+  };
+}
+
+export function useCoupleBalance(enabled = true) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['couple', spaceId, 'balance'],
+    queryFn: () => api<CoupleBalance>(spacePath(spaceId, '/couple/balance')),
+    enabled,
+  });
+}
+
+export function useTransactionSplit(transactionId: string, enabled = true) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['couple', spaceId, 'split', transactionId],
+    queryFn: () => api<CoupleSplit>(spacePath(spaceId, `/transactions/${transactionId}/split`)),
+    enabled,
+  });
+}
+
+export function useSplitSettings(enabled = true) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['couple', spaceId, 'settings'],
+    queryFn: () => api<SplitSettings>(spacePath(spaceId, '/split-settings')),
+    enabled,
+  });
+}
+
+export function useCoupleMutations() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['couple', spaceId] });
+  return {
+    saveSplit: useMutation({
+      mutationFn: ({ id, ...body }: CoupleSplitBody & { id: string }) =>
+        api(spacePath(spaceId, `/transactions/${id}/split`), { method: 'PUT', body }),
+      onSuccess: invalidate,
+    }),
+    settle: useMutation({
+      mutationFn: (body: SettlementBody) =>
+        api(spacePath(spaceId, '/couple/settlements'), { method: 'POST', body }),
+      onSuccess: invalidate,
+    }),
+    undoSettlement: useMutation({
+      mutationFn: (id: string) =>
+        api(spacePath(spaceId, `/couple/settlements/${id}`), { method: 'DELETE' }),
+      onSuccess: invalidate,
+    }),
+    saveSettings: useMutation({
+      mutationFn: (body: SplitSettingsBody) =>
+        api<SplitSettings>(spacePath(spaceId, '/split-settings'), { method: 'PUT', body }),
+      onSuccess: invalidate,
     }),
   };
 }

@@ -24,6 +24,7 @@ import {
   useUpdateTransaction,
 } from '../../lib/queries';
 import { Attachments } from './Attachments';
+import { CoupleSplit } from './CoupleSplit';
 import {
   CARD_PREFIX,
   EntryForm,
@@ -417,6 +418,9 @@ export function EditEntryPage() {
           );
         }}
       />
+      {t.type === 'expense' && !isTransfer && (
+        <CoupleSplit transactionId={t.id} amount={t.amount} />
+      )}
       {!isTransfer && <Attachments transactionId={t.id} />}
       {deleteButton}
     </>

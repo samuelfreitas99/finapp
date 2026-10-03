@@ -67,7 +67,8 @@ Itens da fatura = `transactions` com `invoice_id` (e `card_id`). Total da fatura
 ## Divisão (casal) e racha
 | Tabela | Colunas principais |
 |---|---|
-| `transaction_splits` | id, transaction_id, user_id, amount, paid_by_user_id |
+| `transaction_splits` | id, space_id, transaction_id, user_id, amount (parte do membro, ≥0), paid_by_user_id; único por (transaction_id, user_id) |
+| `space_settlements` | id, space_id, from_user_id (quem pagou), to_user_id, amount (>0), date, notes, created_by, deleted_at |
 | `split_groups` | id, name, created_by, currency, archived_at |
 | `split_participants` | id, group_id, user_id (opcional), contact_name, invite_code |
 | `split_expenses` | id, group_id, description, amount, date, split_mode (`equal`/`percent`/`amount`/`shares`), category, created_by |

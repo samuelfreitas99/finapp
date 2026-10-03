@@ -9,3 +9,4 @@ export * from './notifications';
 export * from './planning';
 export * from './attachments';
 export * from './audit';
+export * from './couple';
