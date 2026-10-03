@@ -31,7 +31,23 @@ export function useSignIn() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { email: string; password: string }) =>
-      api('/api/auth/sign-in/email', { method: 'POST', body }),
+      api<{ twoFactorRedirect?: boolean }>('/api/auth/sign-in/email', { method: 'POST', body }),
+    // Com verificação em duas etapas, a sessão só nasce depois do código.
+    onSuccess: (data) => {
+      if (!data?.twoFactorRedirect) return qc.invalidateQueries({ queryKey: meKey });
+    },
+  });
+}
+
+/** Segundo passo do login: código do aplicativo ou código de backup. */
+export function useVerifyTwoFactor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code, backup }: { code: string; backup: boolean }) =>
+      api(backup ? '/api/auth/two-factor/verify-backup-code' : '/api/auth/two-factor/verify-totp', {
+        method: 'POST',
+        body: { code },
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: meKey }),
   });
 }

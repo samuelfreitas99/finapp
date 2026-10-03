@@ -76,6 +76,8 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - `PUT /api/me/pin` ✅ (`{ pin, currentPin? }`, 4–6 dígitos; trocar exige `currentPin`), `POST /api/me/pin/verify` ✅ (`{ pin }`; 400 `pin_invalid`, 429 `pin_locked` após 5 erros), `DELETE /api/me/pin` ✅ (`{ pin }`); `GET /api/me` traz `pinEnabled`
 
+- 2FA (Better Auth, `/api/auth/two-factor/*`): `POST enable` (`{ password }` → `totpURI` e `backupCodes`), `POST verify-totp` (`{ code }`; confirma a ativação ou conclui o login), `POST verify-backup-code`, `POST disable` (`{ password }`); `POST /api/auth/sign-in/email` devolve `{ twoFactorRedirect: true }` quando ligado; `GET /api/me` traz `twoFactorEnabled`
+
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
 - `/api/split-groups/:id/expenses` CRUD

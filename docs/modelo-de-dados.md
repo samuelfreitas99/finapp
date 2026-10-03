@@ -15,7 +15,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 ## Identidade e espaços
 | Tabela | Colunas principais |
 |---|---|
-| `users` | id, name, email (unique), email_verified, image, created_at (gerenciada pelo Better Auth; as tabelas dele são `sessions`, `auth_accounts` (para não colidir com `accounts`, as carteiras) e `verifications`; `passkeys` na V2) |
+| `users` | id, name, email (unique), email_verified, image, created_at (gerenciada pelo Better Auth; as tabelas dele são `sessions`, `auth_accounts` (para não colidir com `accounts`, as carteiras) e `verifications`; `two_factors` (segredo TOTP e códigos de backup cifrados; `users.two_factor_enabled`); `passkeys` na V2) |
 | `invites` | id, code (unique), created_by, space_id (opcional: convite para espaço), email opcional, expires_at, used_by, used_at |
 | `spaces` | id, name, type (`personal`/`shared`), default_split (jsonb), currency (`BRL`), created_by |
 | `space_members` | space_id, user_id, role (`owner`/`member`), split_percent (opcional), joined_at |

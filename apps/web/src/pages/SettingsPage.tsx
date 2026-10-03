@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { markUnlocked } from '../lib/app-lock';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '../lib/push';
 import { errorText } from './transactions/EntryForm';
+import { TwoFactorCard } from './TwoFactorCard';
 
 const TYPE_LABEL: Record<NotificationType, { label: string; days?: boolean }> = {
   due_soon: { label: 'Contas e parcelas a vencer', days: true },
@@ -301,7 +302,9 @@ function PinCard() {
                   onChange={(e) => setAgain(digits(e.target.value))}
                 />
                 {again !== '' && pin !== again && (
-                  <p className="muted expense" role="alert">Os PINs não são iguais.</p>
+                  <p className="muted expense" role="alert">
+                    Os PINs não são iguais.
+                  </p>
                 )}
               </div>
             </>
@@ -325,6 +328,7 @@ export function SettingsPage() {
     <>
       <PageHeader title="Configurações" back="/mais" />
       <PinCard />
+      <TwoFactorCard />
       <PushCard />
       <AlertSettings />
     </>

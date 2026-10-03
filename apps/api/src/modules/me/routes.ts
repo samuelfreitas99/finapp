@@ -2,7 +2,7 @@ import { pinBodySchema, setPinBodySchema, type MeResponse } from '@finapp/shared
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../../db/client';
-import { userSettings } from '../../db/schema';
+import { userSettings, users } from '../../db/schema';
 import { ApiError, badRequest } from '../../http/errors';
 import { currentUser, requireUser } from '../../plugins/auth';
 import { userSpaces } from '../spaces/access';
@@ -39,7 +39,7 @@ export function meRoutes(app: FastifyInstance, db: Db, throttle = new PinThrottl
 
   app.get('/api/me', { preHandler: requireUser }, async (request): Promise<MeResponse> => {
     const user = currentUser(request);
-    const [spaces, [settings]] = await Promise.all([
+    const [spaces, [settings], [account]] = await Promise.all([
       userSpaces(db, user.id),
       db
         .select({
@@ -48,12 +48,17 @@ export function meRoutes(app: FastifyInstance, db: Db, throttle = new PinThrottl
         })
         .from(userSettings)
         .where(eq(userSettings.userId, user.id)),
+      db
+        .select({ twoFactorEnabled: users.twoFactorEnabled })
+        .from(users)
+        .where(eq(users.id, user.id)),
     ]);
     return {
       user,
       spaces,
       activeSpaceId: settings?.activeSpaceId ?? spaces[0]?.id ?? null,
       pinEnabled: Boolean(settings?.lockPinHash),
+      twoFactorEnabled: account?.twoFactorEnabled ?? false,
     };
   });
 

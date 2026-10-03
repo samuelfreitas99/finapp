@@ -1984,3 +1984,16 @@ h3 {
   letter-spacing: 0.4em;
   text-align: center;
 }
+
+.backup-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.backup-codes code {
+  font-size: 15px;
+}

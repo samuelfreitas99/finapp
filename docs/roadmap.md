@@ -72,7 +72,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Anexos de comprovantes
 - [x] Importação OFX/CSV com deduplicação e regras de categoria
 - [x] Exportação CSV/XLSX/JSON
-- [ ] Passkeys, 2FA, bloqueio por PIN, audit log (feito: audit log e PIN; falta: 2FA, passkeys)
+- [ ] Passkeys, 2FA, bloqueio por PIN, audit log (feito: audit log, PIN e 2FA; falta: passkeys)
 
 ## Fase 8: Compartilhamento e racha
 - [ ] Espaço compartilhado: convites, membros, seletor de espaço, visão consolidada
@@ -111,6 +111,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Exportação: espaço ativo inteiro, sem filtro de período; CSV (`;`, BOM, valores com sinal e vírgula, células que parecem fórmula recebem apóstrofo), XLSX (abas Lançamentos e Contas) e JSON completo em centavos. Não inclui anexos nem dados de usuários.
 - Audit log: uma linha por requisição de escrita bem-sucedida no espaço (hook em `spaceScoped`), com usuário, entidade, id, ação (`create`/`update`/`delete` ou o verbo da rota) e o corpo enviado sem campos sensíveis (`after`); `before` não é preenchido (só o que foi enviado). Importação e anexos registram só a ação (sem conteúdo). Qualquer membro do espaço vê o histórico.
 - Bloqueio por PIN: 4 a 6 números, guardado com hash scrypt em `user_settings.lock_pin_hash`; o app pede ao abrir e após 60 s em segundo plano, e a verificação trava por 1 minuto depois de 5 erros (contagem em memória, zera ao reiniciar a API). É uma **trava de tela**: não criptografa nada nem invalida a sessão; quem tem o cookie de sessão continua acessando a API. Esqueceu o PIN: sair e entrar com a senha, depois desligar/trocar.
+- 2FA: TOTP (aplicativo autenticador) pelo plugin `two-factor` do Better Auth, com 10 códigos de backup de uso único mostrados uma vez; segredo e códigos ficam cifrados em `two_factors`. Ligar e desligar exigem a senha; o login com 2FA ligado devolve `twoFactorRedirect` e só cria a sessão depois do código (5 tentativas por minuto por IP e trava do plugin por conta). Não há "confiar neste aparelho" nem 2FA por e-mail/SMS (e-mail ainda não é enviado pelo app). Se perder o aplicativo e os códigos de backup, só recuperando pelo banco (um administrador remove a linha de `two_factors` e zera `users.two_factor_enabled`).
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -160,3 +161,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: exportação: `packages/core/export` (CSV seguro), `GET /export?format=csv|xlsx|json` (dependência `exceljs`, gratuita) e tela "Exportar dados" (Claude).
 - 03/10/2026: histórico de alterações: tabela `audit_log` (migração 0013), registro automático das escritas do espaço, `GET /audit-log` (cursor) e tela "Histórico de alterações" (Claude).
 - 03/10/2026: bloqueio por PIN: `PUT/DELETE /api/me/pin`, `POST /api/me/pin/verify`, `pinEnabled` em `/api/me`, tela de bloqueio e cartão "Bloqueio por PIN" em Configurações (Claude).
+- 03/10/2026: verificação em duas etapas (TOTP + códigos de backup): plugin two-factor, tabela `two_factors` e `users.two_factor_enabled` (migração 0014), segunda etapa no login e cartão em Configurações com QR code (dependência `qrcode` no front) (Claude).

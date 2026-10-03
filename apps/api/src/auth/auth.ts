@@ -1,9 +1,10 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
+import { twoFactor } from 'better-auth/plugins';
 import { uuidv7 } from 'uuidv7';
 import type { Db } from '../db/client';
-import { authAccounts, sessions, users, verifications } from '../db/schema';
+import { authAccounts, sessions, twoFactors, users, verifications } from '../db/schema';
 import { claimInvite, onboardUser } from './onboarding';
 
 export interface AuthOptions {
@@ -37,8 +38,11 @@ export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
         session: sessions,
         account: authAccounts,
         verification: verifications,
+        twoFactor: twoFactors,
       },
     }),
+    // Verificação em duas etapas por aplicativo autenticador (TOTP) e códigos de backup.
+    plugins: [twoFactor({ issuer: 'FinApp' })],
     emailAndPassword: {
       enabled: true,
       autoSignIn: true,
@@ -56,6 +60,8 @@ export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
       customRules: {
         '/sign-in/email': { window: 60, max: 5 },
         '/sign-up/email': { window: 60, max: 5 },
+        '/two-factor/verify-totp': { window: 60, max: 5 },
+        '/two-factor/verify-backup-code': { window: 60, max: 5 },
       },
     },
     advanced: {

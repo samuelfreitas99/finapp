@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { authErrorMessage } from '../auth/messages';
-import { useSignIn } from '../auth/session';
+import { useSignIn, useVerifyTwoFactor } from '../auth/session';
 import { BrandMark } from '../components/BrandMark';
 
 export function LoginPage() {
@@ -9,11 +9,28 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const verify = useVerifyTwoFactor();
+  const [needCode, setNeedCode] = useState(false);
+  const [backup, setBackup] = useState(false);
+  const [code, setCode] = useState('');
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     signIn.mutate(
       { email: email.trim(), password },
+      {
+        onSuccess: (data) => {
+          if (data?.twoFactorRedirect) setNeedCode(true);
+          else navigate('/', { replace: true });
+        },
+      },
+    );
+  };
+
+  const submitCode = (e: FormEvent) => {
+    e.preventDefault();
+    verify.mutate(
+      { code: code.trim(), backup },
       { onSuccess: () => navigate('/', { replace: true }) },
     );
   };
@@ -28,45 +45,92 @@ export function LoginPage() {
             <p className="muted">Seu dinheiro, o que vence e o que vai sobrar.</p>
           </div>
         </div>
-        <form className="form card card--pad" onSubmit={submit} noValidate>
-          {signIn.isError && (
-            <p className="alert alert--error" role="alert">
-              {authErrorMessage(signIn.error)}
+        {needCode ? (
+          <form className="form card card--pad" onSubmit={submitCode} noValidate>
+            <h2>Verificação em duas etapas</h2>
+            <p className="muted">
+              {backup
+                ? 'Digite um dos códigos de backup que você guardou. Cada um vale uma vez.'
+                : 'Digite o código de 6 números do seu aplicativo autenticador.'}
             </p>
-          )}
-          <div className="field">
-            <label htmlFor="email">E-mail</label>
-            <input
-              id="email"
-              className="input"
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="password">Senha</label>
-            <input
-              id="password"
-              className="input"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button
-            className="btn btn--primary btn--block"
-            type="submit"
-            disabled={signIn.isPending || !email || !password}
-          >
-            {signIn.isPending ? 'Entrando…' : 'Entrar'}
-          </button>
-        </form>
+            {verify.isError && (
+              <p className="alert alert--error" role="alert">
+                {authErrorMessage(verify.error)}
+              </p>
+            )}
+            <div className="field">
+              <label htmlFor="code">{backup ? 'Código de backup' : 'Código'}</label>
+              <input
+                id="code"
+                className="input pin-input"
+                autoComplete="one-time-code"
+                inputMode={backup ? 'text' : 'numeric'}
+                autoFocus
+                value={code}
+                onChange={(e) =>
+                  setCode(backup ? e.target.value : e.target.value.replace(/\D/g, '').slice(0, 6))
+                }
+              />
+            </div>
+            <button
+              className="btn btn--primary btn--block"
+              type="submit"
+              disabled={verify.isPending || code.trim().length < 6}
+            >
+              {verify.isPending ? 'Verificando…' : 'Confirmar'}
+            </button>
+            <button
+              type="button"
+              className="btn btn--block"
+              onClick={() => {
+                setBackup((b) => !b);
+                setCode('');
+              }}
+            >
+              {backup ? 'Usar o aplicativo' : 'Usar um código de backup'}
+            </button>
+          </form>
+        ) : (
+          <form className="form card card--pad" onSubmit={submit} noValidate>
+            {signIn.isError && (
+              <p className="alert alert--error" role="alert">
+                {authErrorMessage(signIn.error)}
+              </p>
+            )}
+            <div className="field">
+              <label htmlFor="email">E-mail</label>
+              <input
+                id="email"
+                className="input"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="password">Senha</label>
+              <input
+                id="password"
+                className="input"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn btn--primary btn--block"
+              type="submit"
+              disabled={signIn.isPending || !email || !password}
+            >
+              {signIn.isPending ? 'Entrando…' : 'Entrar'}
+            </button>
+          </form>
+        )}
         <p className="auth__switch">
           Recebeu um convite? <Link to="/criar-conta">Criar conta</Link>
         </p>

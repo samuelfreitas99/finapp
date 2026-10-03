@@ -25,6 +25,8 @@ export const meResponseSchema = z.object({
   activeSpaceId: z.uuid().nullable(),
   /** O usuário ativou o bloqueio do app por PIN. */
   pinEnabled: z.boolean(),
+  /** Verificação em duas etapas (aplicativo autenticador) ligada. */
+  twoFactorEnabled: z.boolean(),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 

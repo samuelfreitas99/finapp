@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, id, updatedAt } from './_helpers';
 
 /**
@@ -12,6 +12,8 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  /** Verificação em duas etapas (TOTP) ligada; gerenciada pelo plugin two-factor. */
+  twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -67,4 +69,22 @@ export const verifications = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [index('verifications_identifier_idx').on(t.identifier)],
+);
+
+/** Segredo TOTP e códigos de backup (cifrados pelo Better Auth), um por usuário. */
+export const twoFactors = pgTable(
+  'two_factors',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    secret: text('secret').notNull(),
+    backupCodes: text('backup_codes').notNull(),
+    /** Falso até o usuário confirmar o primeiro código do aplicativo. */
+    verified: boolean('verified').notNull().default(true),
+    failedVerificationCount: integer('failed_verification_count').notNull().default(0),
+    lockedUntil: timestamp('locked_until', { withTimezone: true }),
+  },
+  (t) => [index('two_factors_user_idx').on(t.userId)],
 );
