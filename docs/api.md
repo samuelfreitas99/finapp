@@ -86,4 +86,4 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 ## Importação/exportação (V2)
 - `POST /imports` (multipart OFX/CSV) → prévia, `POST /imports/:id/confirm`
-- `GET /export?format=csv|xlsx|json`
+- `GET /api/spaces/:spaceId/export?format=csv|xlsx|json` ✅ (download do espaço; padrão csv)

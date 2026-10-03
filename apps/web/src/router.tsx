@@ -23,6 +23,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { GoalsPage } from './pages/planning/GoalsPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
 import { ImportPage } from './pages/import/ImportPage';
+import { ExportPage } from './pages/export/ExportPage';
 import { BudgetsPage } from './pages/planning/BudgetsPage';
 import { RemindersPage } from './pages/RemindersPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
           { path: '/mais', element: <MorePage /> },
           { path: '/configuracoes', element: <SettingsPage /> },
           { path: '/notificacoes', element: <NotificationsPage /> },
+          { path: '/exportar', element: <ExportPage /> },
           { path: '/importar', element: <ImportPage /> },
           { path: '/relatorios', element: <ReportsPage /> },
           { path: '/metas', element: <GoalsPage /> },

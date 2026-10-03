@@ -60,3 +60,7 @@ export const netWorthSchema = z.object({
   liabilityLines: z.array(lineSchema),
 });
 export type NetWorthReport = z.infer<typeof netWorthSchema>;
+
+export const exportQuerySchema = z.object({
+  format: z.enum(['csv', 'xlsx', 'json']).default('csv'),
+});
