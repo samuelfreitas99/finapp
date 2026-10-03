@@ -2324,3 +2324,11 @@ h3 {
   flex-direction: column;
   gap: 8px;
 }
+
+/* Importação: item que casou com um lançamento existente. */
+.import-line__match {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--primary);
+}

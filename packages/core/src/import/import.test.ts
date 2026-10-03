@@ -7,6 +7,8 @@ import {
   parseOFX,
   parseStatementAmount,
   parseStatementDate,
+  isInvoicePaymentLine,
+  reconcileStatement,
   suggestRulePattern,
 } from './index';
 
@@ -152,5 +154,114 @@ describe('hasNearbyMatch', () => {
     expect(hasNearbyMatch({ date: '2026-10-05', amount: -4590 }, existing)).toBe(true);
     expect(hasNearbyMatch({ date: '2026-10-06', amount: -4590 }, existing)).toBe(false);
     expect(hasNearbyMatch({ date: '2026-10-03', amount: -4000 }, existing)).toBe(false);
+  });
+});
+
+describe('reconcileStatement', () => {
+  const c = (
+    id: string,
+    date: string,
+    amount: number,
+    status: 'planned' | 'settled',
+    extra: Partial<{ estimated: boolean; imported: boolean }> = {},
+  ) => ({ id, date, amount, status, estimated: false, imported: false, ...extra });
+
+  it('confirms a planned salary that arrived a few days early', () => {
+    const out = reconcileStatement(
+      [{ date: '2026-10-03', amount: 500000 }],
+      [c('salario', '2026-10-07', 500000, 'planned')],
+    );
+    expect(out).toEqual([{ id: 'salario', kind: 'planned' }]);
+  });
+
+  it('accepts a different amount only for estimated planned items', () => {
+    const luz = c('luz', '2026-10-10', -20000, 'planned', { estimated: true });
+    const aluguel = c('aluguel', '2026-10-10', -150000, 'planned');
+    expect(
+      reconcileStatement(
+        [
+          { date: '2026-10-10', amount: -23500 },
+          { date: '2026-10-10', amount: -150100 },
+        ],
+        [luz, aluguel],
+      ),
+    ).toEqual([{ id: 'luz', kind: 'planned' }, null]);
+    // 40% a mais já não é a mesma conta.
+    expect(reconcileStatement([{ date: '2026-10-10', amount: -28000 }], [luz])).toEqual([null]);
+  });
+
+  it('links a manual entry instead of creating it again, and flags old imports', () => {
+    const out = reconcileStatement(
+      [
+        { date: '2026-10-02', amount: -5290 },
+        { date: '2026-10-05', amount: -1000 },
+      ],
+      [
+        c('mercado', '2026-10-01', -5290, 'settled'),
+        c('cafe', '2026-10-05', -1000, 'settled', { imported: true }),
+      ],
+    );
+    expect(out).toEqual([
+      { id: 'mercado', kind: 'settled' },
+      { id: 'cafe', kind: 'possible' },
+    ]);
+  });
+
+  it('prefers the manual entry over the planned one, and uses each only once', () => {
+    const out = reconcileStatement(
+      [
+        { date: '2026-10-10', amount: -9990 },
+        { date: '2026-10-10', amount: -9990 },
+        { date: '2026-10-10', amount: -9990 },
+      ],
+      [c('previsto', '2026-10-10', -9990, 'planned'), c('manual', '2026-10-09', -9990, 'settled')],
+    );
+    expect(out).toEqual([
+      { id: 'manual', kind: 'settled' },
+      { id: 'previsto', kind: 'planned' },
+      null,
+    ]);
+  });
+
+  it('never matches income with expense or far dates', () => {
+    expect(
+      reconcileStatement(
+        [{ date: '2026-10-10', amount: 5000 }],
+        [c('saida', '2026-10-10', -5000, 'settled'), c('longe', '2026-10-20', 5000, 'planned')],
+      ),
+    ).toEqual([null]);
+  });
+});
+
+describe('card invoice helpers', () => {
+  it('reads the Nubank card CSV (date,title,amount) and spots the invoice payment', () => {
+    const csv =
+      'date,title,amount\n2026-09-28,Mercado Sol,52.90\n2026-09-30,Pagamento recebido,-1200.00';
+    const parsed = parseCSVStatement(csv, { invert: true });
+    expect(parsed.entries.map((e) => [e.description, e.amount])).toEqual([
+      ['Mercado Sol', -5290],
+      ['Pagamento recebido', 120000],
+    ]);
+    expect(isInvoicePaymentLine('Pagamento recebido', 120000)).toBe(true);
+    expect(isInvoicePaymentLine('Estorno Mercado', 5290)).toBe(false);
+    expect(isInvoicePaymentLine('Pagamento recebido', -100)).toBe(false);
+  });
+
+  it('matches by amount inside the invoice, whatever the date', () => {
+    const out = reconcileStatement(
+      [{ date: '2026-03-10', amount: -10000 }],
+      [
+        {
+          id: 'parcela',
+          date: '2026-09-10',
+          amount: -10000,
+          status: 'settled',
+          estimated: false,
+          imported: false,
+        },
+      ],
+      { plannedDays: Infinity, settledDays: Infinity },
+    );
+    expect(out).toEqual([{ id: 'parcela', kind: 'settled' }]);
   });
 });

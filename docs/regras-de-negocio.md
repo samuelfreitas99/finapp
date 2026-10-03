@@ -264,7 +264,8 @@ Estilo Splitwise, separado das finanças do espaço (os participantes podem nem 
 
 ## 12. Importação (V2)
 
-- OFX e CSV de extrato; CSV de fatura. Mapeamento de colunas salvo por banco.
-- Deduplicação: mesmo valor, data ±2 dias e descrição similar, ou `fit_id` do OFX.
+- OFX e CSV de extrato de **conta** e de **fatura de cartão** (cartão + mês da fatura: tudo entra nessa fatura; a linha "Pagamento recebido/pagto" fica de fora porque o pagamento sai da conta; CSV de fatura vem com "inverter sinais" ligado, pois a compra é positiva). Colunas reconhecidas pelo nome (inclusive `date,title,amount` do Nubank).
+- **Já importado**: chave `import_key` (FITID do OFX ou data+valor+descrição) única por conta e por cartão; vale mesmo para o que foi excluído depois.
+- **Conciliação** (`reconcileStatement` no core), um lançamento existente por item: (1) **lançado à mão** (efetivado sem `import_key`), mesmo valor e até 2 dias → não cria outro, só grava a chave nele (a próxima importação reconhece direto); (2) **previsto** (salário, conta fixa, parcela), mesmo valor até 5 dias, ou até 30% de diferença se o previsto é estimado → confirma o previsto com o valor e a data do banco (parcela de dívida conta como paga); (3) efetivado que veio de outra importação → "parece repetido", desmarcado. Prefere o lançado à mão, depois valor exato, depois a data mais próxima. Na fatura, compara só os itens daquela fatura e ignora a data (o arquivo traz a data da compra original de parcelados). A tela mostra com o quê cada item casou e permite "Não é o mesmo: lançar como novo".
 - Regras automáticas de categoria aplicadas na importação.
 - **Fora de escopo**: Open Finance/agregadores pagos.

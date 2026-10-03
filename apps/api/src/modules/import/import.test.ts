@@ -83,7 +83,7 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
     const res = await preview(OFX);
     expect(res.statusCode).toBe(200);
     const body = res.json();
-    expect(body.counts).toEqual({ total: 4, exact: 0, possible: 0, ready: 3 });
+    expect(body.counts).toEqual({ total: 4, exact: 0, possible: 0, ready: 3, matched: 0 });
     expect(body.rows[0]).toMatchObject({ type: 'expense', amount: 4590, importKey: 'fit:a1' });
     expect(body.rows[1]).toMatchObject({ type: 'income', amount: 350000 });
     expect(body.rows[3].beforeInitialDate).toBe(true);
@@ -111,7 +111,13 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
     }));
     const done = await api('POST', '/import/commit', { accountId, items });
     expect(done.statusCode).toBe(200);
-    expect(done.json()).toEqual({ created: 3, skipped: 0, rulesCreated: 1 });
+    expect(done.json()).toEqual({
+      created: 3,
+      confirmed: 0,
+      linked: 0,
+      skipped: 0,
+      rulesCreated: 1,
+    });
 
     const txs = (await api('GET', '/transactions?limit=50')).json().items as {
       description: string;
@@ -124,7 +130,13 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
     const again = await preview(OFX);
     expect(again.json().counts).toMatchObject({ exact: 3, ready: 0 });
     const twice = await api('POST', '/import/commit', { accountId, items });
-    expect(twice.json()).toEqual({ created: 0, skipped: 3, rulesCreated: 0 });
+    expect(twice.json()).toEqual({
+      created: 0,
+      confirmed: 0,
+      linked: 0,
+      skipped: 3,
+      rulesCreated: 0,
+    });
   });
 
   it('applies saved rules on the next preview, per kind', async () => {
@@ -136,7 +148,7 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
     expect(rows[1]).toMatchObject({ type: 'income', categoryId: null });
   });
 
-  it('flags possible duplicates of hand-entered transactions', async () => {
+  it('links a hand-entered transaction instead of duplicating it', async () => {
     const manual = await api('POST', '/transactions', {
       type: 'expense',
       status: 'settled',
@@ -148,7 +160,139 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
     expect(manual.statusCode, manual.body).toBe(201);
     const csv = 'Data;Descrição;Valor\n13/10/2026;ALMOCO RESTAURANTE;-33,00';
     const rows = (await preview(csv, 'csv')).json().rows;
-    expect(rows[0].duplicate).toBe('possible');
+    expect(rows[0].duplicate).toBeNull();
+    expect(rows[0].match).toMatchObject({
+      id: manual.json().id,
+      kind: 'settled',
+      description: 'Almoço',
+    });
+    const res = (
+      await api('POST', '/import/commit', {
+        accountId,
+        items: [{ ...rows[0], matchId: rows[0].match.id }],
+      })
+    ).json();
+    expect(res).toMatchObject({ created: 0, linked: 1, confirmed: 0 });
+    // Importar o mesmo extrato de novo: agora é reconhecido na hora.
+    expect((await preview(csv, 'csv')).json().rows[0].duplicate).toBe('exact');
+  });
+
+  it('confirms planned items (salary, debt installment) with the real amount and date', async () => {
+    const salary = await api('POST', '/transactions', {
+      type: 'income',
+      status: 'planned',
+      amount: 500000,
+      date: '2026-10-07',
+      description: 'Salário',
+      accountId,
+    });
+    expect(salary.statusCode, salary.body).toBe(201);
+    const debt = (
+      await api('POST', '/debts', {
+        name: 'Empréstimo extrato',
+        kind: 'bank_loan',
+        paymentAccountId: accountId,
+        phases: [
+          {
+            system: 'fixed',
+            installments: 1,
+            installmentAmount: 30000,
+            firstDueDate: '2026-10-09',
+          },
+        ],
+      })
+    ).json();
+    const csv = [
+      'Data;Descrição;Valor',
+      '05/10/2026;PAGTO SALARIO EMPRESA;5000,00',
+      '09/10/2026;DEBITO EMPRESTIMO;-300,00',
+      '09/10/2026;OUTRA COISA;-12,00',
+    ].join('\n');
+    const preview1 = (await preview(csv, 'csv')).json();
+    const [sal, loan, other] = preview1.rows;
+    expect(sal.match).toMatchObject({ id: salary.json().id, kind: 'planned' });
+    expect(loan.match).toMatchObject({ kind: 'planned', amount: 30000 });
+    expect(other.match).toBeNull();
+    expect(preview1.counts.matched).toBe(2);
+
+    const res = (
+      await api('POST', '/import/commit', {
+        accountId,
+        items: preview1.rows.map((r: { match: { id: string } | null }) => ({
+          ...r,
+          matchId: r.match?.id ?? null,
+        })),
+      })
+    ).json();
+    expect(res).toMatchObject({ created: 1, confirmed: 2, linked: 0 });
+    const tx = (await api('GET', `/transactions/${salary.json().id}`)).json();
+    expect(tx).toMatchObject({ status: 'settled', date: '2026-10-05', amount: 500000 });
+    expect((await api('GET', `/debts/${debt.id}`)).json().status).toBe('paid_off');
+  });
+
+  it('imports a card invoice CSV into the chosen invoice, without duplicating', async () => {
+    const cardId = (
+      await api('POST', '/cards', {
+        name: 'Nubank',
+        limitAmount: 1000000,
+        closingDay: 3,
+        dueDay: 10,
+      })
+    ).json().id;
+    // Parcelado e compra feita à mão que já estão na fatura de novembro.
+    await api('POST', '/installment-plans', {
+      description: 'Geladeira',
+      cardId,
+      totalAmount: 10000,
+      installments: 3,
+      firstDate: '2026-10-14',
+    });
+    const manual = await api('POST', '/transactions', {
+      type: 'expense',
+      amount: 5290,
+      date: '2026-10-12',
+      description: 'Mercado',
+      cardId,
+    });
+    expect(manual.statusCode, manual.body).toBe(201);
+
+    // Fatura do Nubank: compra positiva, pagamento negativo; datas da compra original.
+    const csv = [
+      'date,title,amount',
+      '2026-10-14,Geladeira - Parcela 1/3,33.34',
+      '2026-10-12,Mercado Sol,52.90',
+      '2026-10-13,Farmacia,20.00',
+      '2026-10-05,Pagamento recebido,-500.00',
+    ].join('\n');
+    const body = { cardId, invoiceMonth: '2026-11', format: 'csv', content: csv, invert: true };
+    const pre = (await api('POST', '/import/preview', body)).json();
+    expect(pre.counts).toMatchObject({ total: 4, matched: 2, ready: 3 });
+    const [plan, market, pharmacy, payment] = pre.rows;
+    expect(plan).toMatchObject({ type: 'expense', amount: 3334, match: { kind: 'settled' } });
+    expect(market.match).toMatchObject({ id: manual.json().id, kind: 'settled' });
+    expect(pharmacy).toMatchObject({ type: 'expense', amount: 2000, match: null });
+    expect(payment).toMatchObject({ invoicePayment: true, match: null });
+
+    const res = (
+      await api('POST', '/import/commit', {
+        cardId,
+        invoiceMonth: '2026-11',
+        items: pre.rows
+          .filter((r: { invoicePayment: boolean }) => !r.invoicePayment)
+          .map((r: { match: { id: string } | null }) => ({ ...r, matchId: r.match?.id ?? null })),
+      })
+    ).json();
+    expect(res).toMatchObject({ created: 1, linked: 2, confirmed: 0 });
+    const invoice = (await api('GET', `/cards/${cardId}/invoices/2026-11`)).json();
+    expect(invoice.total).toBe(3334 + 5290 + 2000);
+
+    const again = (await api('POST', '/import/preview', body)).json();
+    expect(again.counts).toMatchObject({ exact: 3, ready: 0 });
+    // Fatura exige o mês; conta e cartão juntos não.
+    expect(
+      (await api('POST', '/import/preview', { ...body, invoiceMonth: undefined })).statusCode,
+    ).toBe(400);
+    expect((await api('POST', '/import/preview', { ...body, accountId })).statusCode).toBe(400);
   });
 
   it('does not bring back an imported transaction that was deleted', async () => {

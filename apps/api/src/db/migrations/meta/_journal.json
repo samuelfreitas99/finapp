@@ -162,6 +162,13 @@
       "when": 1791043127323,
       "tag": "0022_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791048668745,
+      "tag": "0023_card_import_key",
+      "breakpoints": true
     }
   ]
 }

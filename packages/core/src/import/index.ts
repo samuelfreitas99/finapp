@@ -179,6 +179,7 @@ const ALIASES = {
     'lancamento',
     'memo',
     'description',
+    'title',
     'estabelecimento',
     'titulo',
     'detalhes',
@@ -318,4 +319,89 @@ export function hasNearbyMatch(
       e.amount === entry.amount &&
       Math.abs(Date.parse(`${e.date}T00:00:00Z`) - t) <= toleranceDays * 86_400_000,
   );
+}
+
+export interface ReconcileEntry {
+  date: ISODate;
+  /** Com sinal: + entrada, − saída. */
+  amount: Cents;
+}
+
+export interface ReconcileCandidate extends ReconcileEntry {
+  id: string;
+  status: 'planned' | 'settled';
+  /** Valor estimado (conta variável, salário que muda): aceita diferença no valor. */
+  estimated: boolean;
+  /** Já veio de uma importação (tem `import_key`). */
+  imported: boolean;
+}
+
+/**
+ * - `planned`: o item é o previsto (salário, conta fixa, parcela): confirmar o previsto.
+ * - `settled`: já foi lançado à mão: não criar, só ligar o lançamento ao extrato.
+ * - `possible`: parece o mesmo de outra importação: pular.
+ */
+export type ReconcileKind = 'planned' | 'settled' | 'possible';
+
+export interface ReconcileMatch {
+  id: string;
+  kind: ReconcileKind;
+}
+
+const PLANNED_DAYS = 5;
+const SETTLED_DAYS = 2;
+const ESTIMATED_TOLERANCE = 0.3;
+
+const dayDistance = (a: ISODate, b: ISODate) =>
+  Math.abs(Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000;
+
+/**
+ * Conciliação do extrato com o que já existe na conta. Lançado à mão: mesmo valor até 2
+ * dias. Previsto: mesmo valor até 5 dias (o salário pode cair antes); se estimado, até 30%
+ * de diferença. Mesmo sentido (entrada/saída) sempre. Cada lançamento existente casa com
+ * um item só; prefere o já lançado, depois valor exato, depois a data mais próxima.
+ * @see RN 8 (Importação)
+ */
+export function reconcileStatement(
+  entries: readonly ReconcileEntry[],
+  existing: readonly ReconcileCandidate[],
+  /**
+   * Janela em dias para previsto e para lançado à mão. Na fatura do cartão, quem chama já
+   * filtrou os itens da mesma fatura e passa `Infinity` (a data do arquivo pode ser a da
+   * compra original de um parcelado).
+   */
+  { plannedDays = PLANNED_DAYS, settledDays = SETTLED_DAYS } = {},
+): (ReconcileMatch | null)[] {
+  const used = new Set<string>();
+  return entries.map((entry) => {
+    let best: { c: ReconcileCandidate; score: number } | null = null;
+    for (const c of existing) {
+      if (used.has(c.id) || Math.sign(c.amount) !== Math.sign(entry.amount)) continue;
+      const days = dayDistance(c.date, entry.date);
+      const exact = c.amount === entry.amount;
+      let ok: boolean;
+      if (c.status === 'settled') ok = exact && days <= settledDays;
+      else {
+        const close =
+          c.estimated &&
+          Math.abs(Math.abs(entry.amount) - Math.abs(c.amount)) <=
+            Math.abs(c.amount) * ESTIMATED_TOLERANCE;
+        ok = days <= plannedDays && (exact || close);
+      }
+      if (!ok) continue;
+      // Menor é melhor: já lançado < previsto; valor exato < aproximado; depois os dias.
+      const score = (c.status === 'settled' ? 0 : 1000) + (exact ? 0 : 100) + days;
+      if (!best || score < best.score) best = { c, score };
+    }
+    if (!best) return null;
+    used.add(best.c.id);
+    const kind: ReconcileKind =
+      best.c.status === 'planned' ? 'planned' : best.c.imported ? 'possible' : 'settled';
+    return { id: best.c.id, kind };
+  });
+}
+
+/** Linha da fatura que é o pagamento da fatura anterior (não é compra nem estorno). */
+export function isInvoicePaymentLine(description: string, amount: Cents): boolean {
+  return amount > 0 && /\b(pagamento|pagto|pgto)\b/.test(normalizeText(description));
 }

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "transactions_card_import_key_uq" ON "transactions" USING btree ("card_id","import_key");

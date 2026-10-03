@@ -833,6 +833,9 @@ export function useImport() {
         void qc.invalidateQueries({ queryKey: keys.accounts(spaceId) });
         void qc.invalidateQueries({ queryKey: keys.transactions(spaceId) });
         void qc.invalidateQueries({ queryKey: ['category-rules', spaceId] });
+        // Fatura importada, previstos confirmados (parcelas de dívida, recorrências).
+        void qc.invalidateQueries({ queryKey: cardKeys.all(spaceId) });
+        void qc.invalidateQueries({ queryKey: debtKeys(spaceId) });
       },
     }),
   };

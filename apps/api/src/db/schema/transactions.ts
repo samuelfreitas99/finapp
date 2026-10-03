@@ -94,6 +94,8 @@ export const transactions = pgTable(
     uniqueIndex('transactions_recurrence_key_uq').on(t.recurrenceId, t.recurrenceKey),
     // Vale também para lançamentos excluídos: o que foi apagado não volta a ser importado.
     uniqueIndex('transactions_import_key_uq').on(t.accountId, t.importKey),
+    // Fatura de cartão importada: o mesmo item não entra duas vezes no mesmo cartão.
+    uniqueIndex('transactions_card_import_key_uq').on(t.cardId, t.importKey),
     index('transactions_installment_plan_idx').on(t.installmentPlanId),
     index('transactions_debt_installment_idx').on(t.debtInstallmentId),
     check(
