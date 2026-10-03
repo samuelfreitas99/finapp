@@ -16,3 +16,4 @@ export * from './schemas/reminders';
 export * from './schemas/budgets';
 export * from './schemas/goals';
 export * from './schemas/reports';
+export * from './schemas/attachments';

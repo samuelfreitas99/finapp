@@ -66,3 +66,7 @@ Contexto: o Samuel não gosta de verde; o verde-petróleo do protótipo era a co
 Decisão: cor principal azul-marinho `#1F3A68` (azul-claro `#8EB2EC` no modo escuro), aplicada aos tokens, ao manifest do PWA e aos ícones. O verde fica só como cor semântica de receita. Transferência passa de azul para violeta, para não se confundir com a marca. Todos os pares de texto conferidos com WCAG AA.
 Consequências: identidade visual difere do protótipo só na cor; layout e tipografia seguem aprovados.
 
+## ADR-016 Comprovantes guardados no Postgres (03/10/2026)
+Contexto: o roadmap pede anexos de comprovantes. O modelo previa `file_path` (arquivo em disco), mas isso exigiria um volume novo no compose e o backup cobrir dois lugares.
+Decisão: o arquivo fica na coluna `attachments.data` (`bytea`), limitado a 8 MB e 10 por lançamento, só JPG, PNG, WebP ou PDF (tipo conferido pelos primeiros bytes). O app reduz fotos grandes (máx. 1800 px) antes de enviar. Exclusão lógica (`deleted_at`).
+Consequências: o `pg_dump` diário já inclui os comprovantes e não há infraestrutura nova; o banco cresce mais rápido (fotos reduzidas ficam em ~300 KB). Se o volume virar problema, mover os bytes para disco/objeto sem mudar a API (`/attachments/:id/file`).

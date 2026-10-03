@@ -68,6 +68,8 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `GET /budgets?month=` (situação do mês: limite, sobra, gasto, faixa), `PUT /budgets` (cria/atualiza por categoria e mês; `month` nulo = todo mês), `DELETE /budgets/:id`
 - `GET/POST /goals`, `PATCH/DELETE /goals/:id` (situação e aporte sugerido calculados), `POST /goals/:id/deposit` (guardar/retirar à mão, só sem conta vinculada)
 
+- `GET /transactions/:id/attachments`, `POST /transactions/:id/attachments?name=` (corpo = o arquivo cru; `image/jpeg|png|webp` ou `application/pdf`, até 8 MB, 10 por lançamento; 400 `invalid_file` se o conteúdo não for do tipo aceito, 413 se grande), `GET /attachments/:id/file` (abre o arquivo), `DELETE /attachments/:id` (lógico)
+
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
 - `/api/split-groups/:id/expenses` CRUD

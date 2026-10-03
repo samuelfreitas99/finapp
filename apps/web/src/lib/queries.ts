@@ -10,6 +10,7 @@ import type {
   DebtPreview,
   UpdateDebtBody,
   Projection,
+  Attachment,
   Budgets,
   ByCategoryReport,
   MonthlyReport,
@@ -47,7 +48,7 @@ import type {
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { z } from 'zod';
 import { useActiveSpace } from '../auth/session';
-import { api, spacePath } from './api';
+import { api, spacePath, uploadFile } from './api';
 
 /** Espaço ativo; as telas logadas sempre têm um. */
 export function useSpaceId(): string {
@@ -731,4 +732,38 @@ export function useReportNetWorth() {
     queryKey: ['reports', spaceId, 'net-worth'],
     queryFn: () => api<NetWorthReport>(spacePath(spaceId, '/reports/net-worth')),
   });
+}
+
+export function useAttachments(transactionId: string) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['attachments', spaceId, transactionId],
+    queryFn: () =>
+      api<{ items: Attachment[] }>(
+        spacePath(spaceId, `/transactions/${transactionId}/attachments`),
+      ).then((r) => r.items),
+  });
+}
+
+export function useAttachmentMutations(transactionId: string) {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  const invalidate = () =>
+    qc.invalidateQueries({ queryKey: ['attachments', spaceId, transactionId] });
+  return {
+    upload: useMutation({
+      mutationFn: ({ file, name }: { file: Blob; name: string }) =>
+        uploadFile<Attachment>(
+          spacePath(spaceId, `/transactions/${transactionId}/attachments`),
+          file,
+          name,
+        ),
+      onSuccess: invalidate,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) =>
+        api(spacePath(spaceId, `/attachments/${id}`), { method: 'DELETE' }),
+      onSuccess: invalidate,
+    }),
+  };
 }

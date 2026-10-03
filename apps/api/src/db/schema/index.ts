@@ -7,3 +7,4 @@ export * from './recurrences';
 export * from './debts';
 export * from './notifications';
 export * from './planning';
+export * from './attachments';

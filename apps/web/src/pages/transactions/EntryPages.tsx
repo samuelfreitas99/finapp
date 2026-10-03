@@ -23,6 +23,7 @@ import {
   useTransaction,
   useUpdateTransaction,
 } from '../../lib/queries';
+import { Attachments } from './Attachments';
 import {
   CARD_PREFIX,
   EntryForm,
@@ -416,6 +417,7 @@ export function EditEntryPage() {
           );
         }}
       />
+      {!isTransfer && <Attachments transactionId={t.id} />}
       {deleteButton}
     </>
   );

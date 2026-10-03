@@ -36,7 +36,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 |---|---|
 | `transactions` | id, space_id, type (`income`/`expense`/`transfer_in`/`transfer_out`/`adjustment`), status (`planned`/`settled`), amount (>0; no `adjustment`, a diferença com sinal, ≠0, ADR-013), date, description, notes, category_id, account_id **ou** invoice_id (check: exatamente um), card_id, payment_method (`pix`/`debit`/`credit`/`cash`/`boleto`/`ted`/`other`), pix_counterparty, contact_id, transfer_id, installment_plan_id, installment_number, anticipated, recurrence_id, recurrence_key (identidade da ocorrência: `YYYY-MM#parte` ou a data no semanal; único por recorrência, inclusive excluídos), detached, debt_installment_id, invoice_payment_id, split_id, estimated, reconciled_at, settled_at |
 | `transaction_tags` | transaction_id, tag_id |
-| `attachments` | id, space_id, transaction_id, file_path, mime, size |
+| `attachments` | id, space_id, transaction_id, file_name, mime, size, data (`bytea`, ADR-016), created_by, deleted_at |
 | `recurrences` | id, space_id, type (`income`/`expense`), description, amount (>0), frequency, interval (1–120), day_rule (jsonb: `{kind, day?, n?}`), adjust, parts (jsonb, salário dividido), start_date, end_date, account_id **ou** card_id (check), category_id, payment_method, variable_amount, generated_until (migração `0004`) |
 
 ## Cartões

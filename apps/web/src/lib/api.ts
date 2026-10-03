@@ -50,3 +50,25 @@ export async function api<T>(
 
 /** Caminho de um recurso do espaço. */
 export const spacePath = (spaceId: string, path: string) => `/api/spaces/${spaceId}${path}`;
+
+/** Envia um arquivo como corpo cru (comprovantes), com o nome em `?name=`. */
+export async function uploadFile<T>(path: string, file: Blob, name: string): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${path}?name=${encodeURIComponent(name)}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+  } catch {
+    throw new ApiError(0, 'network_error', FALLBACK);
+  }
+  if (!res.ok) {
+    if (res.status === 413) {
+      throw new ApiError(413, 'file_too_large', 'O arquivo é grande demais (máximo de 8 MB).');
+    }
+    throw await toError(res);
+  }
+  return (await res.json()) as T;
+}

@@ -1903,3 +1903,50 @@ h3 {
   gap: 4px;
   list-style: none;
 }
+
+.attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachments__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.attachments__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.attachments__link strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachments__thumb {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+
+.attachments__thumb--pdf {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted, inherit);
+}
