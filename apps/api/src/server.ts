@@ -9,6 +9,7 @@ import { createDb } from './db/client';
 import { runMigrations } from './db/migrate';
 import { runSeed } from './db/seed';
 import { startJobs } from './jobs';
+import { settleDueCardInstallments } from './jobs/debts';
 import { generateAllRecurrences } from './jobs/recurrences';
 import { todayIn } from '@finapp/core';
 
@@ -71,6 +72,9 @@ async function main() {
     // Na subida, já completa a janela (o job diário roda às 02:00).
     generateAllRecurrences(db, todayIn()).catch((err: unknown) =>
       app.log.error({ err }, 'falha ao gerar recorrências'),
+    );
+    settleDueCardInstallments(db, todayIn()).catch((err: unknown) =>
+      app.log.error({ err }, 'falha ao efetivar parcelas de dívida no cartão'),
     );
   }
 

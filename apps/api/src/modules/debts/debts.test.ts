@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import { createAuth } from '../../auth/auth';
 import { createAdminInvite } from '../../cli/create-invite';
+import { settleDueCardInstallments } from '../../jobs/debts';
 import { createTempDb, testDatabaseUrl } from '../../test/temp-db';
 
 const appUrl = 'http://localhost:5174';
@@ -14,6 +15,7 @@ describe.skipIf(!testDatabaseUrl)('debts API (integration)', () => {
   let spaceId: string;
   let accountId: string;
   let cardId: string;
+  let db: Awaited<ReturnType<typeof createTempDb>>['db'];
 
   type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
   const api = (method: Method, path: string, payload?: unknown) =>
@@ -27,6 +29,7 @@ describe.skipIf(!testDatabaseUrl)('debts API (integration)', () => {
   beforeAll(async () => {
     const temp = await createTempDb();
     drop = temp.drop;
+    db = temp.db;
     const auth = createAuth({
       db: temp.db,
       secret: 'test-secret-test-secret-test-secret-00',
@@ -249,6 +252,72 @@ describe.skipIf(!testDatabaseUrl)('debts API (integration)', () => {
     ).json();
     const receivables = await planned(lent.id);
     expect(receivables.map((r) => r.type)).toEqual(['income', 'income']);
+  });
+
+  it('counts card installments already on an invoice as paid, without duplicating', async () => {
+    // Começou em setembro: as parcelas de 05/09 e 05/10 já passaram (hoje é 15/10).
+    const debt = (
+      await api('POST', '/debts', {
+        name: 'Saque no cartão',
+        kind: 'card_loan',
+        paymentCardId: cardId,
+        phases: [{ system: 'fixed', installments: 4, total: 40000, firstDueDate: '2026-09-05' }],
+      })
+    ).json();
+    expect(debt.installments.map((i: { status: string }) => i.status)).toEqual([
+      'paid',
+      'paid',
+      'pending',
+      'pending',
+    ]);
+    expect(debt.summary).toMatchObject({ paidCount: 2, lateCount: 0 });
+    const before = await planned(debt.id);
+    expect(before.filter((t) => t.status === 'settled')).toHaveLength(2);
+
+    // Uma ação na dívida refaz os previstos: os efetivados não podem voltar em dobro.
+    await api('POST', `/debts/${debt.id}/installments/3/pay`, { amount: 5000 });
+    const after = await planned(debt.id);
+    expect(after.filter((t) => t.status === 'settled')).toHaveLength(3);
+    expect(after).toHaveLength(5); // 2 pagas + parcial da 3ª + resto da 3ª + 4ª
+
+    // Quando a 4ª vence (05/01/2027), o job do dia efetiva e marca como paga.
+    expect(await settleDueCardInstallments(db, '2027-01-05')).toBeGreaterThanOrEqual(2);
+    const done = (await api('GET', `/debts/${debt.id}`)).json();
+    expect(done.status).toBe('paid_off');
+  });
+
+  it('marks the installment paid when its planned entry is confirmed in Lançamentos', async () => {
+    const debt = (
+      await api('POST', '/debts', {
+        name: 'Empréstimo confirmado',
+        kind: 'bank_loan',
+        paymentAccountId: accountId,
+        phases: [
+          {
+            system: 'fixed',
+            installments: 2,
+            installmentAmount: 30000,
+            firstDueDate: '2026-10-10',
+          },
+        ],
+      })
+    ).json();
+    const items = (
+      await api('GET', `/transactions?limit=50&status=planned&q=${encodeURIComponent(debt.name)}`)
+    ).json().items as { id: string; date: string }[];
+    const first = items.find((t) => t.date === '2026-10-10');
+    expect((await api('POST', `/transactions/${first?.id}/settle`, {})).statusCode).toBe(200);
+    const detail = (await api('GET', `/debts/${debt.id}`)).json();
+    expect(detail.installments[0]).toMatchObject({ status: 'paid', paidAmount: 30000 });
+    // Confirmar com valor menor deixa parcial e refaz o previsto do restante.
+    const second = items.find((t) => t.date === '2026-11-10');
+    await api('POST', `/transactions/${second?.id}/settle`, { amount: 10000, date: TODAY });
+    const partial = (await api('GET', `/debts/${debt.id}`)).json();
+    expect(partial.installments[1]).toMatchObject({ status: 'partial', paidAmount: 10000 });
+    const rest = (
+      await api('GET', `/transactions?limit=50&status=planned&q=${encodeURIComponent(debt.name)}`)
+    ).json().items as { amount: number }[];
+    expect(rest.map((r) => r.amount)).toEqual([20000]);
   });
 
   it('validates and cancels debts', async () => {

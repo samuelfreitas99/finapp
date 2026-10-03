@@ -6,6 +6,7 @@ import { notifyDueReminders } from '../modules/notifications/reminders';
 import { generateAlerts, sendPending } from './alerts';
 import { generateSummaries } from './summaries';
 import { syncIndexValues } from './indexes';
+import { settleDueCardInstallments } from './debts';
 import { generateAllRecurrences } from './recurrences';
 
 export const RECURRENCES_JOB = 'recurrences-generate';
@@ -58,6 +59,8 @@ export async function startJobs({
   });
   await boss.work(RECURRENCES_JOB, async () => {
     const created = await generateAllRecurrences(db, todayIn());
+    const cardInstallments = await settleDueCardInstallments(db, todayIn());
+    if (cardInstallments) log.info({ cardInstallments }, 'parcelas de dívida no cartão efetivadas');
     log.info({ created }, 'recorrências geradas');
   });
 

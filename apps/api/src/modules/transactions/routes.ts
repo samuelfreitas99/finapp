@@ -32,6 +32,7 @@ import { currentUser } from '../../plugins/auth';
 import { accountForEdit, accountForEntry, balancesFor } from '../accounts/service';
 import { cardForEntry, ensureInvoice, findCard, invoiceMonthFor } from '../cards/service';
 import { categoryForEntry, systemCategoryId } from '../categories/routes';
+import { recordInstallmentPayment } from '../debts/service';
 import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 import {
   assertContact,
@@ -475,6 +476,17 @@ export function transactionRoutes(app: FastifyInstance, { db, today }: SpaceCont
         .where(eq(transactions.id, id))
         .returning();
       if (!row) throw new Error('falha ao efetivar');
+      // Parcela de dívida confirmada aqui também conta como paga na dívida.
+      if (row.debtInstallmentId) {
+        await recordInstallmentPayment(tx, {
+          installmentId: row.debtInstallmentId,
+          amount: row.amount,
+          date: row.date,
+          transactionId: row.id,
+          today: t,
+          userId: currentUser(request).id,
+        });
+      }
       return row;
     });
     const [item] = await withTags([updated]);

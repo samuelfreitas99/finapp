@@ -176,6 +176,9 @@ A pessoa informa o que vê no app do banco: quantas parcelas faltam, o próximo 
 - **Amortização extraordinária** (price/sac): valor extra abate o saldo devedor. Opção `reduce_term` (mantém a parcela, recalcula e remove parcelas do fim) ou `reduce_installment` (mantém o prazo, recalcula as parcelas). Recalcular só parcelas pendentes.
 - **Quitação total**: paga o saldo devedor, cancela pendentes, status `paid_off`.
 
+- **Parcela paga fora da tela da dívida** (`recordInstallmentPayment`): confirmar o previsto da parcela em Lançamentos (ou pela importação de extrato) registra o pagamento na parcela (paga ou parcial; parcial refaz o previsto do restante) e quita a dívida se era a última. Lançamento efetivado de uma parcela que a dívida ainda não sabia (dado antigo) é reconhecido na próxima sincronização, sem lançar de novo.
+- **Dívida paga no cartão**: a parcela que chega ao vencimento já está na fatura, então conta como paga; o job diário (02:00 e na subida) efetiva esses itens (`settleDueCardInstallments`).
+
 ### 6.6 Casos especiais
 - **Cartão de outra pessoa** (`third_party_card`): você usou o cartão do João para comprar ou sacar. Vira dívida com o contato João, com as parcelas que você repassa a ele (em datas que você combinar, padrão: vencimento do cartão dele). Não entra em nenhuma fatura sua.
 - **Empréstimo no cartão / saque** (`card_loan`): valor recebido entra numa conta (receita técnica "Empréstimo recebido", fora dos relatórios de renda); parcelas vão para as faturas do seu cartão.

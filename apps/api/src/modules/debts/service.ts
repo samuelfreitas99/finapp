@@ -201,40 +201,88 @@ export async function syncPlannedEntries(
   const card = debt.paymentCardId ? await findCard(db, debt.spaceId, debt.paymentCardId) : null;
   const categoryId = await systemCategoryId(db, debt.spaceId, 'loan');
   const dtos = toInstallmentDtos(rows, today);
+  // Parcelas que já têm lançamento efetivado (pago fora da tela da dívida, inclusive dados
+  // de antes desta regra): conta o pagamento na parcela em vez de lançar de novo.
+  const settledRows = ids.length
+    ? await db
+        .select({
+          id: transactions.id,
+          installmentId: transactions.debtInstallmentId,
+          amount: transactions.amount,
+          date: transactions.date,
+        })
+        .from(transactions)
+        .where(
+          and(
+            inArray(transactions.debtInstallmentId, ids),
+            eq(transactions.status, 'settled'),
+            isNull(transactions.deletedAt),
+          ),
+        )
+    : [];
+  const settledFor = new Map(settledRows.map((r) => [r.installmentId, r]));
   const phaseById = new Map(phases.map((p) => [p.id, p]));
   const perPhase = new Map<string, number>();
   for (const d of dtos) perPhase.set(d.phaseId, (perPhase.get(d.phaseId) ?? 0) + 1);
   for (const d of dtos) {
     if (d.status === 'paid' || d.amount - d.paidAmount <= 0) continue;
+    const already = settledFor.get(d.id);
+    if (already && d.paidAmount === 0) {
+      await recordInstallmentPayment(db, {
+        installmentId: d.id,
+        amount: already.amount,
+        date: already.date,
+        transactionId: already.id,
+        today,
+        userId,
+        resync: false,
+      });
+      continue;
+    }
     const phase = phaseById.get(d.phaseId);
     if (!phase) continue;
     const invoiceId = card
       ? (await ensureInvoice(db, card, await invoiceMonthFor(db, card, d.dueDate), userId)).id
       : null;
     const settled = card ? d.dueDate <= today : false;
-    await db.insert(transactions).values({
-      spaceId: debt.spaceId,
-      createdBy: userId,
-      type: debt.direction === 'owed_to_me' ? 'income' : 'expense',
-      status: settled ? 'settled' : 'planned',
-      amount: d.amount - d.paidAmount,
-      date: d.dueDate,
-      description: installmentLabel(
-        debt,
-        phase,
-        phases.length > 1,
-        d.phaseNumber,
-        perPhase.get(d.phaseId) ?? 0,
-      ),
-      accountId: card ? null : debt.paymentAccountId,
-      cardId: card?.id ?? null,
-      invoiceId,
-      categoryId,
-      paymentMethod: card ? 'credit' : null,
-      debtInstallmentId: d.id,
-      estimated: d.estimated,
-      settledAt: settled ? new Date() : null,
-    });
+    const [entry] = await db
+      .insert(transactions)
+      .values({
+        spaceId: debt.spaceId,
+        createdBy: userId,
+        type: debt.direction === 'owed_to_me' ? 'income' : 'expense',
+        status: settled ? 'settled' : 'planned',
+        amount: d.amount - d.paidAmount,
+        date: d.dueDate,
+        description: installmentLabel(
+          debt,
+          phase,
+          phases.length > 1,
+          d.phaseNumber,
+          perPhase.get(d.phaseId) ?? 0,
+        ),
+        accountId: card ? null : debt.paymentAccountId,
+        cardId: card?.id ?? null,
+        invoiceId,
+        categoryId,
+        paymentMethod: card ? 'credit' : null,
+        debtInstallmentId: d.id,
+        estimated: d.estimated,
+        settledAt: settled ? new Date() : null,
+      })
+      .returning({ id: transactions.id });
+    // No cartão, a parcela que já venceu está na fatura: conta como paga na dívida.
+    if (settled && entry) {
+      await recordInstallmentPayment(db, {
+        installmentId: d.id,
+        amount: d.amount - d.paidAmount,
+        date: d.dueDate,
+        transactionId: entry.id,
+        today,
+        userId,
+        resync: false,
+      });
+    }
   }
 }
 
@@ -326,4 +374,54 @@ export async function insertDebt(
     );
   }
   return debt;
+}
+
+/**
+ * Um lançamento ligado a uma parcela foi efetivado fora da tela da dívida ("Confirmar" em
+ * Lançamentos, importação de extrato, parcela no cartão que chegou na fatura): registra o
+ * pagamento na parcela, quita a dívida se era a última e, se ficou parcial, refaz o previsto
+ * do restante. Parcela já paga não muda.
+ * @see RN 6.3
+ */
+export async function recordInstallmentPayment(
+  db: DbExecutor,
+  {
+    installmentId,
+    amount,
+    date,
+    transactionId,
+    today,
+    userId,
+    resync = true,
+  }: {
+    installmentId: string;
+    amount: number;
+    date: ISODate;
+    transactionId: string;
+    today: ISODate;
+    userId: string | null;
+    /** `false` quando quem chama já está dentro de `syncPlannedEntries`. */
+    resync?: boolean;
+  },
+) {
+  const [inst] = await db
+    .select()
+    .from(debtInstallments)
+    .where(and(eq(debtInstallments.id, installmentId), isNull(debtInstallments.deletedAt)));
+  if (!inst || inst.status === 'paid') return;
+  const paidAmount = inst.paidAmount + amount;
+  const fully = paidAmount + inst.discount >= inst.amount;
+  await db
+    .update(debtInstallments)
+    .set({ paidAmount, paidDate: date, status: fully ? 'paid' : 'partial', transactionId })
+    .where(eq(debtInstallments.id, inst.id));
+  const [debt] = await db.select().from(debts).where(eq(debts.id, inst.debtId));
+  if (!debt) return;
+  const rows = await installmentsOf(db, debt.id);
+  if (rows.length && rows.every((r) => r.status === 'paid')) {
+    await db.update(debts).set({ status: 'paid_off' }).where(eq(debts.id, debt.id));
+    await syncPlannedEntries(db, { ...debt, status: 'paid_off' }, today, userId);
+  } else if (!fully && resync) {
+    await syncPlannedEntries(db, debt, today, userId);
+  }
 }
