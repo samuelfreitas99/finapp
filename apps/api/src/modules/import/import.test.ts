@@ -117,6 +117,7 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
       linked: 0,
       skipped: 0,
       rulesCreated: 1,
+      newInitialDate: null,
     });
 
     const txs = (await api('GET', '/transactions?limit=50')).json().items as {
@@ -136,6 +137,7 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
       linked: 0,
       skipped: 3,
       rulesCreated: 0,
+      newInitialDate: null,
     });
   });
 
@@ -322,6 +324,41 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
       (await api('POST', '/import/preview', { ...body, invoiceMonth: undefined })).statusCode,
     ).toBe(400);
     expect((await api('POST', '/import/preview', { ...body, accountId })).statusCode).toBe(400);
+  });
+
+  it('brings older items too, moving the account start without changing today', async () => {
+    const acc = (
+      await api('POST', '/accounts', {
+        name: 'Começou em outubro',
+        type: 'checking',
+        initialBalance: 100000,
+        initialDate: '2026-10-01',
+      })
+    ).json();
+    const balance = async () => (await api('GET', `/accounts/${acc.id}`)).json().balance as number;
+    const before = await balance();
+    const csv = [
+      'Data;Descrição;Valor',
+      '10/09/2026;SALARIO;3000,00',
+      '20/09/2026;MERCADO;-500,00',
+      '05/10/2026;PADARIA;-20,00',
+    ].join('\n');
+    const pre = (
+      await api('POST', '/import/preview', { accountId: acc.id, format: 'csv', content: csv })
+    ).json();
+    expect(pre.rows.map((r: { beforeInitialDate: boolean }) => r.beforeInitialDate)).toEqual([
+      true,
+      true,
+      false,
+    ]);
+    const res = (
+      await api('POST', '/import/commit', { accountId: acc.id, items: pre.rows, extendStart: true })
+    ).json();
+    expect(res).toMatchObject({ created: 3, newInitialDate: '2026-09-10' });
+    const after = (await api('GET', `/accounts/${acc.id}`)).json();
+    // Saldo inicial em 10/09 = 1.000 − (3.000 − 500) = −1.500; hoje só muda pela padaria.
+    expect(after).toMatchObject({ initialDate: '2026-09-10', initialBalance: -150000 });
+    expect(await balance()).toBe(before - 2000);
   });
 
   it('does not bring back an imported transaction that was deleted', async () => {

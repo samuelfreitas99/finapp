@@ -44,9 +44,10 @@ function HowItWorks() {
       <summary>Como funciona (primeira vez e todo mês)</summary>
       <div className="stack legal__body">
         <p>
-          <strong>Primeira vez:</strong> o app só importa o que é do dia do saldo inicial da conta
-          em diante. Para trazer os últimos meses, abra a conta e ponha como saldo inicial o saldo
-          do primeiro dia que você quer importar; depois importe o extrato desde esse dia.
+          <strong>Meses anteriores:</strong> se o extrato tiver itens de antes do dia em que você
+          começou a conta no app, a tela pergunta se quer trazê-los. O app ajusta o começo da conta
+          sozinho e o saldo de hoje continua o mesmo. Pode importar um mês de cada vez, em qualquer
+          ordem.
         </p>
         <p>
           <strong>Todo mês:</strong> baixe o extrato do mês no app do banco e importe. Pode pegar um
@@ -134,7 +135,10 @@ export function ImportPage() {
     linked: number;
     skipped: number;
     rules: number;
+    newInitialDate: string | null;
   } | null>(null);
+  // Trazer também os itens de antes do começo da conta no app.
+  const [extendStart, setExtendStart] = useState(false);
 
   const target = targetValue || (accounts.data?.[0] ? `acc:${accounts.data[0].id}` : '');
   const isCard = target.startsWith('card:');
@@ -157,6 +161,7 @@ export function ImportPage() {
 
   const load = (f: { name: string; content: string; format: 'ofx' | 'csv' }, inv: boolean) => {
     setDone(null);
+    setExtendStart(false);
     preview.mutate(
       { ...targetBody, format: f.format, content: f.content, invert: inv },
       {
@@ -201,6 +206,10 @@ export function ImportPage() {
     return { inc, exp };
   }, [chosen]);
 
+  const earlier = (lines ?? []).filter((l) => l.beforeInitialDate && !l.duplicate);
+  const startOfAccount = isCard
+    ? ''
+    : (accounts.data?.find((a) => a.id === targetId)?.initialDate ?? '');
   const update = (i: number, patch: Partial<Line>) =>
     setLines((cur) => (cur ?? []).map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
 
@@ -219,6 +228,7 @@ export function ImportPage() {
           saveRule: l.saveRule && l.chosenCategory !== '',
           matchId: l.match?.id ?? null,
         })),
+        ...(isCard ? {} : { extendStart }),
       },
       {
         onSuccess: (r) => {
@@ -228,7 +238,9 @@ export function ImportPage() {
             linked: r.linked,
             skipped: r.skipped,
             rules: r.rulesCreated,
+            newInitialDate: r.newInitialDate,
           });
+          setExtendStart(false);
           setLines(null);
           setFile(null);
           toast({ text: 'Extrato importado.' });
@@ -349,6 +361,12 @@ export function ImportPage() {
             {done.linked > 0 && <li>{done.linked} que você já tinha lançado (não duplicados)</li>}
             {done.skipped > 0 && <li>{done.skipped} ignorados por já existirem</li>}
             {done.rules > 0 && <li>{done.rules} regras de categoria salvas</li>}
+            {done.newInitialDate && (
+              <li>
+                A conta agora começa em {formatDate(done.newInitialDate)} (o saldo de hoje não
+                mudou)
+              </li>
+            )}
           </ul>
         </section>
       )}
@@ -364,12 +382,40 @@ export function ImportPage() {
             {counts.possible > 0 ? `, ${counts.possible} parecem repetidos (desmarcados)` : ''}.
             Tudo entra como efetivado.
           </p>
+          {earlier.length > 0 && !isCard && (
+            <div className="alert" role="status">
+              <p>
+                {earlier.length === 1 ? '1 item é' : `${earlier.length} itens são`} de antes de{' '}
+                {formatDate(startOfAccount)}, quando esta conta começa no app.
+                {extendStart
+                  ? ' Vão entrar, e a conta passa a começar no item mais antigo. O saldo de hoje continua o mesmo.'
+                  : ' Ficam de fora, a menos que você queira trazê-los.'}
+              </p>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  const next = !extendStart;
+                  setExtendStart(next);
+                  setLines((cur) =>
+                    (cur ?? []).map((l) =>
+                      l.beforeInitialDate && !l.duplicate && !l.match
+                        ? { ...l, selected: next }
+                        : l,
+                    ),
+                  );
+                }}
+              >
+                {extendStart ? 'Deixar de fora' : 'Trazer também'}
+              </button>
+            </div>
+          )}
           <ul className="import-lines">
             {lines.map((l, i) => (
               <li
                 key={l.importKey}
                 className={
-                  l.duplicate || l.beforeInitialDate || l.invoicePayment
+                  l.duplicate || (l.beforeInitialDate && !extendStart) || l.invoicePayment
                     ? 'import-line import-line--dim'
                     : 'import-line'
                 }
@@ -378,7 +424,11 @@ export function ImportPage() {
                   <input
                     type="checkbox"
                     checked={l.selected}
-                    disabled={l.beforeInitialDate || l.invoicePayment || l.duplicate === 'exact'}
+                    disabled={
+                      (l.beforeInitialDate && !extendStart) ||
+                      l.invoicePayment ||
+                      l.duplicate === 'exact'
+                    }
                     aria-label={`Importar ${l.description}`}
                     onChange={(e) => update(i, { selected: e.target.checked })}
                   />
@@ -387,7 +437,9 @@ export function ImportPage() {
                     <span className="muted">
                       {formatDate(l.date)}
                       {l.duplicate ? ` · ${DUP_TEXT[l.duplicate]}` : ''}
-                      {l.beforeInitialDate ? ' · antes do saldo inicial da conta' : ''}
+                      {l.beforeInitialDate && !extendStart
+                        ? ' · antes do começo da conta no app'
+                        : ''}
                       {l.invoicePayment ? ' · pagamento da fatura (já sai da conta)' : ''}
                     </span>
                     {l.match && !l.beforeInitialDate && (
@@ -443,14 +495,14 @@ export function ImportPage() {
               </li>
             ))}
           </ul>
-          <div className="form__actions">
+          <div className="stack">
             <span className="muted">
-              {chosen.length} selecionados · entradas {money(totals.inc, hidden)} · saídas{' '}
-              {money(totals.exp, hidden)}
+              {chosen.length} {chosen.length === 1 ? 'selecionado' : 'selecionados'} · entradas{' '}
+              {money(totals.inc, hidden)} · saídas {money(totals.exp, hidden)}
             </span>
             <button
               type="button"
-              className="btn btn--primary"
+              className="btn btn--primary btn--block"
               disabled={chosen.length === 0 || commit.isPending}
               onClick={submit}
             >

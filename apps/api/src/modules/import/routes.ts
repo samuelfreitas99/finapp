@@ -21,7 +21,7 @@ import {
 } from '@finapp/shared';
 import { and, asc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { categories, categoryRules, invoices, transactions } from '../../db/schema';
+import { accounts, categories, categoryRules, invoices, transactions } from '../../db/schema';
 import { badRequest, notFound } from '../../http/errors';
 import { currentUser } from '../../plugins/auth';
 import { findAccount } from '../accounts/service';
@@ -260,9 +260,31 @@ export function importRoutes(app: FastifyInstance, { db, today }: SpaceContext) 
       }
     }
 
+    // Trazer o que é de antes do início da conta: recua o início e acerta o saldo inicial
+    // (saldo inicial novo = antigo − efeito dos itens anteriores), o saldo de hoje não muda.
+    let startDate = target.kind === 'account' ? target.account.initialDate : '';
+    let newInitialDate: string | null = null;
+    if (target.kind === 'account' && body.extendStart) {
+      const earlier = body.items.filter((i) => !i.matchId && i.date < startDate);
+      if (earlier.length) {
+        const effect = earlier.reduce(
+          (s, i) => s + (i.type === 'income' ? i.amount : -i.amount),
+          0,
+        );
+        newInitialDate = earlier.map((i) => i.date).sort()[0] as string;
+        await db
+          .update(accounts)
+          .set({
+            initialDate: newInitialDate,
+            initialBalance: target.account.initialBalance - effect,
+          })
+          .where(eq(accounts.id, target.account.id));
+        startDate = newInitialDate;
+      }
+    }
     const usable = body.items.filter((i) =>
       target.kind === 'account'
-        ? i.date >= target.account.initialDate
+        ? i.date >= startDate
         : !isInvoicePaymentLine(i.description, i.type === 'income' ? i.amount : -i.amount),
     );
     const now = new Date();
@@ -369,6 +391,7 @@ export function importRoutes(app: FastifyInstance, { db, today }: SpaceContext) 
       linked,
       skipped: body.items.length - created - confirmed - linked,
       rulesCreated,
+      newInitialDate,
     };
   });
 

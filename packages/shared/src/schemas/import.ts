@@ -100,6 +100,11 @@ export const importCommitBodySchema = z
       )
       .min(1)
       .max(2000),
+    /**
+     * Conta: importar também os itens de antes do início da conta. O início recua para o
+     * item mais antigo e o saldo inicial é recalculado para o saldo de hoje não mudar.
+     */
+    extendStart: z.boolean().default(false),
   })
   .refine(oneTarget, oneTargetMessage);
 
@@ -113,6 +118,8 @@ export const importResultSchema = z.object({
   linked: z.int(),
   skipped: z.int(),
   rulesCreated: z.int(),
+  /** Novo início da conta, quando `extendStart` recuou a data. */
+  newInitialDate: isoDateSchema.nullable(),
 });
 export type ImportResult = z.infer<typeof importResultSchema>;
 
