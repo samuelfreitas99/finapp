@@ -56,9 +56,12 @@ services:
       # Padrão: repositório local montado em /repo. Para backup externo, troque
       # RESTIC_REPOSITORY no .env (ex.: b2:bucket:finapp, rclone:remoto:finapp).
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-/repo}
+      # Cópia externa do repositório local (ver docs/arquitetura.md › Backup).
+      RCLONE_CONFIG: /config/rclone/rclone.conf
       TZ: America/Sao_Paulo
     volumes:
       - ${BACKUP_LOCAL_DIR:-/srv/finapp-backups/restic}:/repo
+      - ${RCLONE_CONFIG_DIR:-/srv/finapp-backups/rclone}:/config/rclone
     depends_on:
       db:
         condition: service_healthy

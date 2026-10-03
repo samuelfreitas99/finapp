@@ -12,7 +12,7 @@ if ! restic cat config >/dev/null 2>&1; then
 fi
 
 # Repassa o ambiente para o cron (busybox crond não herda variáveis).
-export -p | grep -E 'export (PG|RESTIC_|B2_|AWS_|RCLONE_|GOOGLE_|AZURE_|TZ|KEEP_)' >/etc/backup.env
+export -p | grep -E 'export (PG|RESTIC_|B2_|AWS_|RCLONE_|GOOGLE_|AZURE_|TZ|KEEP_|OFFSITE_)' >/etc/backup.env
 echo "$BACKUP_CRON . /etc/backup.env && backup.sh >/proc/1/fd/1 2>/proc/1/fd/2" >/etc/crontabs/root
 chmod 600 /etc/backup.env
 
