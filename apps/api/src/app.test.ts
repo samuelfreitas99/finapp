@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { healthResponseSchema } from '@finapp/shared';
 import { describe, expect, it } from 'vitest';
 import { buildApp } from './app';
+import { loadConfig } from './config';
 
 describe('GET /api/health', () => {
   it('returns ok', async () => {
@@ -33,5 +34,38 @@ describe('web build serving', () => {
     expect(res.statusCode).toBe(404);
     expect(res.json()).toMatchObject({ error: { code: 'not_found' } });
     await app.close();
+  });
+});
+
+describe('old domain redirect', () => {
+  const app = buildApp({
+    appUrl: 'https://app.novo.com.br',
+    redirectHosts: ['financas.voleidraft.top'],
+  });
+
+  it('sends the old host to the same path on the new domain', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/dividas/123?x=1',
+      headers: { host: 'financas.voleidraft.top' },
+    });
+    expect(res.statusCode).toBe(301);
+    expect(res.headers.location).toBe('https://app.novo.com.br/dividas/123?x=1');
+  });
+
+  it('leaves the new host and the local health check alone', async () => {
+    for (const host of ['app.novo.com.br', '127.0.0.1:3000']) {
+      const res = await app.inject({ method: 'GET', url: '/api/health', headers: { host } });
+      expect(res.statusCode).toBe(200);
+    }
+  });
+});
+
+describe('loadConfig REDIRECT_HOSTS', () => {
+  it('splits, trims and lowercases the list', () => {
+    expect(
+      loadConfig({ REDIRECT_HOSTS: ' Financas.Voleidraft.top, ,old.example.com' }).redirectHosts,
+    ).toEqual(['financas.voleidraft.top', 'old.example.com']);
+    expect(loadConfig({}).redirectHosts).toEqual([]);
   });
 });

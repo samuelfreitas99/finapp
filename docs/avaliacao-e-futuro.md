@@ -17,10 +17,10 @@ O que muda para quem usa (tudo vem do navegador, que separa os dados por domíni
 | Tema, PIN da tela, fila offline | Ficam no aparelho, no domínio antigo | Tema e PIN se refazem; **sincronize a fila offline antes** |
 | 2FA (TOTP) | Continua funcionando (o código não depende do domínio) | Nada |
 
-Roteiro da troca (Fase 10):
-1. Adicionar o hostname novo ao túnel (generalizar `infra/cloudflared/add-financas-hostname.sh` para receber o hostname por parâmetro).
+Roteiro da troca: **pronto em `docs/trocar-dominio.md`** (resumo abaixo).
+1. Adicionar o hostname novo ao túnel (`infra/cloudflared/add-hostname.sh <hostname>`).
 2. Trocar `APP_URL` (e `VAPID_SUBJECT`) no `infra/.env` e reiniciar só o `finapp-api`.
-3. Manter o domínio antigo por uns 3 meses com **redirecionamento 301** para o novo (regra no Cloudflare), para links e ícones antigos.
+3. Manter o domínio antigo por uns 3 meses com **redirecionamento 301** para o novo (`REDIRECT_HOSTS` no `.env`: a própria API redireciona, sem regra no painel).
 4. Avisar os usuários: entrar de novo, reinstalar o app, religar notificações e recriar a passkey.
 
 ## 2. Tela de dívidas: avaliação de usabilidade

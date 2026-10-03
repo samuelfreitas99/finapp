@@ -4,6 +4,8 @@ export interface Config {
   authSecret: string | undefined;
   /** URL pública do app (ex.: https://financas.voleidraft.top). */
   appUrl: string;
+  /** Domínios antigos que redirecionam (301) para `appUrl` (`REDIRECT_HOSTS`, separados por vírgula). */
+  redirectHosts: string[];
   production: boolean;
   /** Web Push (VAPID). Sem as chaves, o push fica desligado. */
   push: PushConfig | null;
@@ -22,6 +24,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl: env.DATABASE_URL,
     authSecret: env.BETTER_AUTH_SECRET,
     appUrl: env.APP_URL ?? 'http://localhost:5174',
+    redirectHosts: (env.REDIRECT_HOSTS ?? '')
+      .split(',')
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean),
     production,
     push:
       env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY

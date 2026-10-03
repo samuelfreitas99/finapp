@@ -88,7 +88,7 @@ O servidor já roda `cloudflared` com um túnel para outro site. O FinApp usa **
 O `cloudflared` do servidor roda **no host, como serviço systemd**, com túnel **gerenciado localmente** (`/etc/cloudflared/config.yml` com regras `ingress`; voleidraft.top → `http://localhost:3000`). Por isso o painel da Cloudflare **não** serve para adicionar o hostname: a mudança é no arquivo.
 1. No servidor (repositório em `/srv/finapp`): `cp infra/.env.example infra/.env` e preencher (senha do banco, `BETTER_AUTH_SECRET`, chaves VAPID, `APP_URL`).
 2. `docker compose -f infra/docker-compose.yml up -d --build` (projeto `finapp-prod`: `finapp-api`, `finapp-db`; depois `finapp-backup`). A API fica em `127.0.0.1:3010` (só loopback).
-3. Automático: `sudo bash /srv/finapp/infra/cloudflared/add-financas-hostname.sh` (faz backup, insere, valida, reinicia e testa; os passos 3–5 abaixo são o equivalente manual). Manual: em `/etc/cloudflared/config.yml` (precisa de sudo), adicionar **antes** da regra final `http_status:404`:
+3. Automático: `sudo bash /srv/finapp/infra/cloudflared/add-hostname.sh financas.voleidraft.top` (aceita qualquer hostname; faz backup, insere, valida, reinicia e testa; os passos 3–5 abaixo são o equivalente manual). Manual: em `/etc/cloudflared/config.yml` (precisa de sudo), adicionar **antes** da regra final `http_status:404`:
    ```yaml
    - hostname: "financas.voleidraft.top"
      service: http://localhost:3010
@@ -107,7 +107,7 @@ Atualizar: `git pull && docker compose -f infra/docker-compose.yml up -d --build
 4. Conferir: migrações em `drizzle.__drizzle_migrations`, `https://financas.voleidraft.top/api/health` 200, SPA e manifest carregando, logs sem erro.
 5. Se algo falhar: `docker tag finapp-api:rollback-<...> finapp-api:latest && docker compose -f infra/docker-compose.yml up -d --no-deps api` e avisar. Nunca mexer em containers que não são do FinApp (voleidraft, cloudflared...).
 
-Se no futuro comprar um domínio próprio, basta adicionar outro Public Hostname; nada no app muda além de `APP_URL`.
+Domínio próprio: roteiro completo em `docs/trocar-dominio.md` (script do túnel com o hostname novo, `APP_URL` e `REDIRECT_HOSTS` para o domínio antigo responder 301).
 
 ## Backup
 - Container `finapp-backup` (imagem `infra/backup/`: postgres:17-alpine + restic + rclone, cron do busybox). Todo dia às 03:00 (`BACKUP_CRON`, fuso America/Sao_Paulo) faz `pg_dump -Fc` do `finapp-db` direto para o restic (snapshot com tag `finapp-db`, arquivo `finapp.dump`) e aplica a retenção 7 diários / 4 semanais / 12 mensais com `forget --prune`.

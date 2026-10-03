@@ -95,7 +95,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Menu "Mais" agrupado por seção
 - [x] Primeiros passos no Início (checklist que some quando concluído)
 - [x] Espaços: transferir posse e excluir espaço; textos dos dois tipos de convite
-- [ ] Troca de domínio: script do túnel com hostname por parâmetro e roteiro de migração
+- [x] Troca de domínio: script do túnel com hostname por parâmetro e roteiro de migração
 - [ ] Antes de abrir ao público: e-mail (esqueci a senha), LGPD, backup externo, Turnstile
 
 ## Dúvidas em aberto
@@ -198,3 +198,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: menu "Mais" em quatro grupos (Dia a dia, Planejar e acompanhar, Dividir com pessoas, Dados e configurações), cada item com uma descrição curta (Claude).
 - 03/10/2026: primeiros passos no Início (`OnboardingCard`, `lib/onboarding.ts`), `user_settings.onboarding` (migração 0022), `PUT /api/me/onboarding`; "Cadastrar salário" abre `/fixas/nova?tipo=receita` (Claude).
 - 03/10/2026: espaços: `POST /api/spaces/:id/transfer` e `DELETE /api/spaces/:id` (com o nome para confirmar), coroa "passar a posse" e "Excluir este espaço" na tela, textos dos dois convites; racha deixa de lançar em espaço do qual a pessoa saiu (Claude).
+- 03/10/2026: troca de domínio preparada: `infra/cloudflared/add-hostname.sh <hostname>` (antes `add-financas-hostname.sh`), `REDIRECT_HOSTS` (a API responde 301 do domínio antigo para `APP_URL`) e roteiro `docs/trocar-dominio.md` (Claude).

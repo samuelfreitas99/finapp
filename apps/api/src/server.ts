@@ -47,6 +47,7 @@ async function main() {
     logger: { level: process.env.LOG_LEVEL ?? 'info' },
     ...(db && auth ? { db, auth } : {}),
     appUrl: config.appUrl,
+    redirectHosts: config.redirectHosts,
   });
 
   let boss: Awaited<ReturnType<typeof startJobs>> | null = null;

@@ -21,6 +21,9 @@ Controle financeiro pessoal completo, como PWA (instala no celular pelo navegado
 | [docs/design.md](docs/design.md) | UX/UI e telas |
 | [docs/decisoes.md](docs/decisoes.md) | Registro de decisões |
 | [docs/como-trabalhar.md](docs/como-trabalhar.md) | Ferramentas, fluxo e economia de limite |
+| [docs/avaliacao-e-futuro.md](docs/avaliacao-e-futuro.md) | Avaliação pós-lançamento e próximos passos |
+| [docs/trocar-dominio.md](docs/trocar-dominio.md) | Roteiro para trocar o domínio |
+| [docs/instalar-no-celular.md](docs/instalar-no-celular.md) | Como instalar o app no celular |
 
 ## Rodando
 Veja `docs/arquitetura.md` (seções Desenvolvimento e Deploy).

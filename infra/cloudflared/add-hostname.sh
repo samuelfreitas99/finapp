@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# Adiciona financas.voleidraft.top ao túnel Cloudflare existente (cloudflared
-# rodando no host via systemd, com config local em /etc/cloudflared/config.yml).
+# Adiciona um hostname do FinApp ao túnel Cloudflare existente (cloudflared rodando
+# no host via systemd, com config local em /etc/cloudflared/config.yml).
 #
-# Uso: sudo bash /srv/finapp/infra/cloudflared/add-financas-hostname.sh
+# Uso: sudo bash /srv/finapp/infra/cloudflared/add-hostname.sh <hostname> [serviço]
+#   ex.: sudo bash .../add-hostname.sh financas.voleidraft.top
+#        sudo bash .../add-hostname.sh app.meudominio.com.br http://localhost:3010
+# Sem argumento, usa financas.voleidraft.top (o hostname original).
+# Para um domínio novo (não subdomínio de voleidraft.top), o domínio precisa estar na
+# mesma conta da Cloudflare; veja docs/trocar-dominio.md.
 #
 # O que faz:
 #  1. backup do config.yml com data/hora;
@@ -10,12 +15,17 @@
 #  3. valida o config; se falhar, restaura o backup e sai sem reiniciar nada;
 #  4. cria o DNS do subdomínio, se houver cert.pem de login do cloudflared;
 #  5. reinicia o cloudflared (voleidraft.top fica fora por poucos segundos);
-#  6. testa voleidraft.top e financas.voleidraft.top.
+#  6. testa voleidraft.top e o hostname novo.
 set -euo pipefail
 
 CONFIG="${CONFIG:-/etc/cloudflared/config.yml}"
-HOSTNAME_NEW="financas.voleidraft.top"
-SERVICE_NEW="http://localhost:3010"
+HOSTNAME_NEW="${1:-financas.voleidraft.top}"
+SERVICE_NEW="${2:-http://localhost:3010}"
+
+if [[ ! "$HOSTNAME_NEW" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]]; then
+  echo "Hostname inválido: $HOSTNAME_NEW (use letras minúsculas, ex.: app.meudominio.com.br)" >&2
+  exit 1
+fi
 DRY_RUN="${DRY_RUN:-0}" # DRY_RUN=1 só altera o arquivo (para testes), sem validar/reiniciar
 
 log() { printf '\n==> %s\n' "$*"; }
@@ -27,7 +37,7 @@ insert_rule() {
     !done && /^[[:space:]]*-[[:space:]]*service:[[:space:]]*http_status:404/ {
       match($0, /^[[:space:]]*/)
       indent = substr($0, 1, RLENGTH)
-      print indent "# FinApp"
+      print indent "# FinApp (" host ")"
       print indent "- hostname: \"" host "\""
       print indent "  service: " svc
       print ""
@@ -54,7 +64,7 @@ BACKUP="$CONFIG.bak-$(date +%Y%m%d-%H%M%S)"
 log "Backup: $BACKUP"
 cp -p "$CONFIG" "$BACKUP"
 
-if grep -q "$HOSTNAME_NEW" "$CONFIG"; then
+if grep -qF "\"$HOSTNAME_NEW\"" "$CONFIG"; then
   log "$HOSTNAME_NEW já está no config; nada a inserir."
 else
   log "Inserindo $HOSTNAME_NEW -> $SERVICE_NEW"
@@ -94,8 +104,8 @@ if [[ -n "$CERT" ]]; then
   log "Criando DNS de $HOSTNAME_NEW (cert: $CERT)"
   TUNNEL_ORIGIN_CERT="$CERT" "$CLOUDFLARED" tunnel route dns "$TUNNEL_ID" "$HOSTNAME_NEW" || true
 else
-  log "Sem cert.pem: crie o DNS no painel da Cloudflare (voleidraft.top > DNS):"
-  echo "    CNAME  financas  ->  $TUNNEL_ID.cfargotunnel.com  (proxy ligado, nuvem laranja)"
+  log "Sem cert.pem: crie o DNS no painel da Cloudflare (zona do domínio > DNS):"
+  echo "    CNAME  $HOSTNAME_NEW  ->  $TUNNEL_ID.cfargotunnel.com  (proxy ligado, nuvem laranja)"
 fi
 
 log "Reiniciando cloudflared"
@@ -109,5 +119,7 @@ for url in "https://voleidraft.top" "https://$HOSTNAME_NEW/api/health"; do
   echo "$url -> $code"
 done
 echo
-echo "Se financas der 000 ou 530, o DNS ainda não existe/propagou (veja o CNAME acima)."
+echo "Se $HOSTNAME_NEW der 000 ou 530, o DNS ainda não existe/propagou."
+echo "Domínio de outra zona: se o 'route dns' falhou, crie o CNAME no painel:"
+echo "    CNAME  $HOSTNAME_NEW  ->  $TUNNEL_ID.cfargotunnel.com  (proxy ligado)"
 echo "Para desfazer: sudo cp -p $BACKUP $CONFIG && sudo systemctl restart cloudflared"

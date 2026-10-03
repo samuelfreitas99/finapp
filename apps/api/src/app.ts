@@ -42,6 +42,8 @@ export interface AppOptions {
   db?: Db;
   auth?: Auth;
   appUrl?: string;
+  /** Domínios antigos: qualquer pedido para eles vira 301 para o mesmo caminho em `appUrl`. */
+  redirectHosts?: string[];
   /** Envio de Web Push (null = desligado). */
   push?: PushSender | null;
   /** "Hoje" (YYYY-MM-DD, America/Sao_Paulo). Injetável nos testes. */
@@ -56,8 +58,18 @@ export function buildApp({
   appUrl = 'http://localhost:5174',
   today = () => todayIn(),
   push = null,
+  redirectHosts = [],
 }: AppOptions = {}) {
   const app = Fastify({ logger, trustProxy: true });
+
+  // Troca de domínio: o endereço antigo continua no túnel e manda para o novo.
+  if (redirectHosts.length) {
+    const target = appUrl.replace(/\/$/, '');
+    app.addHook('onRequest', async (request, reply) => {
+      const host = request.hostname.split(':')[0]?.toLowerCase() ?? '';
+      if (redirectHosts.includes(host)) return reply.redirect(`${target}${request.url}`, 301);
+    });
+  }
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) {
