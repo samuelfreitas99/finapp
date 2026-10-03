@@ -16,3 +16,4 @@ export * from './alerts';
 export * from './reminders';
 export * from './budgets';
 export * from './goals';
+export * from './reports';

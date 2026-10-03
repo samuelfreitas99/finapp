@@ -15,44 +15,63 @@ const ROLLOVER_MONTHS = 12;
 
 type BudgetRow = typeof budgets.$inferSelect;
 
-/** Despesas efetivadas por mês de competência e categoria (subcategoria soma na mãe). */
-export async function spentByMonth(
+/** Chave das linhas sem categoria nos totais por categoria. */
+export const NO_CATEGORY = 'none';
+
+/**
+ * Totais efetivados por mês de competência e categoria (subcategoria soma na mãe), sem
+ * categorias técnicas. Despesa: cartão pela fatura, conta pela data; estorno no cartão
+ * abate. Receita: pela data. Lançamentos sem categoria ficam em `NO_CATEGORY`.
+ */
+export async function totalsByMonth(
   db: Db,
   spaceId: string,
   from: YearMonth,
   to: YearMonth,
+  kind: 'expense' | 'income' = 'expense',
 ): Promise<Map<string, Map<string, number>>> {
-  // Competência: cartão pela fatura, conta pela data. Estorno no cartão abate o gasto.
   const competence = sql<string>`coalesce(${invoices.referenceMonth}, substr(${transactions.date}::text, 1, 7))`;
+  const group = sql<string | null>`coalesce(${categories.parentId}, ${categories.id})::text`;
+  const typeFilter =
+    kind === 'expense'
+      ? sql`(${transactions.type} = 'expense' or (${transactions.type} = 'income' and ${transactions.invoiceId} is not null))`
+      : sql`(${transactions.type} = 'income' and ${transactions.invoiceId} is null)`;
+  const sign =
+    kind === 'expense'
+      ? sql`case when ${transactions.type} = 'expense' then ${transactions.amount} else -${transactions.amount} end`
+      : sql`${transactions.amount}`;
   const rows = await db
     .select({
       month: competence,
-      categoryId: sql<string>`coalesce(${categories.parentId}, ${categories.id})`,
-      amount: sql<string>`sum(case when ${transactions.type} = 'expense' then ${transactions.amount} else -${transactions.amount} end)`,
+      categoryId: group,
+      amount: sql<string>`sum(${sign})`,
     })
     .from(transactions)
-    .innerJoin(categories, eq(categories.id, transactions.categoryId))
+    .leftJoin(categories, eq(categories.id, transactions.categoryId))
     .leftJoin(invoices, eq(invoices.id, transactions.invoiceId))
     .where(
       and(
         eq(transactions.spaceId, spaceId),
         isNull(transactions.deletedAt),
         eq(transactions.status, 'settled'),
-        eq(categories.isSystem, false),
-        eq(categories.kind, 'expense'),
-        sql`(${transactions.type} = 'expense' or (${transactions.type} = 'income' and ${transactions.invoiceId} is not null))`,
+        sql`(${categories.id} is null or ${categories.isSystem} = false)`,
+        typeFilter,
         sql`${competence} between ${from} and ${to}`,
       ),
     )
-    .groupBy(competence, sql`coalesce(${categories.parentId}, ${categories.id})`);
+    .groupBy(competence, group);
   const byMonth = new Map<string, Map<string, number>>();
   for (const r of rows) {
     const m = byMonth.get(r.month) ?? new Map<string, number>();
-    m.set(r.categoryId, Number(r.amount));
+    m.set(r.categoryId ?? NO_CATEGORY, Number(r.amount));
     byMonth.set(r.month, m);
   }
   return byMonth;
 }
+
+/** Despesas efetivadas por mês e categoria (base dos orçamentos). */
+export const spentByMonth = (db: Db, spaceId: string, from: YearMonth, to: YearMonth) =>
+  totalsByMonth(db, spaceId, from, to, 'expense');
 
 /** Orçamento vigente da categoria no mês: o do mês, senão o geral. */
 export function effectiveBudget(rows: readonly BudgetRow[], categoryId: string, month: string) {

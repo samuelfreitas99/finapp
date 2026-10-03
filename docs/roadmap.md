@@ -68,7 +68,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 ## Fase 7: Planejamento e relatórios
 - [x] Orçamentos por categoria com alertas
 - [x] Metas
-- [ ] Relatórios (categoria, mensal, patrimônio, dívidas)
+- [x] Relatórios (categoria, mensal, patrimônio, dívidas)
 - [ ] Anexos de comprovantes
 - [ ] Importação OFX/CSV com deduplicação e regras de categoria
 - [ ] Exportação CSV/XLSX/JSON
@@ -103,6 +103,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Divisão (casal e racha): nos modos proporcionais cada parte é arredondada para baixo e o resto inteiro vai para quem pagou (se não participa, para o 1º participante). Simplificação gulosa com desempate por id.
 - Orçamentos: `consumido` conta só despesas **efetivadas** (previstas não entram), por competência (cartão pela fatura, estorno no cartão abate), e a categoria principal inclui as subcategorias; o orçamento é sempre da categoria principal. Orçamento de um mês específico sobrepõe o geral. A sobra acumulada olha até 12 meses para trás e só a partir do mês em que o orçamento geral foi criado; estouro zera a sobra (não vira dívida). Visão por data da compra no cartão (RN 1) ainda não existe.
 - Metas: com conta vinculada, o guardado é o **saldo atual** da conta (aporte = transferência para ela); sem conta, é o valor marcado à mão (guardar/retirar). `aporte_sugerido = ceil((alvo - guardado) / meses)`, contando o mês corrente (mínimo 1); prazo vencido sugere o que falta de uma vez; sem prazo não há sugestão. Metas não geram alerta por enquanto.
+- Relatórios: só lançamentos **efetivados**, sem categorias técnicas; despesa por competência (cartão pela fatura, estorno abate), receita pela data; subcategoria soma na categoria principal; as 9 maiores aparecem e o resto vira "Outras". Patrimônio líquido = contas positivas + a receber de pessoas + imóveis já entregues − faturas em aberto − contas negativas − principal das dívidas ativas (sem juros futuros); não há histórico mês a mês do patrimônio ainda. O relatório de dívidas usa `GET /debts` (sem endpoint próprio).
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -146,3 +147,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: lançamentos offline: sem conexão, receita/despesa/compra no cartão do "+" fica numa fila no aparelho e é enviada quando a internet volta (faixa "Sem conexão"); mutações não pausam offline. **Fase 6 concluída** (Claude).
 - 03/10/2026: orçamentos por categoria: `packages/core/budgets` (faixas de 80%/100%, sobra acumulada, alertas), tabela `budgets` (migração 0009), `GET/PUT/DELETE /budgets`, aviso `budget` no job diário (uma vez por categoria, mês e faixa) e tela "Orçamentos" no menu Mais (Claude).
 - 03/10/2026: metas: `packages/core/goals` (`goalProgress`), tabela `goals` (migração 0010), `GET/POST/PATCH/DELETE /goals` e `POST /goals/:id/deposit`, tela "Metas" no menu Mais (Claude).
+- 03/10/2026: relatórios: `packages/core/reports` (`categoryBreakdown`, `savingsRate`, `netWorth`), `GET /reports/by-category|monthly|net-worth` e tela "Relatórios" (categorias, mensal com gráfico, patrimônio, dívidas) no menu Mais (Claude).

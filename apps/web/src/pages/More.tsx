@@ -28,6 +28,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/planejamento', label: 'Planejamento', icon: CalendarRange },
   { to: '/orcamentos', label: 'Orçamentos', icon: BadgePercent },
   { to: '/metas', label: 'Metas', icon: Flag },
+  { to: '/relatorios', label: 'Relatórios', icon: ChartPie },
   { to: '/fixas', label: 'Receitas e despesas fixas', icon: Repeat },
   { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
   { to: '/categorias', label: 'Categorias', icon: Tags },
@@ -35,10 +36,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/configuracoes', label: 'Notificações e configurações', icon: Settings },
 ];
 
-const later: { label: string; icon: LucideIcon }[] = [
-  { label: 'Racha', icon: Users },
-  { label: 'Relatórios', icon: ChartPie },
-];
+const later: { label: string; icon: LucideIcon }[] = [{ label: 'Racha', icon: Users }];
 
 const themes: { value: Theme; label: string }[] = [
   { value: 'system', label: 'Automático' },

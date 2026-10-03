@@ -15,3 +15,4 @@ export * from './schemas/notifications';
 export * from './schemas/reminders';
 export * from './schemas/budgets';
 export * from './schemas/goals';
+export * from './schemas/reports';

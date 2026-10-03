@@ -64,7 +64,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 ## Planejamento e relatórios
 - `GET /dashboard?month=` ✅ (receitas/despesas sem categorias técnicas; `balance`, `forecastBalance`/`forecastDate`, `income`/`expense` `{ settled, planned }`, `upcoming` (previstos vencidos e dos próximos 7 dias, até 10), `overdueCount`, `hasAccounts`)
 - `GET /projection?months=12` ✅ (1–36; saldo atual das contas que somam nos totais + previstos dessas contas por tipo (receita, fixa = recorrência, parcela = carnê, outras) + o que falta pagar de cada fatura no vencimento; transferências fora; RN 7)
-- `GET /reports/by-category?from=&to=`, `/reports/monthly?from=&to=`, `/reports/net-worth`
+- `GET /reports/by-category?from=&to=&kind=expense|income` (meses `YYYY-MM`; total e itens com fatia, até 9 + "Outras"), `GET /reports/monthly?months=12` (receita, despesa, sobra e taxa de poupança por mês), `GET /reports/net-worth` (ativos, passivos e linhas); só efetivados, categorias técnicas fora
 - `GET /budgets?month=` (situação do mês: limite, sobra, gasto, faixa), `PUT /budgets` (cria/atualiza por categoria e mês; `month` nulo = todo mês), `DELETE /budgets/:id`
 - `GET/POST /goals`, `PATCH/DELETE /goals/:id` (situação e aporte sugerido calculados), `POST /goals/:id/deposit` (guardar/retirar à mão, só sem conta vinculada)
 

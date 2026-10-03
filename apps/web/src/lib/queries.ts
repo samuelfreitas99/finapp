@@ -11,6 +11,9 @@ import type {
   UpdateDebtBody,
   Projection,
   Budgets,
+  ByCategoryReport,
+  MonthlyReport,
+  NetWorthReport,
   Goal,
   CreateGoalBody,
   UpdateGoalBody,
@@ -701,4 +704,31 @@ export function useGoalMutations() {
       onSuccess: invalidate,
     }),
   };
+}
+
+export function useReportByCategory(from: string, to: string, kind: 'expense' | 'income') {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['reports', spaceId, 'by-category', from, to, kind],
+    queryFn: () =>
+      api<ByCategoryReport>(
+        spacePath(spaceId, `/reports/by-category?from=${from}&to=${to}&kind=${kind}`),
+      ),
+  });
+}
+
+export function useReportMonthly(months: number) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['reports', spaceId, 'monthly', months],
+    queryFn: () => api<MonthlyReport>(spacePath(spaceId, `/reports/monthly?months=${months}`)),
+  });
+}
+
+export function useReportNetWorth() {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['reports', spaceId, 'net-worth'],
+    queryFn: () => api<NetWorthReport>(spacePath(spaceId, '/reports/net-worth')),
+  });
 }
