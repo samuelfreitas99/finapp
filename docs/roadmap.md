@@ -86,6 +86,17 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Resumo semanal/mensal por push
 - [x] Empacotar como app Android (Capacitor/TWA), se fizer falta — decidido **não empacotar** por ora (ADR-019); guia de instalação do PWA em `docs/instalar-no-celular.md`
 
+## Fase 10: Polimento pós-lançamento (proposta, ver `avaliacao-e-futuro.md`)
+- [ ] Dívidas: pagar adiantado informando o **valor cobrado** (desconto em valor, não só taxa)
+- [ ] Dívidas: "Adiantar parcelas" (quantidade, das próximas ou das últimas)
+- [ ] Dívidas: ações no topo do painel (Pagar próxima, Adiantar, Amortizar, Quitar, Simular), editar dados, selo de atraso na lista
+- [ ] Índices: IPEADATA como reserva do Banco Central para INCC-M e IGP-M
+- [ ] Menu "Mais" agrupado por seção
+- [ ] Primeiros passos no Início (checklist que some quando concluído)
+- [ ] Espaços: transferir posse e excluir espaço; textos dos dois tipos de convite
+- [ ] Troca de domínio: script do túnel com hostname por parâmetro e roteiro de migração
+- [ ] Antes de abrir ao público: e-mail (esqueci a senha), LGPD, backup externo, Turnstile
+
 ## Dúvidas em aberto
 - Imóvel com entrega incerta: a projeção usa a **previsão** de entrega; o "pior caso" (prazo do contrato) ainda não tem visão própria no Planejamento.
 - Recorrências: a geração começa no **mês atual** (ou no início da regra, se for depois); meses passados não são criados. Usa só os feriados nacionais (os locais do espaço ainda não entram). No cartão, ocorrências com data até hoje viram itens efetivados na fatura; na conta, ficam previstas até confirmar. Ocorrência excluída pelo usuário não volta (`recurrence_key` único).
