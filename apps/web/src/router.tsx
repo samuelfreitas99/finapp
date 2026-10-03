@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { GuestOnly, RequireAuth } from './auth/guards';
 import { AppLayout } from './layout/AppLayout';
+import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordReset';
 import { HomePage } from './pages/Home';
 import { LoginPage } from './pages/Login';
 import { MorePage } from './pages/More';
@@ -42,8 +43,11 @@ export const router = createBrowserRouter([
     children: [
       { path: '/entrar', element: <LoginPage /> },
       { path: '/criar-conta', element: <SignUpPage /> },
+      { path: '/esqueci-senha', element: <ForgotPasswordPage /> },
     ],
   },
+  // Aberta pelo link do e-mail, com ou sem sessão.
+  { path: '/redefinir-senha', element: <ResetPasswordPage /> },
   {
     element: <RequireAuth />,
     children: [

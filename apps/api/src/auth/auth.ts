@@ -5,6 +5,7 @@ import { passkey } from '@better-auth/passkey';
 import { twoFactor } from 'better-auth/plugins';
 import { uuidv7 } from 'uuidv7';
 import type { Db } from '../db/client';
+import { resetPasswordMail, type Mailer } from '../mail';
 import { authAccounts, passkeys, sessions, twoFactors, users, verifications } from '../db/schema';
 import { claimInvite, onboardUser } from './onboarding';
 
@@ -14,7 +15,13 @@ export interface AuthOptions {
   /** URL pública do app; a API fica em `${appUrl}/api/auth`. */
   appUrl: string;
   production: boolean;
+  /** Envio de e-mail; sem ele, o link de redefinição só sai pelo servidor (`--reset-link`). */
+  mailer?: Mailer | null;
 }
+
+/** Link da tela "Redefinir senha" para um token. */
+export const resetPasswordUrl = (appUrl: string, token: string) =>
+  `${appUrl.replace(/\/$/, '')}/redefinir-senha?token=${encodeURIComponent(token)}`;
 
 /**
  * Better Auth com e-mail e senha. O cadastro exige `inviteCode` no corpo de
@@ -22,7 +29,7 @@ export interface AuthOptions {
  * Front e API no mesmo domínio: cookie de sessão HttpOnly, SameSite=Lax, Secure em HTTPS.
  * @see docs/arquitetura.md › Autenticação
  */
-export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
+export function createAuth({ db, secret, appUrl, production, mailer = null }: AuthOptions) {
   // Convite reservado no "before" e ligado ao usuário no "after" do mesmo cadastro.
   const pendingInvites = new Map<string, string>();
 
@@ -56,6 +63,17 @@ export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
       autoSignIn: true,
       minPasswordLength: 8,
       maxPasswordLength: 128,
+      // "Esqueci a senha": o link aponta direto para a tela do app (sem o redirect do Better
+      // Auth). Trocar a senha encerra as outras sessões.
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ user, token }) => {
+        if (!mailer) return;
+        await mailer({
+          to: user.email,
+          ...resetPasswordMail(user.name, resetPasswordUrl(appUrl, token)),
+        });
+      },
     },
     session: {
       expiresIn: 60 * 60 * 24 * 30,
@@ -68,6 +86,8 @@ export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
       customRules: {
         '/sign-in/email': { window: 60, max: 5 },
         '/sign-up/email': { window: 60, max: 5 },
+        '/request-password-reset': { window: 60, max: 3 },
+        '/reset-password': { window: 60, max: 5 },
         '/two-factor/verify-totp': { window: 60, max: 5 },
         '/two-factor/verify-backup-code': { window: 60, max: 5 },
         '/passkey/verify-authentication': { window: 60, max: 10 },

@@ -42,6 +42,8 @@ export interface AppOptions {
   db?: Db;
   auth?: Auth;
   appUrl?: string;
+  /** O "esqueci a senha" manda e-mail (SMTP configurado)? */
+  passwordResetEmail?: boolean;
   /** Domínios antigos: qualquer pedido para eles vira 301 para o mesmo caminho em `appUrl`. */
   redirectHosts?: string[];
   /** Envio de Web Push (null = desligado). */
@@ -59,6 +61,7 @@ export function buildApp({
   today = () => todayIn(),
   push = null,
   redirectHosts = [],
+  passwordResetEmail = false,
 }: AppOptions = {}) {
   const app = Fastify({ logger, trustProxy: true });
 
@@ -96,6 +99,9 @@ export function buildApp({
   app.get('/api/health', async (): Promise<HealthResponse> => {
     return { status: 'ok', time: new Date().toISOString() };
   });
+
+  /** O que a tela de login pode oferecer (público). */
+  app.get('/api/auth-features', async () => ({ passwordResetEmail }));
 
   if (db && auth) {
     registerAuth(app, auth, appUrl);

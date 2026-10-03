@@ -96,7 +96,12 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Primeiros passos no Início (checklist que some quando concluído)
 - [x] Espaços: transferir posse e excluir espaço; textos dos dois tipos de convite
 - [x] Troca de domínio: script do túnel com hostname por parâmetro e roteiro de migração
-- [ ] Antes de abrir ao público: e-mail (esqueci a senha), LGPD, backup externo, Turnstile
+- Antes de abrir ao público:
+  - [x] Esqueci a senha (link por e-mail via SMTP, ou gerado pelo servidor com `--reset-link`)
+  - [ ] Conta de e-mail para envio (SMTP) configurada no `.env`
+  - [ ] Política de privacidade e termos de uso (LGPD)
+  - [ ] Backup externo (offsite)
+  - [ ] Cadastro aberto com Cloudflare Turnstile (só quando sair do convite)
 
 ## Dúvidas em aberto
 - Imóvel com entrega incerta: a projeção usa a **previsão** de entrega; o "pior caso" (prazo do contrato) ainda não tem visão própria no Planejamento.
@@ -199,3 +204,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: primeiros passos no Início (`OnboardingCard`, `lib/onboarding.ts`), `user_settings.onboarding` (migração 0022), `PUT /api/me/onboarding`; "Cadastrar salário" abre `/fixas/nova?tipo=receita` (Claude).
 - 03/10/2026: espaços: `POST /api/spaces/:id/transfer` e `DELETE /api/spaces/:id` (com o nome para confirmar), coroa "passar a posse" e "Excluir este espaço" na tela, textos dos dois convites; racha deixa de lançar em espaço do qual a pessoa saiu (Claude).
 - 03/10/2026: troca de domínio preparada: `infra/cloudflared/add-hostname.sh <hostname>` (antes `add-financas-hostname.sh`), `REDIRECT_HOSTS` (a API responde 301 do domínio antigo para `APP_URL`) e roteiro `docs/trocar-dominio.md` (Claude).
+- 03/10/2026: esqueci a senha: `sendResetPassword` com SMTP opcional (`SMTP_URL`/`MAIL_FROM`, nodemailer), link direto para `/redefinir-senha`, sessões encerradas ao trocar, `--reset-link email` no servidor (24 h), `GET /api/auth-features` e telas "Esqueci a senha" e "Escolha uma senha nova" (Claude).

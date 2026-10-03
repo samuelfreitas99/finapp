@@ -1,6 +1,8 @@
 import { buildApp } from './app';
 import { createAuth } from './auth/auth';
 import { createAdminInvite } from './cli/create-invite';
+import { createResetLink } from './cli/reset-link';
+import { createMailer } from './mail';
 import { loadConfig } from './config';
 import { createPushSender } from './modules/notifications/push';
 import { createDb } from './db/client';
@@ -26,6 +28,17 @@ async function main() {
     return;
   }
 
+  // `node server.cjs --reset-link email`: link para a pessoa escolher uma senha nova.
+  const resetFlag = process.argv.indexOf('--reset-link');
+  if (resetFlag !== -1) {
+    if (!config.databaseUrl) throw new Error('DATABASE_URL não definido');
+    const email = process.argv[resetFlag + 1] ?? '';
+    const link = await createResetLink(config.databaseUrl, config.appUrl, email);
+    console.log(link ? `Link (vale 24 h): ${link}` : `Nenhuma conta com o e-mail ${email}.`);
+    return;
+  }
+
+  const mailer = config.mail ? createMailer(config.mail) : null;
   let db;
   let auth;
   if (config.databaseUrl) {
@@ -37,6 +50,7 @@ async function main() {
       secret: config.authSecret ?? 'dev-secret-dev-secret-dev-secret-0000',
       appUrl: config.appUrl,
       production: config.production,
+      mailer,
     });
   }
 
@@ -48,6 +62,7 @@ async function main() {
     ...(db && auth ? { db, auth } : {}),
     appUrl: config.appUrl,
     redirectHosts: config.redirectHosts,
+    passwordResetEmail: Boolean(mailer),
   });
 
   let boss: Awaited<ReturnType<typeof startJobs>> | null = null;

@@ -1,3 +1,5 @@
+import type { MailConfig } from './mail';
+
 /** Configuração lida do ambiente. */
 export interface Config {
   databaseUrl: string | undefined;
@@ -9,6 +11,8 @@ export interface Config {
   production: boolean;
   /** Web Push (VAPID). Sem as chaves, o push fica desligado. */
   push: PushConfig | null;
+  /** E-mail (SMTP_URL + MAIL_FROM). Sem eles, nada é enviado por e-mail. */
+  mail: MailConfig | null;
 }
 
 export interface PushConfig {
@@ -37,6 +41,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
             subject: env.VAPID_SUBJECT ?? 'mailto:admin@financas.voleidraft.top',
           }
         : null,
+    mail: env.SMTP_URL && env.MAIL_FROM ? { smtpUrl: env.SMTP_URL, from: env.MAIL_FROM } : null,
   };
   if (production && (!config.databaseUrl || !config.authSecret || config.authSecret.length < 32)) {
     throw new Error(

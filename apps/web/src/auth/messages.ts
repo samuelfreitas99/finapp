@@ -15,6 +15,7 @@ const BY_CODE: Record<string, string> = {
   TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: 'Muitas tentativas. Entre de novo para continuar.',
   INVALID_TWO_FACTOR_COOKIE: 'A verificação expirou. Entre de novo com a senha.',
   TOTP_ALREADY_ENABLED: 'A verificação em duas etapas já está ligada.',
+  INVALID_TOKEN: 'Este link já foi usado ou expirou. Peça um novo em "Esqueci a senha".',
 };
 
 export function authErrorMessage(err: unknown): string {

@@ -141,6 +141,9 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <Link to="/esqueci-senha" className="field-hint">
+                Esqueci a senha
+              </Link>
             </div>
             <button
               className="btn btn--primary btn--block"

@@ -5,7 +5,8 @@ REST em `/api`, JSON, autenticação por cookie de sessão. Recursos do espaço 
 Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato planejado; ao implementar, mantenha esta página atualizada (✅ = implementado).
 
 ## Auth e usuário
-- `POST /api/auth/*` (Better Auth: `sign-up/email` com `inviteCode`, `sign-in/email`, `sign-out`, `GET get-session`) ✅
+- `POST /api/auth/*` (Better Auth: `sign-up/email` com `inviteCode`, `sign-in/email`, `sign-out`, `GET get-session`, `request-password-reset` `{ email }`, `reset-password` `{ token, newPassword }`) ✅
+- `GET /api/auth-features` ✅ (público: `{ passwordResetEmail }`)
 - `GET /api/me` ✅ (usuário, espaços, espaço ativo); `PATCH /api/me`, `GET/PATCH /api/me/settings`
 - `DELETE /api/invites/:id` ✅ (cancela convite seu ainda não usado)
 - `POST /api/invites` ✅ (`{ spaceId?, email?, expiresInDays? }`; para espaço, só o dono), `GET /api/invites` ✅
