@@ -101,12 +101,13 @@ describe.skipIf(!testDatabaseUrl)('push and notification settings (integration)'
   it('returns default settings and saves changes (RN 9)', async () => {
     const defaults = (await call('GET', '/api/notification-settings')).json();
     expect(defaults.quietStart).toBeNull();
-    expect(defaults.types).toHaveLength(11);
-    expect(
-      defaults.types.every(
-        (t: { enabled: boolean; daysBefore: number }) => t.enabled && t.daysBefore === 3,
-      ),
-    ).toBe(true);
+    expect(defaults.types).toHaveLength(13);
+    // Tudo ligado por padrão, menos os resumos (semanal e mensal), que o usuário liga.
+    const off = defaults.types
+      .filter((t: { enabled: boolean }) => !t.enabled)
+      .map((t: { type: string }) => t.type);
+    expect(off.sort()).toEqual(['monthly_summary', 'weekly_summary']);
+    expect(defaults.types.every((t: { daysBefore: number }) => t.daysBefore === 3)).toBe(true);
     const updated = (
       await call('PATCH', '/api/notification-settings', {
         quietStart: '22:00',

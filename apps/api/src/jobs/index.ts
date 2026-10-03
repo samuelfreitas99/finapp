@@ -4,6 +4,7 @@ import type { Db } from '../db/client';
 import type { PushSender } from '../modules/notifications/push';
 import { notifyDueReminders } from '../modules/notifications/reminders';
 import { generateAlerts, sendPending } from './alerts';
+import { generateSummaries } from './summaries';
 import { syncIndexValues } from './indexes';
 import { generateAllRecurrences } from './recurrences';
 
@@ -73,7 +74,8 @@ export async function startJobs({
   await boss.createQueue(ALERTS_JOB);
   await boss.schedule(ALERTS_JOB, '0 8 * * *', null, { tz: REFERENCE_TIME_ZONE, missed: 'once' });
   await boss.work(ALERTS_JOB, async () => {
-    const created = await generateAlerts(db, todayIn());
+    const created =
+      (await generateAlerts(db, todayIn())) + (await generateSummaries(db, todayIn()));
     const sent = await sendPending(db, push);
     log.info({ created, sent }, 'alertas do dia');
   });

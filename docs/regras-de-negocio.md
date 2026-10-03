@@ -230,6 +230,8 @@ Job diário (08:00 `America/Sao_Paulo`) e jobs por evento geram `notifications` 
 | `budget` | orçamento em 80% / 100% |
 | `card_limit` | uso do limite acima de 80% |
 | `split_pending` | racha com saldo pendente há X dias |
+| `weekly_summary` | resumo da semana (segunda, 08:00); começa desligado |
+| `monthly_summary` | resumo do mês anterior (dia 1º, 08:00); começa desligado |
 Horário de silêncio respeitado. Uma notificação por evento (idempotência por chave `tipo+entidade+data`).
 
 ---

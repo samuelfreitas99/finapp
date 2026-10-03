@@ -1,5 +1,6 @@
 import {
   NOTIFICATION_TYPES,
+  OFF_BY_DEFAULT_NOTIFICATIONS,
   pushSubscriptionBodySchema,
   updateNotificationSettingsBodySchema,
   type NotificationDto,
@@ -28,7 +29,7 @@ export async function settingsOf(db: Db, userId: string): Promise<NotificationSe
     quietEnd: rows[0]?.quietEnd ?? null,
     types: NOTIFICATION_TYPES.map((type) => ({
       type,
-      enabled: byType.get(type)?.enabled ?? true,
+      enabled: byType.get(type)?.enabled ?? !OFF_BY_DEFAULT_NOTIFICATIONS.includes(type),
       daysBefore: byType.get(type)?.daysBefore ?? DEFAULT_DAYS_BEFORE,
     })),
   };

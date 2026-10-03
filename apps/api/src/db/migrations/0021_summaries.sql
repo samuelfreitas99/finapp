@@ -1,0 +1,4 @@
+ALTER TABLE "notification_settings" DROP CONSTRAINT "notification_settings_type_check";--> statement-breakpoint
+ALTER TABLE "notifications" DROP CONSTRAINT "notifications_type_check";--> statement-breakpoint
+ALTER TABLE "notification_settings" ADD CONSTRAINT "notification_settings_type_check" CHECK ("notification_settings"."type" in ('due_soon', 'overdue', 'invoice_closing', 'invoice_closed', 'invoice_due', 'income_unconfirmed', 'negative_forecast', 'budget', 'card_limit', 'split_pending', 'reminder', 'weekly_summary', 'monthly_summary'));--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_type_check" CHECK ("notifications"."type" in ('due_soon', 'overdue', 'invoice_closing', 'invoice_closed', 'invoice_due', 'income_unconfirmed', 'negative_forecast', 'budget', 'card_limit', 'split_pending', 'reminder', 'weekly_summary', 'monthly_summary'));

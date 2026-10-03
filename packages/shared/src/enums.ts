@@ -119,8 +119,16 @@ export const NOTIFICATION_TYPES = [
   'card_limit',
   'split_pending',
   'reminder',
+  'weekly_summary',
+  'monthly_summary',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+/** Avisos que começam desligados (resumos): o usuário liga em Configurações. */
+export const OFF_BY_DEFAULT_NOTIFICATIONS: readonly NotificationType[] = [
+  'weekly_summary',
+  'monthly_summary',
+];
 
 export const REMINDER_REPEATS = ['none', 'daily', 'weekly', 'monthly', 'yearly'] as const;
 export type ReminderRepeat = (typeof REMINDER_REPEATS)[number];

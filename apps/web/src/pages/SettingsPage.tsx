@@ -24,6 +24,8 @@ const TYPE_LABEL: Record<NotificationType, { label: string; days?: boolean }> = 
   card_limit: { label: 'Limite do cartão acima de 80%' },
   split_pending: { label: 'Racha com saldo pendente' },
   reminder: { label: 'Lembretes no horário' },
+  weekly_summary: { label: 'Resumo da semana (toda segunda)' },
+  monthly_summary: { label: 'Resumo do mês (todo dia 1)' },
 };
 
 const KEY = ['notification-settings'];
