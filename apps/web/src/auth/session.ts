@@ -1,4 +1,4 @@
-import type { MeResponse } from '@finapp/shared';
+import type { MeResponse, Onboarding, UpdateOnboardingBody } from '@finapp/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../lib/api';
 
@@ -69,5 +69,16 @@ export function useSignOut() {
       qc.clear();
       qc.setQueryData(meKey, null);
     },
+  });
+}
+
+/** Esconde os "primeiros passos" ou marca passos como "não se aplica". */
+export function useUpdateOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateOnboardingBody) =>
+      api<Onboarding>('/api/me/onboarding', { method: 'PUT', body }),
+    onSuccess: (onboarding) =>
+      qc.setQueryData<MeResponse | null>(meKey, (me) => (me ? { ...me, onboarding } : me)),
   });
 }

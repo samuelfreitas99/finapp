@@ -98,6 +98,17 @@ export type DebtIndex = (typeof DEBT_INDEXES)[number];
 export const DEBT_INSTALLMENT_STATUSES = ['pending', 'paid', 'late', 'partial'] as const;
 export type DebtInstallmentStatus = (typeof DEBT_INSTALLMENT_STATUSES)[number];
 
+/** Passos do "primeiros passos" do Início, na ordem em que aparecem. */
+export const ONBOARDING_STEPS = [
+  'account',
+  'card',
+  'income',
+  'expenses',
+  'debts',
+  'notifications',
+] as const;
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+
 export const DEBT_EVENT_TYPES = [
   'amortization',
   'payoff',

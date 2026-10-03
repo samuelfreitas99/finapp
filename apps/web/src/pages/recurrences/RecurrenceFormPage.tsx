@@ -8,7 +8,7 @@ import type {
 } from '@finapp/shared';
 import { Plus, Trash2, X } from 'lucide-react';
 import { useDeferredValue, useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { MoneyInput } from '../../components/MoneyInput';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
@@ -551,13 +551,15 @@ export function NewRecurrencePage() {
   const { create } = useRecurrenceMutations();
   const navigate = useNavigate();
   const toast = useToast();
+  // `?tipo=receita` (vindo dos primeiros passos) já abre como receita.
+  const [params] = useSearchParams();
   if (accounts.isPending) return <div className="skeleton" style={{ height: 480 }} />;
   return (
     <>
       <PageHeader title="Nova recorrência" back="/fixas" />
       <RecurrenceForm
         initial={{
-          type: 'expense',
+          type: params.get('tipo') === 'receita' ? 'income' : 'expense',
           description: '',
           amount: 0,
           frequency: 'monthly',

@@ -2,6 +2,7 @@ import { parseISODate } from '@finapp/core';
 import { AlertTriangle, CalendarCheck, Landmark, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 import { useMe } from '../auth/session';
+import { OnboardingCard } from '../components/OnboardingCard';
 import { TopBar } from '../layout/AppLayout';
 import { dayLabel } from '../lib/dates';
 import { money, monthShort } from '../lib/format';
@@ -46,18 +47,23 @@ export function HomePage() {
       <>
         <TopBar />
         <h1>Olá, {firstName}</h1>
-        <section className="card empty">
-          <Landmark size={40} strokeWidth={1.5} aria-hidden="true" />
-          <h2>Comece pelas suas contas</h2>
-          <p className="muted">
-            Cadastre onde seu dinheiro está (conta corrente, carteira, VR...) com o saldo de hoje.
-            Depois é só lançar pelo +.
-          </p>
-          <Link to="/contas/nova" className="btn btn--primary">
-            <Plus size={18} aria-hidden="true" />
-            Nova conta
-          </Link>
-        </section>
+        <OnboardingCard
+          hasAccounts={false}
+          fallback={
+            <section className="card empty">
+              <Landmark size={40} strokeWidth={1.5} aria-hidden="true" />
+              <h2>Comece pelas suas contas</h2>
+              <p className="muted">
+                Cadastre onde seu dinheiro está (conta corrente, carteira, VR...) com o saldo de
+                hoje. Depois é só lançar pelo +.
+              </p>
+              <Link to="/contas/nova" className="btn btn--primary">
+                <Plus size={18} aria-hidden="true" />
+                Nova conta
+              </Link>
+            </section>
+          }
+        />
       </>
     );
   }
@@ -84,6 +90,8 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <OnboardingCard hasAccounts />
 
       {consolidated.data && (
         <section className="card card--pad stack" aria-labelledby="all-spaces">

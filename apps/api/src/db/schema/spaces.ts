@@ -1,4 +1,4 @@
-import { SPACE_ROLES, SPACE_TYPES, THEMES } from '@finapp/shared';
+import { SPACE_ROLES, SPACE_TYPES, THEMES, type Onboarding } from '@finapp/shared';
 import {
   boolean,
   check,
@@ -78,6 +78,11 @@ export const userSettings = pgTable(
     hideValues: boolean('hide_values').notNull().default(false),
     activeSpaceId: uuid('active_space_id').references(() => spaces.id, { onDelete: 'set null' }),
     lockPinHash: text('lock_pin_hash'),
+    /** "Primeiros passos" do Início (escondido e passos pulados). */
+    onboarding: jsonb('onboarding')
+      .$type<Onboarding>()
+      .notNull()
+      .default({ dismissed: false, skipped: [] }),
     updatedAt: updatedAt(),
   },
   (t) => [check('user_settings_theme_check', inList(t.theme, THEMES))],

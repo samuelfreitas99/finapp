@@ -53,6 +53,9 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `POST /installment-plans/:id/cancel` ✅ (`{ refundBilled? }`; RN 5.4)
 - Parcelas não são editadas (valor/data/conta) nem excluídas sozinhas: `installment_locked`.
 
+## Primeiros passos
+- `PUT /api/me/onboarding` ✅ (`{ dismissed?, skipped? }`; só o que mudar; devolve o estado). `GET /api/me` traz `onboarding`.
+
 ## Dívidas
 - `POST /debts/preview` ✅ (cronograma + painel sem gravar), `POST /debts` ✅ (`{ name, direction?, kind, contactId?, institution?, principal?, paymentAccountId | paymentCardId, completionDate?, assetValue?, notes?, paidInstallments?, phases: [{ name, system, firstDueDate, installments?, installmentAmount | total, principal, rateMonthly | rateAnnual, index?, values?, lastMonth?, endsAtCompletion?, startsAfterCompletion?, payments? }] }`; `moneyAccountId`/`moneyDate` lançam o valor recebido (devo) ou emprestado (me devem) na conta, fora dos relatórios; `card_loan` exige `paymentCardId`; `third_party_card` não aceita cartão; cria as parcelas e os lançamentos previstos de cada parcela pendente na conta (despesa se devo, receita se me devem) ou como itens das faturas do cartão)
 - `GET /debts` ✅ (com painel e próxima parcela), `GET /debts/:id` ✅ (painel geral e por fase, patrimônio líquido `assetValue − saldo devedor`, cronograma com status do dia), `PATCH /debts/:id` ✅ (nome, contato, instituição, valor do bem, observações), `DELETE /debts/:id` ✅ (cancela; apaga os previstos não pagos)

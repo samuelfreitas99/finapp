@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "onboarding" jsonb DEFAULT '{"dismissed":false,"skipped":[]}'::jsonb NOT NULL;

@@ -19,7 +19,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 | `invites` | id, code (unique), created_by, space_id (opcional: convite para espaço), email opcional, expires_at, used_by, used_at |
 | `spaces` | id, name, type (`personal`/`shared`), default_split (jsonb), currency (`BRL`), created_by |
 | `space_members` | space_id, user_id, role (`owner`/`member`), split_percent (opcional), joined_at |
-| `user_settings` | user_id, theme, hide_values, active_space_id, lock_pin_hash |
+| `user_settings` | user_id, theme, hide_values, active_space_id, lock_pin_hash, onboarding (jsonb `{ dismissed, skipped[] }`, migração 0022) |
 
 ## Cadastros
 | Tabela | Colunas principais |

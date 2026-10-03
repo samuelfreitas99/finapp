@@ -93,7 +93,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Dívidas: cadastro de imóvel guiado ("O que o seu contrato tem?") e parcelas já vencidas marcadas como pagas
 - [x] Índices: IPEADATA como reserva do Banco Central para INCC-M e IGP-M
 - [x] Menu "Mais" agrupado por seção
-- [ ] Primeiros passos no Início (checklist que some quando concluído)
+- [x] Primeiros passos no Início (checklist que some quando concluído)
 - [ ] Espaços: transferir posse e excluir espaço; textos dos dois tipos de convite
 - [ ] Troca de domínio: script do túnel com hostname por parâmetro e roteiro de migração
 - [ ] Antes de abrir ao público: e-mail (esqueci a senha), LGPD, backup externo, Turnstile
@@ -196,3 +196,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: ajustes de uso (2): campos numéricos sem setinhas (`IntegerInput`/`DecimalInput`: teclado numérico, dá para apagar e digitar 21, valor só aceito dentro do mínimo e máximo); tema padrão claro (escuro e automático em Mais); simulador reorganizado para celular (resultado em destaque, mês a mês e comparação à vista recolhidos); botão "Copiar link" nos convites; excluir conta (`POST /api/me/delete`, senha + EXCLUIR; recusa se é dono de espaço compartilhado com outros membros; apaga o espaço pessoal; no racha herda o criador) (Claude).
 - 03/10/2026: Fase 10 (parte 1): IPEADATA como reserva dos índices (`parseIpeaSeries`); dívidas: desconto em valor ao pagar adiantado, `POST /debts/:id/advance` (`planAdvance` no core), painel com ações no topo, editar dados, observações, selo de atraso e ordem na lista, simulador abre na dívida (`/simuladores?divida=`); cadastro de imóvel com as partes do contrato marcadas pela pessoa (financiamento padrão SAC, sem índice) e parcelas vencidas como pagas (Claude).
 - 03/10/2026: menu "Mais" em quatro grupos (Dia a dia, Planejar e acompanhar, Dividir com pessoas, Dados e configurações), cada item com uma descrição curta (Claude).
+- 03/10/2026: primeiros passos no Início (`OnboardingCard`, `lib/onboarding.ts`), `user_settings.onboarding` (migração 0022), `PUT /api/me/onboarding`; "Cadastrar salário" abre `/fixas/nova?tipo=receita` (Claude).

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SPACE_ROLES, SPACE_TYPES } from '../enums';
+import { ONBOARDING_STEPS, SPACE_ROLES, SPACE_TYPES } from '../enums';
 
 /** Corpo de `POST /api/auth/sign-up/email` (campos do Better Auth + convite). */
 export const signUpBodySchema = z.object({
@@ -19,6 +19,17 @@ export const spaceSummarySchema = z.object({
 export type SpaceSummary = z.infer<typeof spaceSummarySchema>;
 
 /** Resposta de `GET /api/me`. */
+/** Estado do "primeiros passos": escondido de vez e passos marcados como "não se aplica". */
+export const onboardingSchema = z.object({
+  dismissed: z.boolean(),
+  skipped: z.array(z.enum(ONBOARDING_STEPS)),
+});
+export type Onboarding = z.infer<typeof onboardingSchema>;
+
+/** Corpo de `PUT /api/me/onboarding` (só o que mudar). */
+export const updateOnboardingBodySchema = onboardingSchema.partial();
+export type UpdateOnboardingBody = z.infer<typeof updateOnboardingBodySchema>;
+
 export const meResponseSchema = z.object({
   user: z.object({ id: z.uuid(), name: z.string(), email: z.email() }),
   spaces: z.array(spaceSummarySchema),
@@ -27,6 +38,7 @@ export const meResponseSchema = z.object({
   pinEnabled: z.boolean(),
   /** Verificação em duas etapas (aplicativo autenticador) ligada. */
   twoFactorEnabled: z.boolean(),
+  onboarding: onboardingSchema,
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 

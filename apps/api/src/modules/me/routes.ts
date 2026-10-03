@@ -2,6 +2,7 @@ import {
   deleteAccountBodySchema,
   pinBodySchema,
   setPinBodySchema,
+  updateOnboardingBodySchema,
   type MeResponse,
 } from '@finapp/shared';
 import { eq } from 'drizzle-orm';
@@ -52,6 +53,7 @@ export function meRoutes(app: FastifyInstance, db: Db, auth: Auth, throttle = ne
         .select({
           activeSpaceId: userSettings.activeSpaceId,
           lockPinHash: userSettings.lockPinHash,
+          onboarding: userSettings.onboarding,
         })
         .from(userSettings)
         .where(eq(userSettings.userId, user.id)),
@@ -66,7 +68,27 @@ export function meRoutes(app: FastifyInstance, db: Db, auth: Auth, throttle = ne
       activeSpaceId: settings?.activeSpaceId ?? spaces[0]?.id ?? null,
       pinEnabled: Boolean(settings?.lockPinHash),
       twoFactorEnabled: account?.twoFactorEnabled ?? false,
+      onboarding: settings?.onboarding ?? { dismissed: false, skipped: [] },
     };
+  });
+
+  /** "Primeiros passos" do Início: esconder ou marcar passos como "não se aplica". */
+  app.put('/api/me/onboarding', { preHandler: requireUser }, async (request) => {
+    const user = currentUser(request);
+    const body = updateOnboardingBodySchema.parse(request.body ?? {});
+    const [current] = await db
+      .select({ onboarding: userSettings.onboarding })
+      .from(userSettings)
+      .where(eq(userSettings.userId, user.id));
+    const next = {
+      dismissed: body.dismissed ?? current?.onboarding.dismissed ?? false,
+      skipped: [...new Set(body.skipped ?? current?.onboarding.skipped ?? [])],
+    };
+    await db
+      .insert(userSettings)
+      .values({ userId: user.id, onboarding: next })
+      .onConflictDoUpdate({ target: userSettings.userId, set: { onboarding: next } });
+    return next;
   });
 
   /** Define ou troca o PIN de bloqueio do app (trocar exige o PIN atual). */
