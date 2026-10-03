@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router';
+import { LockGate } from '../components/LockGate';
 import { useMe } from './session';
 
 function Loading() {
@@ -31,7 +32,11 @@ export function RequireAuth() {
   if (me.isPending) return <Loading />;
   if (me.isError) return <ServerError retry={() => void me.refetch()} />;
   if (!me.data) return <Navigate to="/entrar" replace />;
-  return <Outlet />;
+  return (
+    <LockGate enabled={me.data.pinEnabled}>
+      <Outlet />
+    </LockGate>
+  );
 }
 
 /** Telas de login/cadastro: quem já está logado vai para o início. */

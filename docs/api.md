@@ -74,6 +74,8 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - `GET /audit-log?limit=&cursor=&entity=` ✅ (histórico de alterações do espaço, mais recentes primeiro; `nextCursor`)
 
+- `PUT /api/me/pin` ✅ (`{ pin, currentPin? }`, 4–6 dígitos; trocar exige `currentPin`), `POST /api/me/pin/verify` ✅ (`{ pin }`; 400 `pin_invalid`, 429 `pin_locked` após 5 erros), `DELETE /api/me/pin` ✅ (`{ pin }`); `GET /api/me` traz `pinEnabled`
+
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
 - `/api/split-groups/:id/expenses` CRUD

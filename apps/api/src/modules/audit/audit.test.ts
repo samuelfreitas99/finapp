@@ -66,7 +66,14 @@ describe.skipIf(!testDatabaseUrl)('audit log (integration)', () => {
       headers: { cookie, origin: appUrl },
       ...(payload === undefined ? {} : { payload: payload as Record<string, unknown> }),
     });
-  const flush = () => new Promise((r) => setTimeout(r, 100));
+  /** O registro é gravado depois da resposta: espera até aparecerem `n` linhas. */
+  const flush = async (n: number) => {
+    for (let i = 0; i < 60; i++) {
+      const { items } = (await call('GET', '/audit-log?limit=100')).json();
+      if (items.length >= n) return;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  };
 
   beforeAll(async () => {
     const temp = await createTempDb();
@@ -112,7 +119,7 @@ describe.skipIf(!testDatabaseUrl)('audit log (integration)', () => {
     await call('PATCH', `/accounts/${account.id}`, { name: 'Conta Nova' });
     await call('GET', '/accounts');
     await call('POST', '/accounts', { name: '' }); // inválido: não registra
-    await flush();
+    await flush(2);
 
     const { items } = (await call('GET', '/audit-log')).json();
     expect(
@@ -135,7 +142,7 @@ describe.skipIf(!testDatabaseUrl)('audit log (integration)', () => {
       format: 'csv',
       content: 'x',
     });
-    await flush();
+    await flush(3);
     const page1 = (await call('GET', '/audit-log?limit=1')).json();
     expect(page1.items).toHaveLength(1);
     expect(page1.nextCursor).toBeTruthy();

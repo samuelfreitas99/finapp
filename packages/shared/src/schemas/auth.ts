@@ -23,6 +23,8 @@ export const meResponseSchema = z.object({
   user: z.object({ id: z.uuid(), name: z.string(), email: z.email() }),
   spaces: z.array(spaceSummarySchema),
   activeSpaceId: z.uuid().nullable(),
+  /** O usuário ativou o bloqueio do app por PIN. */
+  pinEnabled: z.boolean(),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
@@ -47,3 +49,17 @@ export const inviteSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 export type Invite = z.infer<typeof inviteSchema>;
+
+/** PIN de bloqueio do app: 4 a 6 dígitos. */
+export const pinSchema = z.string().regex(/^\d{4,6}$/, 'O PIN deve ter de 4 a 6 números.');
+
+/** Corpo de `PUT /api/me/pin`; `currentPin` é obrigatório para trocar um PIN existente. */
+export const setPinBodySchema = z.object({
+  pin: pinSchema,
+  currentPin: pinSchema.optional(),
+});
+export type SetPinBody = z.infer<typeof setPinBodySchema>;
+
+/** Corpo de `POST /api/me/pin/verify` e `DELETE /api/me/pin`. */
+export const pinBodySchema = z.object({ pin: pinSchema });
+export type PinBody = z.infer<typeof pinBodySchema>;

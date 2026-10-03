@@ -1978,3 +1978,9 @@ h3 {
   flex-direction: column;
   gap: 6px;
 }
+
+.pin-input {
+  font-size: 24px;
+  letter-spacing: 0.4em;
+  text-align: center;
+}

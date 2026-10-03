@@ -4,7 +4,9 @@ import { Bell, BellOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { useToast } from '../components/Toast';
+import { useMe, meKey } from '../auth/session';
 import { api } from '../lib/api';
+import { markUnlocked } from '../lib/app-lock';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '../lib/push';
 import { errorText } from './transactions/EntryForm';
 
@@ -188,10 +190,141 @@ function AlertSettings() {
   );
 }
 
+function PinCard() {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const me = useMe();
+  const enabled = me.data?.pinEnabled ?? false;
+  const [mode, setMode] = useState<'idle' | 'set' | 'remove'>('idle');
+  const [current, setCurrent] = useState('');
+  const [pin, setPin] = useState('');
+  const [again, setAgain] = useState('');
+  const digits = (v: string) => v.replace(/\D/g, '').slice(0, 6);
+  const valid = (v: string) => v.length >= 4;
+
+  const close = () => {
+    setMode('idle');
+    setCurrent('');
+    setPin('');
+    setAgain('');
+  };
+  const save = useMutation({
+    mutationFn: () =>
+      mode === 'remove'
+        ? api('/api/me/pin', { method: 'DELETE', body: { pin: current } })
+        : api('/api/me/pin', {
+            method: 'PUT',
+            body: { pin, ...(enabled ? { currentPin: current } : {}) },
+          }),
+    onSuccess: async () => {
+      const removed = mode === 'remove';
+      if (!removed) markUnlocked();
+      close();
+      await qc.invalidateQueries({ queryKey: meKey });
+      toast({ text: removed ? 'Bloqueio por PIN desligado.' : 'PIN salvo.' });
+    },
+  });
+  const ready =
+    mode === 'remove'
+      ? valid(current)
+      : valid(pin) && pin === again && (!enabled || valid(current));
+
+  return (
+    <section className="card card--pad form" aria-labelledby="pin-title">
+      <h2 id="pin-title">Bloqueio por PIN</h2>
+      <p className="muted">
+        {enabled
+          ? 'O app pede o PIN ao abrir e depois de 1 minuto em segundo plano.'
+          : 'Peça um PIN de 4 a 6 números para abrir o app. Protege seus dados se alguém pegar seu celular desbloqueado.'}
+      </p>
+      {save.isError && (
+        <p className="alert alert--error" role="alert">
+          {errorText(save.error)}
+        </p>
+      )}
+      {mode === 'idle' ? (
+        <div className="form__actions">
+          {enabled && (
+            <button type="button" className="btn" onClick={() => setMode('remove')}>
+              Desligar
+            </button>
+          )}
+          <button type="button" className="btn btn--primary" onClick={() => setMode('set')}>
+            {enabled ? 'Trocar PIN' : 'Criar PIN'}
+          </button>
+        </div>
+      ) : (
+        <form
+          className="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (ready) save.mutate();
+          }}
+        >
+          {(enabled || mode === 'remove') && (
+            <div className="field">
+              <label htmlFor="pin-current">PIN atual</label>
+              <input
+                id="pin-current"
+                className="input pin-input"
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                value={current}
+                onChange={(e) => setCurrent(digits(e.target.value))}
+              />
+            </div>
+          )}
+          {mode === 'set' && (
+            <>
+              <div className="field">
+                <label htmlFor="pin-new">Novo PIN (4 a 6 números)</label>
+                <input
+                  id="pin-new"
+                  className="input pin-input"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={pin}
+                  onChange={(e) => setPin(digits(e.target.value))}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="pin-again">Repita o novo PIN</label>
+                <input
+                  id="pin-again"
+                  className="input pin-input"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={again}
+                  onChange={(e) => setAgain(digits(e.target.value))}
+                />
+                {again !== '' && pin !== again && (
+                  <p className="muted expense" role="alert">Os PINs não são iguais.</p>
+                )}
+              </div>
+            </>
+          )}
+          <div className="form__actions">
+            <button type="button" className="btn" onClick={close}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn btn--primary" disabled={!ready || save.isPending}>
+              {mode === 'remove' ? 'Desligar bloqueio' : 'Salvar PIN'}
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}
+
 export function SettingsPage() {
   return (
     <>
       <PageHeader title="Configurações" back="/mais" />
+      <PinCard />
       <PushCard />
       <AlertSettings />
     </>
