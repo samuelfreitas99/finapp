@@ -2,6 +2,7 @@ import { REFERENCE_TIME_ZONE, todayIn } from '@finapp/core';
 import { PgBoss } from 'pg-boss';
 import type { Db } from '../db/client';
 import type { PushSender } from '../modules/notifications/push';
+import { notifyDueReminders } from '../modules/notifications/reminders';
 import { generateAlerts, sendPending } from './alerts';
 import { generateAllRecurrences } from './recurrences';
 
@@ -66,8 +67,10 @@ export async function startJobs({
     log.info({ created, sent }, 'alertas do dia');
   });
   await boss.createQueue(SEND_JOB);
-  await boss.schedule(SEND_JOB, '15 * * * *', null, { tz: REFERENCE_TIME_ZONE });
+  // A cada 5 minutos: lembretes que chegaram no horário + o que ficou no silêncio.
+  await boss.schedule(SEND_JOB, '*/5 * * * *', null, { tz: REFERENCE_TIME_ZONE });
   await boss.work(SEND_JOB, async () => {
+    await notifyDueReminders(db);
     const sent = await sendPending(db, push);
     if (sent) log.info({ sent }, 'notificações enviadas');
   });

@@ -1777,3 +1777,18 @@ h3 {
   border-radius: 4px;
   background: var(--primary);
 }
+
+/* Lembretes */
+.reminder {
+  justify-content: space-between;
+}
+
+.reminder__check {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.reminder--done strong {
+  text-decoration: line-through;
+  color: var(--muted);
+}

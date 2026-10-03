@@ -7,6 +7,7 @@ import {
   HandCoins,
   Landmark,
   Layers,
+  ListChecks,
   Repeat,
   LogOut,
   Settings,
@@ -27,6 +28,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/fixas', label: 'Receitas e despesas fixas', icon: Repeat },
   { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
   { to: '/categorias', label: 'Categorias', icon: Tags },
+  { to: '/lembretes', label: 'Lembretes e checklist', icon: ListChecks },
   { to: '/configuracoes', label: 'Notificações e configurações', icon: Settings },
 ];
 

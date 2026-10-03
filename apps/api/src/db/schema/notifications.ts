@@ -1,4 +1,4 @@
-import { NOTIFICATION_TYPES } from '@finapp/shared';
+import { NOTIFICATION_TYPES, REMINDER_REPEATS } from '@finapp/shared';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -11,7 +11,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { createdAt, id, inList, updatedAt } from './_helpers';
+import { createdAt, deletedAt, id, inList, updatedAt } from './_helpers';
 import { users } from './auth';
 import { spaces } from './spaces';
 
@@ -90,5 +90,34 @@ export const notifications = pgTable(
   (t) => [
     index('notifications_user_created_idx').on(t.userId, t.createdAt),
     check('notifications_type_check', inList(t.type, NOTIFICATION_TYPES)),
+  ],
+);
+
+/**
+ * Lembretes e checklist do usuário. Com `due_at`, o envio de hora em hora notifica no
+ * horário (uma vez por `due_at`); com repetição, concluir avança para a próxima data.
+ */
+export const reminders = pgTable(
+  'reminders',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    notes: text('notes'),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    repeat: text('repeat', { enum: REMINDER_REPEATS }).notNull().default('none'),
+    doneAt: timestamp('done_at', { withTimezone: true }),
+    /** Último `due_at` já notificado (evita repetir o aviso). */
+    notifiedFor: timestamp('notified_for', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    deletedAt: deletedAt(),
+  },
+  (t) => [
+    index('reminders_user_idx').on(t.userId, t.deletedAt),
+    index('reminders_due_idx').on(t.dueAt),
+    check('reminders_repeat_check', inList(t.repeat, REMINDER_REPEATS)),
   ],
 );

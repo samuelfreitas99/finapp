@@ -19,6 +19,7 @@ import { spaceScoped } from './modules/spaces/scope';
 import { transactionRoutes } from './modules/transactions/routes';
 import { inviteRoutes } from './modules/invites/routes';
 import { meRoutes } from './modules/me/routes';
+import { reminderRoutes } from './modules/notifications/reminders';
 import { notificationRoutes } from './modules/notifications/routes';
 import type { PushSender } from './modules/notifications/push';
 import { registerAuth } from './plugins/auth';
@@ -79,6 +80,7 @@ export function buildApp({
     meRoutes(app, db);
     inviteRoutes(app, db);
     notificationRoutes(app, db, push);
+    reminderRoutes(app, db);
     spaceScoped(app, db, (scoped) => {
       const ctx = { db, today };
       accountRoutes(scoped, ctx);

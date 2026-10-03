@@ -19,6 +19,7 @@ const TYPE_LABEL: Record<NotificationType, { label: string; days?: boolean }> = 
   budget: { label: 'Orçamento perto do limite' },
   card_limit: { label: 'Limite do cartão acima de 80%' },
   split_pending: { label: 'Racha com saldo pendente' },
+  reminder: { label: 'Lembretes no horário' },
 };
 
 const KEY = ['notification-settings'];

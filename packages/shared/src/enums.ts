@@ -118,5 +118,9 @@ export const NOTIFICATION_TYPES = [
   'budget',
   'card_limit',
   'split_pending',
+  'reminder',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export const REMINDER_REPEATS = ['none', 'daily', 'weekly', 'monthly', 'yearly'] as const;
+export type ReminderRepeat = (typeof REMINDER_REPEATS)[number];

@@ -62,7 +62,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Cadastro de dívida mais guiado: "Começando agora" ou "Já estou pagando" (quantas faltam, próximo vencimento, valor da parcela; taxa opcional), campos avançados recolhidos
 - [x] Imóvel com entrega incerta: prazo do contrato + previsão de entrega, aviso de estimativa, ação "Recebi as chaves" (pior caso no Planejamento fica para depois)
 - [x] Salário variável (horas extras, feriados): "valor muda todo mês" também em receitas, inclusive salário em partes
-- [ ] Lembretes e checklist com notificação no horário
+- [x] Lembretes e checklist com notificação no horário
 - [ ] Lançamentos offline com fila
 
 ## Fase 7: Planejamento e relatórios
@@ -140,4 +140,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: **Fase 5 concluída e publicada** (main `66ea168`). Fase 6: tabelas `push_subscriptions`, `notification_settings`, `notifications` (migração 0006); API de chave VAPID, inscrição, teste, preferências por tipo com dias de antecedência e horário de silêncio, central (listar/ler); service worker com push; tela Configurações (ligar/desligar no aparelho, teste, avisos); chaves VAPID de produção geradas no `infra/.env` (Claude).
 - 03/10/2026: alertas (RN 9) com regra no core (`buildAlerts`, `inQuietHours`), job diário às 08:00 e envio de hora em hora respeitando o silêncio; sino com contador e central de notificações. Itens novos da Fase 6 pedidos pelo Samuel (cadastro de dívida guiado, entrega incerta, salário variável, lembretes) (Claude).
 - 03/10/2026: salário variável (receita com valor estimado, também em partes). Cadastro de dívida guiado ("Começando agora" / "Já estou pagando" com o que o app do banco mostra, `principalFromPayment` no core, avançado recolhido); imóvel com previsão de entrega + prazo do contrato e "Recebi as chaves" (migração 0007) (Claude).
+- 03/10/2026: lembretes e checklist (`reminders`, migração 0008; `nextReminderAt` no core), aviso no horário pelo job de envio (agora a cada 5 minutos), tela "Lembretes" (Claude).
 

@@ -101,7 +101,7 @@ describe.skipIf(!testDatabaseUrl)('push and notification settings (integration)'
   it('returns default settings and saves changes (RN 9)', async () => {
     const defaults = (await call('GET', '/api/notification-settings')).json();
     expect(defaults.quietStart).toBeNull();
-    expect(defaults.types).toHaveLength(10);
+    expect(defaults.types).toHaveLength(11);
     expect(
       defaults.types.every(
         (t: { enabled: boolean; daysBefore: number }) => t.enabled && t.daysBefore === 3,

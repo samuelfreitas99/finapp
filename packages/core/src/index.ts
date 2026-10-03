@@ -13,3 +13,4 @@ export * from './projection';
 export * from './splits';
 export * from './balances';
 export * from './alerts';
+export * from './reminders';

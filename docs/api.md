@@ -76,6 +76,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 ## Notificações
 - `GET /api/push/vapid-key` ✅ (503 `push_disabled` sem chaves), `POST/DELETE /api/push/subscriptions` ✅ (`PushSubscription.toJSON()`; upsert por endpoint), `POST /api/push/test` ✅
 - `GET /api/notifications` ✅ (50 mais recentes + `unread`), `POST /api/notifications/:id/read` ✅, `POST /api/notifications/read-all` ✅
+- `GET/POST /api/reminders` ✅, `PATCH /api/reminders/:id` ✅ (`{ title?, notes?, dueAt?, repeat?, done? }`; concluir com repetição avança para o próximo horário), `DELETE /api/reminders/:id` ✅ (lembretes e checklist do usuário; aviso no horário via push)
 - `GET/PATCH /api/notification-settings` ✅ (`{ quietStart, quietEnd, types: [{ type, enabled, daysBefore }] }`; sem linha = ligado, 3 dias)
 
 ## Importação/exportação (V2)
