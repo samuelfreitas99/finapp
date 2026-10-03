@@ -51,9 +51,9 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
 ];
 
 const themes: { value: Theme; label: string }[] = [
-  { value: 'system', label: 'Automático' },
   { value: 'light', label: 'Claro' },
   { value: 'dark', label: 'Escuro' },
+  { value: 'system', label: 'Automático' },
 ];
 
 export function MorePage() {

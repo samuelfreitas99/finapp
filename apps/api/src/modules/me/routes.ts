@@ -1,14 +1,21 @@
-import { pinBodySchema, setPinBodySchema, type MeResponse } from '@finapp/shared';
+import {
+  deleteAccountBodySchema,
+  pinBodySchema,
+  setPinBodySchema,
+  type MeResponse,
+} from '@finapp/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../../db/client';
+import type { Auth } from '../../auth/auth';
 import { userSettings, users } from '../../db/schema';
 import { ApiError, badRequest } from '../../http/errors';
 import { currentUser, requireUser } from '../../plugins/auth';
 import { userSpaces } from '../spaces/access';
+import { deleteUserData } from './delete-account';
 import { hashPin, PinThrottle, verifyPin } from './pin';
 
-export function meRoutes(app: FastifyInstance, db: Db, throttle = new PinThrottle()) {
+export function meRoutes(app: FastifyInstance, db: Db, auth: Auth, throttle = new PinThrottle()) {
   const pinHash = async (userId: string) => {
     const [row] = await db
       .select({ hash: userSettings.lockPinHash })
@@ -87,6 +94,36 @@ export function meRoutes(app: FastifyInstance, db: Db, throttle = new PinThrottl
     const body = pinBodySchema.parse(request.body ?? {});
     await checkPin(user.id, body.pin);
     await savePin(user.id, null);
+    return reply.code(204).send();
+  });
+
+  /**
+   * Exclui a conta e os dados pessoais (senha e a palavra EXCLUIR obrigatórias). O endpoint
+   * de exclusão do Better Auth fica desligado: ele aceitaria só a sessão recente, sem senha.
+   */
+  app.post('/api/me/delete', { preHandler: requireUser }, async (request, reply) => {
+    const user = currentUser(request);
+    const body = deleteAccountBodySchema.parse(request.body ?? {});
+    const ctx = await auth.$context;
+    const account = await ctx.internalAdapter.findCredentialAccount(user.id);
+    const ok =
+      account?.password &&
+      (await ctx.password.verify({ hash: account.password, password: body.password }));
+    if (!ok) {
+      throttle.fail(`delete:${user.id}`);
+      throw badRequest('invalid_password', 'Senha incorreta.');
+    }
+    const wait = throttle.waitSeconds(`delete:${user.id}`);
+    if (wait > 0) {
+      throw new ApiError(
+        429,
+        'too_many_attempts',
+        `Muitas tentativas. Tente de novo em ${wait} s.`,
+      );
+    }
+    await deleteUserData(db, user.id);
+    await ctx.internalAdapter.deleteUser(user.id);
+    await ctx.internalAdapter.deleteUserSessions(user.id);
     return reply.code(204).send();
   });
 }

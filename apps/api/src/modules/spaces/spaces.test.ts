@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import { createAuth } from '../../auth/auth';
 import { createAdminInvite } from '../../cli/create-invite';
+import { sql } from 'drizzle-orm';
+import type { Db } from '../../db/client';
 import { createTempDb, testDatabaseUrl } from '../../test/temp-db';
 
 const appUrl = 'http://localhost:5174';
@@ -267,5 +269,199 @@ describe.skipIf(!testDatabaseUrl)('invites management (integration)', () => {
       .json()
       .items.find((i: { usedAt: string | null }) => i.usedAt);
     expect((await call('DELETE', `/api/invites/${used.id}`)).statusCode).toBe(404);
+  });
+});
+
+describe.skipIf(!testDatabaseUrl)('account deletion (integration)', () => {
+  let drop: () => Promise<void>;
+  let app: ReturnType<typeof buildApp>;
+  let db: Db;
+  let adminUrl: string;
+  type User = { cookie: string; id: string; personal: string; email: string };
+  let ana: User;
+  let bia: User;
+
+  const call = (
+    who: { cookie: string },
+    method: 'GET' | 'POST' | 'DELETE',
+    path: string,
+    payload?: unknown,
+  ) =>
+    app.inject({
+      method,
+      url: path,
+      headers: { cookie: who.cookie, origin: appUrl },
+      ...(payload === undefined ? {} : { payload: payload as Record<string, unknown> }),
+    });
+
+  const signUp = async (name: string, email: string): Promise<User> => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { origin: appUrl },
+      payload: {
+        name,
+        email,
+        password: 'senha-forte-1',
+        inviteCode: await createAdminInvite(adminUrl),
+      },
+    });
+    const raw = res.headers['set-cookie'];
+    const cookie = (Array.isArray(raw) ? raw : [String(raw)])
+      .map((c) => String(c).split(';')[0])
+      .join('; ');
+    const me = (await call({ cookie }, 'GET', '/api/me')).json();
+    return { cookie, id: me.user.id, personal: me.activeSpaceId, email };
+  };
+  const remove = (who: User, password = 'senha-forte-1', confirm = 'EXCLUIR') =>
+    call(who, 'POST', '/api/me/delete', { password, confirm });
+  const count = async (table: string, where: string) =>
+    Number(
+      (await db.execute(sql.raw(`select count(*)::int as n from ${table} where ${where}`))).rows[0]
+        ?.n,
+    );
+
+  beforeAll(async () => {
+    const temp = await createTempDb();
+    drop = temp.drop;
+    db = temp.db;
+    adminUrl = temp.url;
+    const auth = createAuth({
+      db,
+      secret: 'test-secret-test-secret-test-secret-00',
+      appUrl,
+      production: false,
+    });
+    app = buildApp({ db, auth, appUrl, today: () => TODAY });
+    ana = await signUp('Ana', 'ana@ex.com');
+    bia = await signUp('Bia', 'bia@ex.com');
+  });
+
+  afterAll(async () => {
+    await app?.close();
+    await drop?.();
+  });
+
+  it('asks for the password and the word EXCLUIR', async () => {
+    expect((await remove(ana, 'errada')).statusCode).toBe(400);
+    expect((await remove(ana, 'senha-forte-1', 'excluir')).statusCode).toBe(400);
+    expect(
+      (await call(ana, 'POST', '/api/auth/delete-user', { password: 'senha-forte-1' })).statusCode,
+    ).toBe(404);
+    expect((await call(ana, 'GET', '/api/me')).statusCode).toBe(200);
+  });
+
+  it('refuses while she owns a shared space with other members, then deletes everything', async () => {
+    const acc = (
+      await call(ana, 'POST', `/api/spaces/${ana.personal}/accounts`, {
+        name: 'Conta',
+        type: 'checking',
+        initialBalance: 1000,
+        initialDate: '2026-01-01',
+      })
+    ).json().id;
+    await call(ana, 'POST', `/api/spaces/${ana.personal}/transactions`, {
+      type: 'expense',
+      status: 'settled',
+      amount: 500,
+      date: '2026-10-10',
+      description: 'Pessoal',
+      accountId: acc,
+    });
+    await call(ana, 'POST', `/api/spaces/${ana.personal}/goals`, {
+      name: 'Meta',
+      targetAmount: 1000,
+      savedAmount: 100,
+    });
+
+    const shared = (await call(ana, 'POST', '/api/spaces', { name: 'Casa' })).json().id;
+    const invite = (await call(ana, 'POST', '/api/invites', { spaceId: shared })).json();
+    await call(bia, 'POST', '/api/invites/accept', { code: invite.code });
+    const sharedAcc = (
+      await call(bia, 'POST', `/api/spaces/${shared}/accounts`, {
+        name: 'Casa',
+        type: 'checking',
+        initialBalance: 0,
+        initialDate: '2026-01-01',
+      })
+    ).json().id;
+    await call(ana, 'POST', `/api/spaces/${shared}/transactions`, {
+      type: 'expense',
+      status: 'settled',
+      amount: 700,
+      date: '2026-10-11',
+      description: 'Mercado da casa',
+      accountId: sharedAcc,
+    });
+    // Grupo de racha criado por Ana, com a Bia dentro.
+    const group = (
+      await call(ana, 'POST', '/api/split-groups', { name: 'Viagem', friends: ['Caio'] })
+    ).json().id;
+    const code = (await call(ana, 'GET', `/api/split-groups/${group}`)).json().joinCode;
+    await call(bia, 'POST', '/api/split-groups/join', { code });
+    // Grupo só da Ana (some junto).
+    await call(ana, 'POST', '/api/split-groups', { name: 'Só minha' });
+
+    const blocked = await remove(ana);
+    expect(blocked.statusCode).toBe(400);
+    expect(blocked.json().error.code).toBe('owns_shared_space');
+    expect((await call(ana, 'GET', '/api/me')).statusCode).toBe(200);
+
+    const members = (await call(ana, 'GET', `/api/spaces/${shared}/members`)).json().items;
+    const biaMember = members.find((m: { email: string }) => m.email === bia.email);
+    await call(ana, 'DELETE', `/api/spaces/${shared}/members/${biaMember.userId}`);
+
+    expect((await remove(ana)).statusCode).toBe(204);
+    // Sem sessão e sem login.
+    expect((await call(ana, 'GET', '/api/me')).statusCode).toBe(401);
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { origin: appUrl },
+      payload: { email: ana.email, password: 'senha-forte-1' },
+    });
+    expect(login.statusCode).toBeGreaterThanOrEqual(400);
+
+    expect(await count('users', `id = '${ana.id}'`)).toBe(0);
+    expect(await count('spaces', `id in ('${ana.personal}', '${shared}')`)).toBe(0);
+    expect(await count('transactions', `space_id = '${ana.personal}'`)).toBe(0);
+    expect(await count('goals', `space_id = '${ana.personal}'`)).toBe(0);
+    // O racha com a Bia continua, agora dela; o grupo só da Ana sumiu.
+    expect(await count('split_groups', `name = 'Só minha'`)).toBe(0);
+    const left = (await call(bia, 'GET', `/api/split-groups/${group}`)).json();
+    expect(left.participants.map((p: { name: string }) => p.name).sort()).toEqual([
+      'Ana',
+      'Bia',
+      'Caio',
+    ]);
+    expect(await count('split_groups', `id = '${group}' and created_by = '${bia.id}'`)).toBe(1);
+    // Bia continua com tudo dela.
+    expect((await call(bia, 'GET', '/api/me')).statusCode).toBe(200);
+  });
+
+  it('removes her membership but keeps the transactions in spaces owned by others', async () => {
+    const caio = await signUp('Caio', 'caio@ex.com');
+    const shared = (await call(bia, 'POST', '/api/spaces', { name: 'Família' })).json().id;
+    const invite = (await call(bia, 'POST', '/api/invites', { spaceId: shared })).json();
+    await call(caio, 'POST', '/api/invites/accept', { code: invite.code });
+    const acc = (
+      await call(bia, 'POST', `/api/spaces/${shared}/accounts`, {
+        name: 'Conta',
+        type: 'checking',
+        initialBalance: 0,
+        initialDate: '2026-01-01',
+      })
+    ).json().id;
+    await call(caio, 'POST', `/api/spaces/${shared}/transactions`, {
+      type: 'expense',
+      status: 'settled',
+      amount: 900,
+      date: '2026-10-12',
+      description: 'Do Caio',
+      accountId: acc,
+    });
+    expect((await remove(caio)).statusCode).toBe(204);
+    expect(await count('transactions', `description = 'Do Caio' and created_by is null`)).toBe(1);
+    expect(await count('space_members', `space_id = '${shared}'`)).toBe(1);
   });
 });

@@ -66,3 +66,10 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 - As 4 telas da barra inferior (Início, Lançamentos, Cartões, Mais) não têm botão "voltar"; toda outra tela tem, no canto esquerdo do título (`PageHeader` com `back`).
 - "Voltar" desfaz a última navegação; só vai para a tela-mãe (`back`) quando a tela foi aberta direto por link.
 - A rolagem é restaurada ao voltar e começa no topo em tela nova.
+
+## Campos numéricos e tema
+- Números inteiros (parcelas, cotas, intervalo) usam `IntegerInput` e percentuais `DecimalInput` (`components/NumberInputs.tsx`): `type="text"` com `inputMode` numérico/decimal, sem setinhas (que não existem no celular), valor selecionado ao tocar, apagar e redigitar funciona e só vale dentro de `min`..`max`. Não usar `type="number"`.
+- Dinheiro continua no `MoneyInput` (dígitos entram pela direita).
+- Tema padrão: **claro**. Escuro e Automático (segue o aparelho) são escolha do usuário em Mais; o tema é aplicado antes da primeira pintura (script no `index.html`).
+- Campos lado a lado (`.field-row`) empilham em telas com menos de 480 px.
+- Simuladores: um resultado em destaque (`.sim-hero`), números de apoio em grade (`.sim-stats`) e o detalhe (mês a mês, comparação) recolhido em `<details>`.

@@ -18,6 +18,7 @@ import {
 } from '../../lib/queries';
 import { useMe } from '../../auth/session';
 import { errorText } from '../transactions/EntryForm';
+import { DecimalInput, IntegerInput } from '../../components/NumberInputs';
 
 const MODE_LABEL: Record<RachaMode, string> = {
   equal: 'Igualmente',
@@ -152,26 +153,19 @@ function ExpenseForm({ group, onDone }: { group: GroupDetail; onDone: () => void
               </span>
             </label>
             {included[p.id] && mode === 'percent' && (
-              <input
-                className="input"
-                type="number"
-                min={0}
-                max={100}
-                step="0.01"
+              <DecimalInput
                 aria-label={`Percentual de ${p.name}`}
                 value={values[p.id] ?? 0}
-                onChange={(e) => setValues({ ...values, [p.id]: Number(e.target.value) })}
+                onChange={(v) => setValues({ ...values, [p.id]: v })}
               />
             )}
             {included[p.id] && mode === 'shares' && (
-              <input
-                className="input"
-                type="number"
+              <IntegerInput
                 min={1}
-                step={1}
+                max={999}
                 aria-label={`Cotas de ${p.name}`}
                 value={values[p.id] ?? 1}
-                onChange={(e) => setValues({ ...values, [p.id]: Number(e.target.value) })}
+                onChange={(v) => setValues({ ...values, [p.id]: v })}
               />
             )}
             {included[p.id] && mode === 'amount' && (

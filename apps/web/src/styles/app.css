@@ -2097,3 +2097,83 @@ h3 {
   overflow-wrap: anywhere;
   user-select: all;
 }
+
+.danger-zone {
+  border: 1px solid var(--expense);
+}
+
+/* Simuladores: um resultado em destaque, o detalhe recolhido */
+.sim-hero__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.sim-hero__main strong {
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.sim-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.sim-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sim-stats dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.sim-stats dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.sim-verdict p {
+  margin: 0;
+}
+
+.sim-details summary,
+.sim-compare summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.sim-compare[open] summary {
+  margin-bottom: 12px;
+}
+
+.sim-scenarios {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .sim-scenarios {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 479px) {
+  .hide-sm {
+    display: none;
+  }
+
+  /* Dois campos lado a lado não cabem em telas estreitas. */
+  .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,5 +1,5 @@
 import type { SpaceSummary } from '@finapp/shared';
-import { Copy, Trash2, UserPlus, Users } from 'lucide-react';
+import { Copy, Link as LinkIcon, Trash2, UserPlus, Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useMe } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
@@ -21,8 +21,10 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
   const [code, setCode] = useState<string | null>(null);
   const error = rename.error ?? invite.error ?? removeMember.error;
 
-  const copy = async (text: string) => {
-    toast({ text: (await copyText(text)) ? 'Código copiado.' : 'Copie o código manualmente.' });
+  const copy = async (text: string, done = 'Código copiado.') => {
+    toast({
+      text: (await copyText(text)) ? done : 'Não consegui copiar. Selecione e copie à mão.',
+    });
   };
 
   return (
@@ -165,6 +167,19 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
                       onClick={() => void copy(code)}
                     >
                       <Copy size={18} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      aria-label="Copiar link do convite"
+                      onClick={() =>
+                        void copy(
+                          `${window.location.origin}/criar-conta?convite=${code}`,
+                          'Link copiado.',
+                        )
+                      }
+                    >
+                      <LinkIcon size={18} aria-hidden="true" />
                     </button>
                   </div>
                 )}

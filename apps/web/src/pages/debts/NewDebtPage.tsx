@@ -4,6 +4,7 @@ import { Plus, X } from 'lucide-react';
 import { useDeferredValue, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { MoneyInput } from '../../components/MoneyInput';
+import { IntegerInput } from '../../components/NumberInputs';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
 import { DEBT_KIND_META, DEBT_SYSTEM_LABEL } from '../../lib/debts';
@@ -339,14 +340,12 @@ function PhaseEditor({
         <div className="field-row">
           <div className="field">
             <label htmlFor={id('n')}>Parcelas</label>
-            <input
+            <IntegerInput
               id={id('n')}
-              className="input num"
-              type="number"
               min={1}
               max={600}
               value={p.installments}
-              onChange={(e) => onChange({ installments: Math.max(1, Number(e.target.value) || 1) })}
+              onChange={(v) => onChange({ installments: v })}
             />
           </div>
           <div className="field">
@@ -397,14 +396,12 @@ function PhaseEditor({
           </div>
           <div className="field">
             <label htmlFor={id('n2')}>Parcelas</label>
-            <input
+            <IntegerInput
               id={id('n2')}
-              className="input num"
-              type="number"
               min={1}
               max={600}
               value={p.installments}
-              onChange={(e) => onChange({ installments: Math.max(1, Number(e.target.value) || 1) })}
+              onChange={(v) => onChange({ installments: v })}
             />
           </div>
         </>
@@ -833,16 +830,12 @@ export function NewDebtPage() {
                 <div className="field-row">
                   <div className="field">
                     <label htmlFor="s-count">Quantas parcelas</label>
-                    <input
+                    <IntegerInput
                       id="s-count"
-                      className="input num"
-                      type="number"
                       min={1}
                       max={600}
                       value={form.simple.count}
-                      onChange={(e) =>
-                        setSimple({ count: Math.max(1, Number(e.target.value) || 1) })
-                      }
+                      onChange={(v) => setSimple({ count: v })}
                     />
                   </div>
                   <div className="field">
@@ -889,16 +882,12 @@ export function NewDebtPage() {
                 <div className="field-row">
                   <div className="field">
                     <label htmlFor="o-left">Quantas parcelas faltam</label>
-                    <input
+                    <IntegerInput
                       id="o-left"
-                      className="input num"
-                      type="number"
                       min={1}
                       max={600}
                       value={form.simple.left}
-                      onChange={(e) =>
-                        setSimple({ left: Math.max(1, Number(e.target.value) || 1) })
-                      }
+                      onChange={(v) => setSimple({ left: v })}
                     />
                   </div>
                   <div className="field">
@@ -936,15 +925,13 @@ export function NewDebtPage() {
                     </div>
                     <div className="field">
                       <label htmlFor="o-total">Total de parcelas do contrato</label>
-                      <input
+                      <IntegerInput
                         id="o-total"
-                        className="input num"
-                        type="number"
                         min={0}
-                        value={form.simple.totalCount || ''}
-                        onChange={(e) =>
-                          setSimple({ totalCount: Math.max(0, Number(e.target.value) || 0) })
-                        }
+                        max={600}
+                        emptyWhenZero
+                        value={form.simple.totalCount}
+                        onChange={(v) => setSimple({ totalCount: v })}
                       />
                     </div>
                   </div>

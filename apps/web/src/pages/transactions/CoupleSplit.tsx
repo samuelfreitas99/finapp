@@ -11,6 +11,7 @@ import {
   useTransactionSplit,
 } from '../../lib/queries';
 import { errorText } from './EntryForm';
+import { DecimalInput } from '../../components/NumberInputs';
 
 const MODES: { value: CoupleSplitMode; label: string }[] = [
   { value: 'none', label: 'Não dividir' },
@@ -141,15 +142,10 @@ function CoupleSplitForm({
             list.map((m) => (
               <div className="field" key={m.userId}>
                 <label htmlFor={`cs-p-${m.userId}`}>{m.name} (%)</label>
-                <input
+                <DecimalInput
                   id={`cs-p-${m.userId}`}
-                  className="input"
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
                   value={percents[m.userId] ?? 0}
-                  onChange={(e) => setPercents({ ...percents, [m.userId]: Number(e.target.value) })}
+                  onChange={(v) => setPercents({ ...percents, [m.userId]: v })}
                 />
               </div>
             ))}

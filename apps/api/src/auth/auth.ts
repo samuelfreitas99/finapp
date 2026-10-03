@@ -32,6 +32,8 @@ export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
     baseURL: appUrl,
     basePath: '/api/auth',
     trustedOrigins: [appUrl],
+    // A exclusão de conta é uma rota nossa (`POST /api/me/delete`), sempre com senha.
+    disabledPaths: ['/delete-user', '/delete-user/callback'],
     database: drizzleAdapter(db, {
       provider: 'pg',
       schema: {

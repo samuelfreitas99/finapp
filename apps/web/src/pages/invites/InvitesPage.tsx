@@ -1,5 +1,5 @@
 import type { Invite } from '@finapp/shared';
-import { Copy, Share2, Trash2, UserPlus } from 'lucide-react';
+import { Copy, Link as LinkIcon, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
@@ -169,6 +169,14 @@ export function InvitesPage() {
                 </span>
                 {status === 'pending' && (
                   <>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      aria-label={`Copiar link do convite ${i.code}`}
+                      onClick={() => void copy(linkFor(i.code), 'Link copiado.')}
+                    >
+                      <LinkIcon size={18} aria-hidden="true" />
+                    </button>
                     <button
                       type="button"
                       className="icon-btn"

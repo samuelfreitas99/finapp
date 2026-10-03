@@ -23,6 +23,7 @@ import {
   useRecurrencePreview,
 } from '../../lib/queries';
 import { CARD_PREFIX, errorText, isCardTarget } from '../transactions/EntryForm';
+import { IntegerInput } from '../../components/NumberInputs';
 
 type RuleKind = DayRuleBody['kind'];
 type Adjust = 'none' | 'previous' | 'next';
@@ -326,14 +327,12 @@ function RecurrenceForm({
             <label htmlFor="interval">
               {form.frequency === 'weekly' ? 'A cada quantas semanas' : 'A cada quantos meses'}
             </label>
-            <input
+            <IntegerInput
               id="interval"
-              className="input num"
-              type="number"
               min={1}
               max={120}
               value={form.interval}
-              onChange={(e) => set('interval', Math.max(1, Number(e.target.value) || 1))}
+              onChange={(v) => set('interval', v)}
             />
           </div>
         )}

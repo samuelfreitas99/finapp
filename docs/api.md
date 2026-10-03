@@ -79,6 +79,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - `GET /audit-log?limit=&cursor=&entity=` ✅ (histórico de alterações do espaço, mais recentes primeiro; `nextCursor`)
 
+- `POST /api/me/delete` ✅ (`{ password, confirm: "EXCLUIR" }`; apaga o espaço pessoal e os espaços compartilhados só seus, sai dos demais; 400 `owns_shared_space` se for dono de espaço com outros membros; o `/api/auth/delete-user` do Better Auth está desligado)
 - `PUT /api/me/pin` ✅ (`{ pin, currentPin? }`, 4–6 dígitos; trocar exige `currentPin`), `POST /api/me/pin/verify` ✅ (`{ pin }`; 400 `pin_invalid`, 429 `pin_locked` após 5 erros), `DELETE /api/me/pin` ✅ (`{ pin }`); `GET /api/me` traz `pinEnabled`
 
 - 2FA (Better Auth, `/api/auth/two-factor/*`): `POST enable` (`{ password }` → `totpURI` e `backupCodes`), `POST verify-totp` (`{ code }`; confirma a ativação ou conclui o login), `POST verify-backup-code`, `POST disable` (`{ password }`); `POST /api/auth/sign-in/email` devolve `{ twoFactorRedirect: true }` quando ligado; `GET /api/me` traz `twoFactorEnabled`

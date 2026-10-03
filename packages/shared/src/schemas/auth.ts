@@ -65,3 +65,10 @@ export type SetPinBody = z.infer<typeof setPinBodySchema>;
 /** Corpo de `POST /api/me/pin/verify` e `DELETE /api/me/pin`. */
 export const pinBodySchema = z.object({ pin: pinSchema });
 export type PinBody = z.infer<typeof pinBodySchema>;
+
+/** Corpo de `POST /api/me/delete`: senha e a palavra EXCLUIR para confirmar. */
+export const deleteAccountBodySchema = z.object({
+  password: z.string().min(1).max(128),
+  confirm: z.literal('EXCLUIR'),
+});
+export type DeleteAccountBody = z.infer<typeof deleteAccountBodySchema>;

@@ -13,6 +13,7 @@ import {
   useSplitSettings,
 } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
+import { DecimalInput } from '../../components/NumberInputs';
 
 function Settings({ spaceId, isOwner }: { spaceId: string; isOwner: boolean }) {
   const toast = useToast();
@@ -60,16 +61,11 @@ function Settings({ spaceId, isOwner }: { spaceId: string; isOwner: boolean }) {
         members.data.map((m) => (
           <div className="field" key={m.userId}>
             <label htmlFor={`def-${m.userId}`}>{m.name} (%)</label>
-            <input
+            <DecimalInput
               id={`def-${m.userId}`}
-              className="input"
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
               disabled={!isOwner}
               value={current[m.userId] ?? 0}
-              onChange={(e) => setPercents({ ...current, [m.userId]: Number(e.target.value) })}
+              onChange={(v) => setPercents({ ...current, [m.userId]: v })}
             />
           </div>
         ))}

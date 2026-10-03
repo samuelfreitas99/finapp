@@ -7,9 +7,10 @@ export function readTheme(): Theme {
     const v = localStorage.getItem(KEY);
     if (v === 'light' || v === 'dark' || v === 'system') return v;
   } catch {
-    // armazenamento indisponível: segue o sistema
+    // armazenamento indisponível: usa o padrão
   }
-  return 'system';
+  // Padrão: claro. Escuro e automático (segue o aparelho) são escolha do usuário.
+  return 'light';
 }
 
 /** Aplica o tema no <html> (`system` remove o atributo e segue o sistema). */

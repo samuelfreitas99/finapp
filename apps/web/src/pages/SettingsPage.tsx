@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { markUnlocked } from '../lib/app-lock';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '../lib/push';
 import { errorText } from './transactions/EntryForm';
+import { DeleteAccountCard } from './DeleteAccountCard';
 import { PasskeysCard } from './PasskeysCard';
 import { TwoFactorCard } from './TwoFactorCard';
 
@@ -335,6 +336,7 @@ export function SettingsPage() {
       <TwoFactorCard />
       <PushCard />
       <AlertSettings />
+      <DeleteAccountCard />
     </>
   );
 }

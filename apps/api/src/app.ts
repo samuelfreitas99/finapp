@@ -87,7 +87,7 @@ export function buildApp({
 
   if (db && auth) {
     registerAuth(app, auth, appUrl);
-    meRoutes(app, db);
+    meRoutes(app, db, auth);
     inviteRoutes(app, db);
     notificationRoutes(app, db, push);
     reminderRoutes(app, db);

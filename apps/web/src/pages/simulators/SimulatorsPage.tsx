@@ -19,6 +19,7 @@ import {
   useSimulateDebt,
 } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
+import { IntegerInput } from '../../components/NumberInputs';
 
 type Tab = 'purchase' | 'debt';
 
@@ -124,15 +125,7 @@ function PurchaseSimulator() {
         <div className="field-row">
           <div className="field">
             <label htmlFor="sim-n">Parcelas</label>
-            <input
-              id="sim-n"
-              className="input"
-              type="number"
-              min={1}
-              max={120}
-              value={n}
-              onChange={(e) => setN(Math.max(1, Math.min(120, Number(e.target.value) || 1)))}
-            />
+            <IntegerInput id="sim-n" min={1} max={120} value={n} onChange={setN} />
           </div>
           <div className="field">
             <label htmlFor="sim-card">Onde vai pagar</label>
@@ -186,66 +179,70 @@ function PurchaseSimulator() {
       </section>
 
       {offer && (
-        <section className="card card--pad stack" aria-labelledby="sim-result">
-          <h2 id="sim-result">Resultado</h2>
-          <dl className="invoice-head__rows">
+        <section className="card card--pad stack sim-hero" aria-labelledby="sim-result">
+          <h2 id="sim-result" className="sr-only">
+            Resultado
+          </h2>
+          <p className="sim-hero__main">
+            <span className="muted">Você paga</span>
+            <strong className="num">
+              {n}x de {money(offer.installmentAmount, hidden)}
+            </strong>
+          </p>
+          <dl className="sim-stats">
             <div>
-              <dt>Parcela</dt>
-              <dd className="num">
-                {n}x de {money(offer.installmentAmount, hidden)}
-              </dd>
-            </div>
-            <div>
-              <dt>Total pago</dt>
+              <dt>Total</dt>
               <dd className="num">{money(offer.total, hidden)}</dd>
             </div>
             <div>
-              <dt>Juros pagos</dt>
+              <dt>Juros</dt>
               <dd className={`num ${offer.interest > 0 ? 'expense' : ''}`}>
                 {offer.interest > 0 ? money(offer.interest, hidden) : 'nenhum'}
               </dd>
             </div>
             {offer.interest > 0 && (
               <div>
-                <dt>Taxa embutida</dt>
+                <dt>Taxa</dt>
                 <dd className="num">{pctText(offer.monthlyRate)}</dd>
               </div>
             )}
           </dl>
-        </section>
-      )}
 
-      {offer && (
-        <section className="card card--pad stack" aria-labelledby="sim-impact">
-          <h2 id="sim-impact">Impacto no seu saldo previsto</h2>
-          {projection.isPending && <div className="skeleton" style={{ height: 80 }} />}
-          {projection.isError && (
-            <p className="alert alert--error" role="alert">
-              {errorText(projection.error)}
-            </p>
-          )}
+          <div className="sim-verdict" aria-live="polite">
+            {projection.isPending && <div className="skeleton" style={{ height: 48 }} />}
+            {projection.isError && (
+              <p className="alert alert--error" role="alert">
+                {errorText(projection.error)}
+              </p>
+            )}
+            {impact?.firstNewNegative ? (
+              <p className="alert alert--error" role="alert">
+                Seu saldo previsto fica{' '}
+                <strong>negativo em {monthLabel(impact.firstNewNegative)}</strong> por causa dessa
+                compra.
+              </p>
+            ) : impact?.lowest ? (
+              <p>
+                Com a compra, o menor saldo previsto é{' '}
+                <strong className="num">{money(impact.lowest.balance, hidden)}</strong> em{' '}
+                {monthLabel(impact.lowest.month)}.
+              </p>
+            ) : null}
+          </div>
+
           {impact && (
-            <>
-              {impact.firstNewNegative ? (
-                <p className="alert alert--error" role="alert">
-                  Com essa compra seu saldo previsto fica{' '}
-                  <strong>negativo em {monthLabel(impact.firstNewNegative)}</strong>.
-                </p>
-              ) : impact.lowest ? (
-                <p>
-                  Menor saldo previsto com a compra:{' '}
-                  <strong className="num">{money(impact.lowest.balance, hidden)}</strong> em{' '}
-                  {monthLabel(impact.lowest.month)}.
-                </p>
-              ) : null}
+            <details className="table-view sim-details">
+              <summary>Ver mês a mês</summary>
               <div className="table-scroll">
                 <table>
                   <thead>
                     <tr>
                       <th scope="col">Mês</th>
                       <th scope="col">Parcela</th>
-                      <th scope="col">Saldo sem a compra</th>
-                      <th scope="col">Saldo com a compra</th>
+                      <th scope="col" className="hide-sm">
+                        Sem a compra
+                      </th>
+                      <th scope="col">Saldo</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -253,7 +250,7 @@ function PurchaseSimulator() {
                       <tr key={m.month}>
                         <th scope="row">{monthLabel(m.month)}</th>
                         <td className="num">{m.outflow ? money(-m.outflow, hidden) : '—'}</td>
-                        <td className="num">{money(m.before, hidden)}</td>
+                        <td className="num hide-sm">{money(m.before, hidden)}</td>
                         <td className={`num ${m.after < 0 ? 'expense' : ''}`}>
                           {money(m.after, hidden)}
                         </td>
@@ -263,64 +260,66 @@ function PurchaseSimulator() {
                 </table>
               </div>
               <p className="muted">
-                Parte do saldo previsto do Planejamento (receitas e despesas já cadastradas).
+                Saldo previsto do Planejamento com a compra.
                 {cardId
                   ? ' As parcelas caem na fatura de cada mês.'
-                  : ' Sem cartão, conta uma parcela por mês a partir do mês que vem.'}
+                  : ' Sem cartão, uma parcela por mês a partir do mês que vem.'}
               </p>
-            </>
+            </details>
           )}
         </section>
       )}
 
       {offer && (
-        <section className="card card--pad form" aria-labelledby="sim-cash">
-          <h2 id="sim-cash">À vista ou parcelado?</h2>
-          <div className="field-row">
-            <div className="field">
-              <label htmlFor="sim-cash-price">Preço à vista</label>
-              <MoneyInput id="sim-cash-price" value={cashPrice} onChange={setCashPrice} />
+        <details className="card card--pad sim-compare">
+          <summary>Comparar com o preço à vista</summary>
+          <div className="form">
+            <div className="field-row">
+              <div className="field">
+                <label htmlFor="sim-cash-price">Preço à vista</label>
+                <MoneyInput id="sim-cash-price" value={cashPrice} onChange={setCashPrice} />
+              </div>
+              <div className="field">
+                <label htmlFor="sim-opp">Rendimento (% ao mês)</label>
+                <input
+                  id="sim-opp"
+                  className="input num"
+                  inputMode="decimal"
+                  value={opportunity}
+                  onChange={(e) => setOpportunity(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="field">
-              <label htmlFor="sim-opp">Rendimento do dinheiro (% ao mês)</label>
-              <input
-                id="sim-opp"
-                className="input num"
-                inputMode="decimal"
-                value={opportunity}
-                onChange={(e) => setOpportunity(e.target.value)}
-              />
-            </div>
-          </div>
-          {compare ? (
-            <p role="status">
-              {compare.cheaper === 'tie' ? (
-                'Dá no mesmo.'
-              ) : compare.cheaper === 'cash' ? (
-                <>
-                  <strong>À vista compensa:</strong> as parcelas valem{' '}
-                  {money(compare.presentValue, hidden)} hoje, mais que os{' '}
-                  {money(compare.cashPrice, hidden)} à vista (economia de{' '}
-                  {money(compare.difference, hidden)}).
-                </>
-              ) : (
-                <>
-                  <strong>Parcelar compensa:</strong> as parcelas valem{' '}
-                  {money(compare.presentValue, hidden)} hoje, menos que os{' '}
-                  {money(compare.cashPrice, hidden)} à vista (economia de{' '}
-                  {money(-compare.difference, hidden)}), se o dinheiro render isso.
-                </>
-              )}
+            {compare ? (
+              <p role="status">
+                {compare.cheaper === 'tie' ? (
+                  'Dá no mesmo.'
+                ) : compare.cheaper === 'cash' ? (
+                  <>
+                    <strong>À vista compensa.</strong> As parcelas valem{' '}
+                    {money(compare.presentValue, hidden)} hoje, mais que os{' '}
+                    {money(compare.cashPrice, hidden)} à vista: economia de{' '}
+                    {money(compare.difference, hidden)}.
+                  </>
+                ) : (
+                  <>
+                    <strong>Parcelar compensa.</strong> As parcelas valem{' '}
+                    {money(compare.presentValue, hidden)} hoje, menos que os{' '}
+                    {money(compare.cashPrice, hidden)} à vista: economia de{' '}
+                    {money(-compare.difference, hidden)}, se o dinheiro render isso.
+                  </>
+                )}
+              </p>
+            ) : (
+              <p className="muted">Informe o preço à vista para comparar.</p>
+            )}
+            <p className="muted">
+              Para o à vista valer a pena, o desconto precisa passar de{' '}
+              {compare ? `${(compare.breakEvenDiscount * 100).toFixed(1).replace('.', ',')}%` : '—'}{' '}
+              sobre o total parcelado.
             </p>
-          ) : (
-            <p className="muted">Informe o preço à vista para comparar.</p>
-          )}
-          <p className="muted">
-            Para o à vista valer a pena, o desconto precisa passar de{' '}
-            {compare ? `${(compare.breakEvenDiscount * 100).toFixed(1).replace('.', ',')}%` : '—'}{' '}
-            sobre o total parcelado, considerando esse rendimento.
-          </p>
-        </section>
+          </div>
+        </details>
       )}
     </>
   );
@@ -338,30 +337,30 @@ function DebtSimulator() {
 
   const scenario = (
     title: string,
-    s: NonNullable<typeof result>['amortization'] extends infer A
-      ? A extends { reduceTerm: infer T }
-        ? T
-        : never
-      : never,
+    hint: string,
+    s: { count: number; installment: number; lastDueDate: string | null; interestSaved: number },
   ) => (
-    <div className="card card--pad stack">
-      <h3>{title}</h3>
-      <dl className="invoice-head__rows">
+    <div className="card card--pad stack sim-scenario">
+      <div>
+        <h3>{title}</h3>
+        <span className="muted">{hint}</span>
+      </div>
+      <p className="sim-hero__main">
+        <span className="muted">Você economiza</span>
+        <strong className="num income">{money(s.interestSaved, hidden)}</strong>
+      </p>
+      <dl className="sim-stats">
         <div>
-          <dt>Parcelas que sobram</dt>
+          <dt>Parcelas</dt>
           <dd className="num">{s.count}</dd>
         </div>
         <div>
-          <dt>Próxima parcela</dt>
+          <dt>Parcela</dt>
           <dd className="num">{money(s.installment, hidden)}</dd>
         </div>
         <div>
-          <dt>Última parcela</dt>
+          <dt>Termina</dt>
           <dd className="num">{s.lastDueDate ? formatDate(s.lastDueDate) : '—'}</dd>
-        </div>
-        <div>
-          <dt>Juros que você economiza</dt>
-          <dd className="num income">{money(s.interestSaved, hidden)}</dd>
         </div>
       </dl>
     </div>
@@ -421,38 +420,45 @@ function DebtSimulator() {
 
       {result && (
         <>
-          <section className="card card--pad stack" aria-labelledby="sim-pay">
-            <h2 id="sim-pay">Quitar tudo hoje</h2>
-            <dl className="invoice-head__rows">
+          <section className="card card--pad stack sim-hero" aria-labelledby="sim-pay">
+            <h2 id="sim-pay" className="sr-only">
+              Quitar tudo hoje
+            </h2>
+            <p className="sim-hero__main">
+              <span className="muted">Quitar tudo hoje custa</span>
+              <strong className="num">{money(result.payoff.pay, hidden)}</strong>
+            </p>
+            <dl className="sim-stats">
               <div>
-                <dt>Hoje você ainda pagaria</dt>
-                <dd className="num">
-                  {money(result.current.remainingAmount, hidden)} em {result.current.remainingCount}{' '}
-                  parcelas
-                </dd>
-              </div>
-              <div>
-                <dt>Quitando agora você paga</dt>
-                <dd className="num">{money(result.payoff.pay, hidden)}</dd>
+                <dt>Em parcelas</dt>
+                <dd className="num">{money(result.current.remainingAmount, hidden)}</dd>
               </div>
               <div>
                 <dt>Você economiza</dt>
                 <dd className="num income">{money(result.payoff.saves, hidden)}</dd>
               </div>
+              <div>
+                <dt>Parcelas</dt>
+                <dd className="num">{result.current.remainingCount}</dd>
+              </div>
             </dl>
             <p className="muted">
-              O saldo devedor não inclui os juros futuros (RN 6.5). Para quitar de verdade, use a
-              tela da dívida.
+              O saldo devedor não inclui os juros futuros. Para quitar de verdade, use a tela da
+              dívida.
             </p>
           </section>
           {result.amortization && (
             <section className="stack" aria-labelledby="sim-amort">
-              <h2 id="sim-amort">
-                Pagando {money(result.amortization.amount, hidden)} a mais (
-                {result.amortization.phaseName})
-              </h2>
-              {scenario('Menos parcelas (mantém o valor)', result.amortization.reduceTerm)}
-              {scenario('Parcela menor (mantém o prazo)', result.amortization.reduceInstallment)}
+              <h2 id="sim-amort">Pagando {money(result.amortization.amount, hidden)} a mais</h2>
+              <p className="muted">{result.amortization.phaseName}</p>
+              <div className="sim-scenarios">
+                {scenario(
+                  'Menos parcelas',
+                  'Mantém o valor da parcela',
+                  result.amortization.reduceTerm,
+                )}
+                {scenario('Parcela menor', 'Mantém o prazo', result.amortization.reduceInstallment)}
+              </div>
             </section>
           )}
         </>
