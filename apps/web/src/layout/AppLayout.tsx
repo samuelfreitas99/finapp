@@ -1,7 +1,8 @@
-import { Eye, EyeOff, Wallet } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router';
+import { Bell, Eye, EyeOff, Wallet } from 'lucide-react';
+import { Link, NavLink, Outlet } from 'react-router';
 import { useActiveSpace } from '../auth/session';
 import { useHiddenValues } from '../lib/hidden-values';
+import { useNotifications } from '../lib/queries';
 import { bottomNav, newEntry, sideNav, type NavItem } from './nav';
 
 function Item({ item, size = 22 }: { item: NavItem; size?: number }) {
@@ -14,7 +15,26 @@ function Item({ item, size = 22 }: { item: NavItem; size?: number }) {
   );
 }
 
-/** Topo das telas: espaço atual e ocultar valores. */
+function NotificationBell() {
+  const { data } = useNotifications();
+  const unread = data?.unread ?? 0;
+  return (
+    <Link
+      to="/notificacoes"
+      className="icon-btn bell"
+      aria-label={unread ? `Notificações, ${unread} não lidas` : 'Notificações'}
+    >
+      <Bell size={20} aria-hidden="true" />
+      {unread > 0 && (
+        <span className="bell__badge" aria-hidden="true">
+          {unread > 9 ? '9+' : unread}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/** Topo das telas: espaço atual, notificações e ocultar valores. */
 export function TopBar({ title }: { title?: string }) {
   const space = useActiveSpace();
   const { hidden, toggle } = useHiddenValues();
@@ -25,6 +45,7 @@ export function TopBar({ title }: { title?: string }) {
         <span>{title ?? space?.name ?? 'Pessoal'}</span>
       </div>
       <div className="topbar__actions">
+        <NotificationBell />
         <button
           type="button"
           className="icon-btn"

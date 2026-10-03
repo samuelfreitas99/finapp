@@ -19,6 +19,7 @@ import { PlanningPage } from './pages/planning/PlanningPage';
 import { DebtPage } from './pages/debts/DebtPage';
 import { DebtsPage } from './pages/debts/DebtsPage';
 import { NewDebtPage } from './pages/debts/NewDebtPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SignUpPage } from './pages/SignUp';
 
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
           { path: '/categorias', element: <CategoriesPage /> },
           { path: '/mais', element: <MorePage /> },
           { path: '/configuracoes', element: <SettingsPage /> },
+          { path: '/notificacoes', element: <NotificationsPage /> },
         ],
       },
     ],

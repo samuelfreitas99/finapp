@@ -1,5 +1,6 @@
 import type {
   Account,
+  NotificationDto,
   AmortizeBody,
   PayInstallmentBody,
   PayoffBody,
@@ -601,6 +602,30 @@ export function usePropertyActions(id: string) {
           body: { month },
         });
       },
+      onSuccess: invalidate,
+    }),
+  };
+}
+
+export function useNotifications() {
+  return useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => api<{ items: NotificationDto[]; unread: number }>('/api/notifications'),
+    refetchInterval: 5 * 60_000,
+  });
+}
+
+export function useNotificationActions() {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['notifications'] });
+  return {
+    read: useMutation({
+      mutationFn: (id: string) =>
+        api(`/api/notifications/${id}/read`, { method: 'POST', body: {} }),
+      onSuccess: invalidate,
+    }),
+    readAll: useMutation({
+      mutationFn: () => api('/api/notifications/read-all', { method: 'POST', body: {} }),
       onSuccess: invalidate,
     }),
   };

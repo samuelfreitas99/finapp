@@ -66,7 +66,8 @@ pg-boss no mesmo Postgres (schema `pgboss`), iniciado pela API (`apps/api/src/jo
 |---|---|
 | `recurrences-generate` ✅ | diário 02:00 (America/Sao_Paulo, `missed: once`), mantém 12 meses gerados; também roda na subida da API |
 | `invoices.updateStatus` | diário 00:05 |
-| `alerts.daily` | diário 08:00 |
+| `alerts-daily` ✅ | diário 08:00 (core `buildAlerts`: a vencer, vencidos, receita não confirmada, fatura fecha amanhã/fechou/a vencer, limite ≥ 80%, saldo previsto negativo; uma notificação por usuário e chave) |
+| `notifications-send` ✅ | de hora em hora (:15), envia por push o que ficou para depois do horário de silêncio |
 | `debts.markLate` | diário 00:10 |
 | `backup` | container separado, diário 03:00 |
 

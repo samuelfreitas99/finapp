@@ -51,7 +51,7 @@ async function main() {
 
   let boss: Awaited<ReturnType<typeof startJobs>> | null = null;
   if (db && config.databaseUrl && process.env.RUN_JOBS !== 'false') {
-    boss = await startJobs({ db, connectionString: config.databaseUrl, log: app.log });
+    boss = await startJobs({ db, connectionString: config.databaseUrl, log: app.log, push });
     // Na subida, já completa a janela (o job diário roda às 02:00).
     generateAllRecurrences(db, todayIn()).catch((err: unknown) =>
       app.log.error({ err }, 'falha ao gerar recorrências'),

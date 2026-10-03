@@ -1,9 +1,13 @@
 import { REFERENCE_TIME_ZONE, todayIn } from '@finapp/core';
 import { PgBoss } from 'pg-boss';
 import type { Db } from '../db/client';
+import type { PushSender } from '../modules/notifications/push';
+import { generateAlerts, sendPending } from './alerts';
 import { generateAllRecurrences } from './recurrences';
 
 export const RECURRENCES_JOB = 'recurrences-generate';
+export const ALERTS_JOB = 'alerts-daily';
+export const SEND_JOB = 'notifications-send';
 
 /** Erros de conexão derrubada/fechada (57P01 admin_shutdown, pool encerrando). */
 export function isConnectionShutdown(err: unknown): boolean {
@@ -27,10 +31,12 @@ export async function startJobs({
   db,
   connectionString,
   log,
+  push = null,
 }: {
   db: Db;
   connectionString: string;
   log: JobLogger;
+  push?: PushSender | null;
 }): Promise<PgBoss> {
   const boss = new PgBoss({ connectionString, schema: 'pgboss' });
   boss.on('error', (err) => {
@@ -49,6 +55,21 @@ export async function startJobs({
   await boss.work(RECURRENCES_JOB, async () => {
     const created = await generateAllRecurrences(db, todayIn());
     log.info({ created }, 'recorrências geradas');
+  });
+
+  // Alertas do dia às 08:00; o envio roda de hora em hora para o que ficou no silêncio.
+  await boss.createQueue(ALERTS_JOB);
+  await boss.schedule(ALERTS_JOB, '0 8 * * *', null, { tz: REFERENCE_TIME_ZONE, missed: 'once' });
+  await boss.work(ALERTS_JOB, async () => {
+    const created = await generateAlerts(db, todayIn());
+    const sent = await sendPending(db, push);
+    log.info({ created, sent }, 'alertas do dia');
+  });
+  await boss.createQueue(SEND_JOB);
+  await boss.schedule(SEND_JOB, '15 * * * *', null, { tz: REFERENCE_TIME_ZONE });
+  await boss.work(SEND_JOB, async () => {
+    const sent = await sendPending(db, push);
+    if (sent) log.info({ sent }, 'notificações enviadas');
   });
   return boss;
 }

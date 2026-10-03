@@ -58,7 +58,11 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 
 ## Fase 6: Alertas
 - [x] Web Push (VAPID), inscrição e configurações
-- [ ] Job diário de alertas e central de notificações
+- [x] Job diário de alertas e central de notificações
+- [ ] Cadastro de dívida mais guiado: "Começando agora" ou "Já estou pagando" (quantas faltam, próximo vencimento, valor da parcela; taxa opcional), campos avançados recolhidos
+- [ ] Imóvel com entrega incerta: prazo do contrato + previsão de entrega, aviso de estimativa, ação "Recebi as chaves", pior caso no Planejamento
+- [ ] Salário variável (horas extras, feriados): "valor muda todo mês" também em receitas, inclusive salário em partes
+- [ ] Lembretes e checklist com notificação no horário
 - [ ] Lançamentos offline com fila
 
 ## Fase 7: Planejamento e relatórios
@@ -133,4 +137,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 02/10/2026: casos especiais de dívida (RN 6.6): valor recebido/emprestado lançado na conta com a categoria técnica "Empréstimo" (`moneyAccountId`), empréstimo no cartão exige o cartão, cartão de outra pessoa não aceita cartão próprio; o Início deixou de contar categorias técnicas (pagamento de fatura, ajuste, transferência, empréstimo) como receita/despesa, o que também tirava a contagem dupla de compra no cartão + pagamento da fatura (Claude).
 - 02/10/2026: imóvel na planta: mudar a entrega das chaves refaz as parcelas pendentes dos juros de obra e do financiamento; valor real do mês nos juros de obra; índices mensais (`/index-values`) e correção das parcelas pendentes da fase; seção "Imóvel" no painel da dívida. **Fase 5 concluída** (Claude).
 - 02/10/2026: **Fase 5 concluída e publicada** (main `66ea168`). Fase 6: tabelas `push_subscriptions`, `notification_settings`, `notifications` (migração 0006); API de chave VAPID, inscrição, teste, preferências por tipo com dias de antecedência e horário de silêncio, central (listar/ler); service worker com push; tela Configurações (ligar/desligar no aparelho, teste, avisos); chaves VAPID de produção geradas no `infra/.env` (Claude).
+- 03/10/2026: alertas (RN 9) com regra no core (`buildAlerts`, `inQuietHours`), job diário às 08:00 e envio de hora em hora respeitando o silêncio; sino com contador e central de notificações. Itens novos da Fase 6 pedidos pelo Samuel (cadastro de dívida guiado, entrega incerta, salário variável, lembretes) (Claude).
 
