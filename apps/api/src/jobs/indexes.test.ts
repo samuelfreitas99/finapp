@@ -97,6 +97,44 @@ describe.skipIf(!testDatabaseUrl)('index sync (integration)', () => {
     );
   });
 
+  it('falls back to IPEADATA when the Banco Central is down', async () => {
+    const ipea = (code: string, rows: [string, number][]) => ({
+      value: rows.map(([month, v]) => ({
+        SERCODIGO: code,
+        VALDATA: `${month}-01T00:00:00-03:00`,
+        VALVALOR: v,
+      })),
+    });
+    // Série inteira desde 2025: só os 6 meses anteriores e o corrente são gravados.
+    const months = Array.from({ length: 20 }, (_, i) => {
+      const n = 2025 * 12 + i;
+      return `${Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, '0')}`;
+    });
+    const fetcher = async (url: string) => {
+      if (url.includes('api.bcb.gov.br')) throw new Error('getaddrinfo ENOTFOUND');
+      if (url.includes("'IGP12_IGPMG12'"))
+        return reply(
+          ipea(
+            'IGP12_IGPMG12',
+            months.map((m) => [m, 1.57]),
+          ),
+        );
+      if (url.includes("'IGP12_INCCMG12'"))
+        return reply(ipea('IGP12_INCCMG12', [['2028-04', 0.25]]));
+      return reply(null, false, 503);
+    };
+    const result = await syncIndexValues(db, '2026-08-10', { fetcher });
+    expect(result.errors.igpm).toBeUndefined();
+    expect(result.errors.incc).toBeUndefined();
+    expect(result.saved.igpm).toBe(7);
+    expect(await valueOf('igpm', '2026-08')).toMatchObject({ value: 0.0157, source: 'auto' });
+    expect(await valueOf('igpm', '2026-01')).toBeUndefined();
+    expect(await valueOf('incc', '2028-04')).toMatchObject({ value: 0.0025, source: 'auto' });
+    expect(result.errors.ipca).toMatch(
+      /IBGE: HTTP 503; Banco Central: getaddrinfo ENOTFOUND; IPEADATA: HTTP 503/,
+    );
+  });
+
   it('prefers IBGE for IPCA when it answers', async () => {
     const urls: string[] = [];
     const fetcher = async (url: string) => {

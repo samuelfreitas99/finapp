@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { bcbWindow, parseBcbSeries, parseIbgeSeries, percentToDecimal } from './index';
+import {
+  bcbWindow,
+  parseBcbSeries,
+  parseIbgeSeries,
+  parseIpeaSeries,
+  percentToDecimal,
+} from './index';
 
 describe('percentToDecimal', () => {
   it('converts percent text to a decimal rate', () => {
@@ -44,6 +50,40 @@ describe('parseIbgeSeries', () => {
     ]);
     expect(parseIbgeSeries([])).toEqual([]);
     expect(parseIbgeSeries(null)).toEqual([]);
+  });
+});
+
+describe('parseIpeaSeries', () => {
+  // Amostra real do IPEADATA (INCC-M, IGP12_INCCMG12), com uma linha inválida acrescentada.
+  const json = {
+    '@odata.context':
+      'http://www.ipeadata.gov.br/api/odata4/$metadata#Collection(Ipeadata.OData4.Models.Valor)',
+    value: [
+      { SERCODIGO: 'IGP12_INCCMG12', VALDATA: '2026-07-01T00:00:00-03:00', VALVALOR: 0.61 },
+      { SERCODIGO: 'IGP12_INCCMG12', VALDATA: '2026-08-01T00:00:00-03:00', VALVALOR: 0.85 },
+      { SERCODIGO: 'IGP12_INCCMG12', VALDATA: '2026-09-01T00:00:00-03:00', VALVALOR: 0.25 },
+      { SERCODIGO: 'IGP12_INCCMG12', VALDATA: '2026-10-01T00:00:00-03:00', VALVALOR: null },
+      { SERCODIGO: 'IGP12_INCCMG12', VALDATA: 'lixo', VALVALOR: 1 },
+    ],
+  };
+
+  it('reads the OData format, rounds long decimals and ignores bad rows', () => {
+    expect(parseIpeaSeries(json)).toEqual([
+      { month: '2026-07', value: 0.0061 },
+      { month: '2026-08', value: 0.0085 },
+      { month: '2026-09', value: 0.0025 },
+    ]);
+    expect(
+      parseIpeaSeries({
+        value: [{ VALDATA: '1980-01-01T00:00:00-02:00', VALVALOR: 6.61564916057387 }],
+      }),
+    ).toEqual([{ month: '1980-01', value: 0.06615649 }]);
+    expect(parseIpeaSeries({ error: {} })).toEqual([]);
+    expect(parseIpeaSeries(null)).toEqual([]);
+  });
+
+  it('keeps only the last months when asked', () => {
+    expect(parseIpeaSeries(json, 2).map((r) => r.month)).toEqual(['2026-08', '2026-09']);
   });
 });
 

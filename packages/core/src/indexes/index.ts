@@ -67,6 +67,32 @@ export function parseIbgeSeries(json: unknown): MonthlyIndex[] {
   return out.sort(MONTH_ASC);
 }
 
+/** Séries mensais do IPEADATA (Ipea), usadas como reserva do Banco Central. */
+export const IPEA_SERIES: Record<IndexName, string> = {
+  incc: 'IGP12_INCCMG12',
+  ipca: 'PRECOS12_IPCAG12',
+  igpm: 'IGP12_IGPMG12',
+};
+
+/**
+ * Série do IPEADATA (OData): `{ value: [{ VALDATA: "2026-09-01T00:00:00-03:00", VALVALOR: 0.25 }] }`
+ * (valor em %). A API devolve a série inteira; `months` mantém só os últimos meses.
+ */
+export function parseIpeaSeries(json: unknown, months?: number): MonthlyIndex[] {
+  const rows = (json as { value?: unknown })?.value;
+  if (!Array.isArray(rows)) return [];
+  const byMonth = new Map<string, number>();
+  for (const row of rows as { VALDATA?: unknown; VALVALOR?: unknown }[]) {
+    const match = /^(\d{4})-(\d{2})-\d{2}T/.exec(String(row?.VALDATA ?? ''));
+    if (!match || (typeof row.VALVALOR !== 'number' && typeof row.VALVALOR !== 'string')) continue;
+    const value = percentToDecimal(row.VALVALOR);
+    if (value === null) continue;
+    byMonth.set(`${match[1]}-${match[2]}`, value);
+  }
+  const all = [...byMonth].map(([month, value]) => ({ month, value })).sort(MONTH_ASC);
+  return months === undefined ? all : all.slice(-months);
+}
+
 /** Datas `dd/mm/aaaa` da janela de busca no SGS (de `months` meses atrás até hoje). */
 export function bcbWindow(today: string, months: number): { from: string; to: string } {
   const [y, m, d] = today.split('-').map(Number) as [number, number, number];

@@ -448,7 +448,7 @@ export function PropertyActions({ d }: { d: DebtDetail }) {
           <span className="muted field-hint">
             {available
               ? available.source === 'auto'
-                ? `Valor buscado no ${indexedPhase.index === 'ipca' ? 'IBGE' : 'Banco Central'}. Pode trocar se quiser.`
+                ? 'Valor buscado nas fontes oficiais (IBGE, Banco Central ou Ipea). Pode trocar se quiser.'
                 : 'Valor que você mesmo cadastrou.'
               : 'Ainda não há valor deste mês: busque abaixo ou digite.'}{' '}
             Corrige as parcelas pendentes de {indexedPhase.name} que vencem a partir desse mês. As
@@ -474,7 +474,7 @@ export function PropertyActions({ d }: { d: DebtDetail }) {
               })
             }
           >
-            {syncIndexes.isPending ? 'Buscando…' : 'Buscar índices no Banco Central/IBGE'}
+            {syncIndexes.isPending ? 'Buscando…' : 'Buscar índices oficiais'}
           </button>
           <button
             type="submit"

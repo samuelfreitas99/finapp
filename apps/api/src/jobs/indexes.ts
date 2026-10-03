@@ -3,8 +3,10 @@ import {
   BCB_SERIES,
   IBGE_IPCA,
   INDEX_LABEL,
+  IPEA_SERIES,
   parseBcbSeries,
   parseIbgeSeries,
+  parseIpeaSeries,
   type IndexName,
   type ISODate,
   type MonthlyIndex,
@@ -38,13 +40,29 @@ const bcbUrl = (index: IndexName, today: ISODate, months: number) => {
 const ibgeUrl = (months: number) =>
   `https://servicodados.ibge.gov.br/api/v3/agregados/${IBGE_IPCA.aggregate}/periodos/-${months}/variaveis/${IBGE_IPCA.variable}?localidades=N1%5Ball%5D`;
 
+// O IPEADATA ignora $top/$filter e devolve a série inteira (poucas centenas de linhas).
+const ipeaUrl = (index: IndexName) =>
+  `https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO='${IPEA_SERIES[index]}')`;
+
+interface Source {
+  url: string;
+  parse: (json: unknown) => MonthlyIndex[];
+  name: string;
+}
+
 /** Fontes de cada índice, em ordem: a primeira que responder vale. */
-function sources(index: IndexName, today: ISODate, months: number) {
+function sources(index: IndexName, today: ISODate, months: number): Source[] {
   const bcb = { url: bcbUrl(index, today, months), parse: parseBcbSeries, name: 'Banco Central' };
+  // Mesma janela do SGS: os `months` meses anteriores e o mês corrente.
+  const ipea = {
+    url: ipeaUrl(index),
+    parse: (json: unknown) => parseIpeaSeries(json, months + 1),
+    name: 'IPEADATA',
+  };
   if (index === 'ipca') {
-    return [{ url: ibgeUrl(months), parse: parseIbgeSeries, name: 'IBGE' }, bcb];
+    return [{ url: ibgeUrl(months), parse: parseIbgeSeries, name: 'IBGE' }, bcb, ipea];
   }
-  return [bcb];
+  return [bcb, ipea];
 }
 
 async function load(fetcher: Fetcher, url: string): Promise<unknown> {

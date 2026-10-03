@@ -1148,7 +1148,7 @@ export function useIndexValues() {
   });
 }
 
-/** Busca agora INCC, IPCA e IGP-M no Banco Central e no IBGE. */
+/** Busca agora INCC, IPCA e IGP-M nas fontes oficiais (IBGE, Banco Central, Ipea). */
 export function useSyncIndexValues() {
   const spaceId = useSpaceId();
   const qc = useQueryClient();
