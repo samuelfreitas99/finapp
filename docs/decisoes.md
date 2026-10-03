@@ -81,3 +81,9 @@ Contexto: algumas telas tinham botão de voltar e outras não, e uma tela nova a
 Decisão: as 4 telas da barra inferior (Início, Lançamentos, Cartões, Mais) não têm "voltar"; toda outra tela tem. "Voltar" desfaz a última navegação (a tela anterior reabre onde estava); se a tela foi aberta direto por link, vai para a tela-mãe indicada em `back`. A rolagem é restaurada ao voltar e volta ao topo ao abrir uma tela nova (`ScrollRestoration`).
 Consequências: no desktop, os itens da barra lateral que não são abas (Contas, Dívidas...) também mostram "voltar", que leva à tela anterior.
 
+## ADR-019 Sem app Android empacotado por enquanto (03/10/2026)
+Contexto: o roadmap previa "empacotar como app Android (Capacitor/TWA), se fizer falta". O app já é um PWA com manifest, ícones (inclusive maskable), service worker e push (Web Push/VAPID) testados no Android.
+Decisão: não empacotar agora. O Chrome instala o PWA em tela cheia e entrega as notificações; um APK/TWA exigiria JDK + Android SDK no servidor, uma chave de assinatura para guardar e manter, o arquivo `assetlinks.json` e, para a Play Store, conta paga, sem ganho funcional.
+Gatilhos para rever: precisar de algo que PWA não faz (ler SMS/notificações de banco, widgets, biometria nativa fora do WebAuthn), entrega por loja para quem não sabe instalar o PWA, ou o Chrome deixar de oferecer a instalação. O caminho (Bubblewrap/TWA) está em `docs/instalar-no-celular.md`.
+Consequências: nada a manter além do PWA; o guia de instalação para Android e iPhone fica em `docs/instalar-no-celular.md`.
+

@@ -14,10 +14,12 @@ export default defineConfig({
         short_name: 'FinApp',
         description: 'Controle financeiro: saldo, o que vence e o que vai sobrar.',
         lang: 'pt-BR',
+        id: '/',
         start_url: '/',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
+        categories: ['finance'],
         background_color: '#F4F3EE',
         theme_color: '#1F3A68',
         icons: [

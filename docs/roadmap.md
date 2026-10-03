@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 9** (Fases 1–8 concluídas; Fase 2 aguarda confirmar o uso real).
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **todas as fases concluídas** (Fases 1–9; pendentes só o backup offsite e o uso real; Fase 2 aguarda confirmar o uso real).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -84,7 +84,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Correção por índice (INCC/IPCA/IGP-M) com busca automática (API pública do Banco Central/IBGE, gratuita)
 - [x] Simuladores: "e se eu comprar em Nx?" e quitação antecipada
 - [x] Resumo semanal/mensal por push
-- [ ] Empacotar como app Android (Capacitor/TWA), se fizer falta
+- [x] Empacotar como app Android (Capacitor/TWA), se fizer falta — decidido **não empacotar** por ora (ADR-019); guia de instalação do PWA em `docs/instalar-no-celular.md`
 
 ## Dúvidas em aberto
 - Imóvel com entrega incerta: a projeção usa a **previsão** de entrega; o "pior caso" (prazo do contrato) ainda não tem visão própria no Planejamento.
@@ -179,3 +179,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: índices automáticos: `packages/core/indexes` (leitura do SGS/BCB e SIDRA/IBGE), `index_values.source` (migração 0020), job `indexes-sync`, `POST /index-values/sync` e botão "Buscar índices no Banco Central/IBGE" com valor do mês preenchido na correção da dívida (Claude).
 - 03/10/2026: simuladores: `packages/core/simulators` (oferta parcelada, taxa embutida, à vista x parcelado, impacto no saldo), `POST /debts/:id/simulate` e tela "Simuladores" (compra parcelada e quitar dívida) no menu Mais (Claude).
 - 03/10/2026: resumos por push: `packages/core/summaries`, tipos `weekly_summary`/`monthly_summary` (migração 0021), `generateSummaries` no job das 08:00 e opções em Configurações (Claude).
+- 03/10/2026: Android: decisão de **não** empacotar (ADR-019) porque o PWA já instala e recebe push; manifest ganhou `id` e `categories`; guia `docs/instalar-no-celular.md`. **Fase 9 concluída** (Claude).
