@@ -19,3 +19,4 @@ export * from './goals';
 export * from './reports';
 export * from './import';
 export * from './export';
+export * from './indexes';

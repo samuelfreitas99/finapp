@@ -311,7 +311,10 @@ export const indexValueBodySchema = z.object({
 });
 export type IndexValueBody = z.infer<typeof indexValueBodySchema>;
 
-export const indexValueSchema = indexValueBodySchema;
+export const indexValueSchema = indexValueBodySchema.extend({
+  /** `auto`: veio do Banco Central/IBGE; `manual`: digitado. */
+  source: z.enum(['manual', 'auto']).optional(),
+});
 export type IndexValue = z.infer<typeof indexValueSchema>;
 
 /**

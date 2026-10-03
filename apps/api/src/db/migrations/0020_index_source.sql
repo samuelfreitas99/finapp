@@ -1,0 +1,2 @@
+ALTER TABLE "index_values" ADD COLUMN "source" text DEFAULT 'manual' NOT NULL;--> statement-breakpoint
+ALTER TABLE "index_values" ADD CONSTRAINT "index_values_source_check" CHECK ("index_values"."source" in ('manual', 'auto'));

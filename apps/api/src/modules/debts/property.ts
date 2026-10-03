@@ -9,6 +9,7 @@ import {
 } from '@finapp/shared';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+import { syncIndexValues } from '../../jobs/indexes';
 import { debtEvents, debtInstallments, debtPhases, debts, indexValues } from '../../db/schema';
 import type { DbExecutor } from '../../db/seed';
 import { badRequest, notFound } from '../../http/errors';
@@ -303,23 +304,45 @@ export function debtPropertyRoutes(
 }
 
 /** Índices mensais (globais): listar e cadastrar. @see RN 6.2 */
-export function indexValueRoutes(app: FastifyInstance, { db }: SpaceContext) {
+export function indexValueRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
   app.get('/index-values', async () => {
     const rows = await db.select().from(indexValues).orderBy(desc(indexValues.month)).limit(120);
     return {
-      items: rows.map((r) => ({ index: r.index, month: r.month, value: r.value })),
+      items: rows.map((r) => ({
+        index: r.index,
+        month: r.month,
+        value: r.value,
+        source: r.source,
+      })),
     };
   });
 
   app.post('/index-values', async (request, reply) => {
     const body = indexValueBodySchema.parse(request.body ?? {});
-    await db
-      .insert(indexValues)
-      .values({ ...body, createdBy: currentUser(request).id })
-      .onConflictDoUpdate({
-        target: [indexValues.index, indexValues.month],
-        set: { value: body.value },
-      });
+    const [existing] = await db
+      .select()
+      .from(indexValues)
+      .where(and(eq(indexValues.index, body.index), eq(indexValues.month, body.month)));
+    // Reenviar o mesmo valor automático não o transforma em manual.
+    if (!existing || existing.value !== body.value) {
+      await db
+        .insert(indexValues)
+        .values({ ...body, source: 'manual', createdBy: currentUser(request).id })
+        .onConflictDoUpdate({
+          target: [indexValues.index, indexValues.month],
+          set: { value: body.value, source: 'manual' },
+        });
+    }
     return reply.code(201).send(body);
+  });
+
+  /** Busca agora os índices no Banco Central e no IBGE (o job diário faz o mesmo). */
+  let last: { at: number; result: Awaited<ReturnType<typeof syncIndexValues>> } | null = null;
+  app.post('/index-values/sync', async () => {
+    // No máximo uma busca por minuto: evita martelar as fontes públicas.
+    if (last && Date.now() - last.at < 60_000) return last.result;
+    const result = await syncIndexValues(db, today());
+    last = { at: Date.now(), result };
+    return result;
   });
 }

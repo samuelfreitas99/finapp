@@ -191,7 +191,12 @@ describe.skipIf(!testDatabaseUrl)(
           .statusCode,
       ).toBe(201);
       const list = (await api('GET', '/index-values')).json().items;
-      expect(list).toContainEqual({ index: 'incc', month: '2026-11', value: 0.01 });
+      expect(list).toContainEqual({
+        index: 'incc',
+        month: '2026-11',
+        value: 0.01,
+        source: 'manual',
+      });
 
       const res = (
         await api('POST', `/debts/${debt.id}/phases/${entrada.id}/index`, { month: '2026-11' })

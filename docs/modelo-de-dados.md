@@ -56,7 +56,7 @@ Itens da fatura = `transactions` com `invoice_id` (e `card_id`). Total da fatura
 | `debt_phases` | id, space_id, debt_id, position (ordem, única na dívida), name, system (`fixed`/`price`/`sac`/`variable`/`balloon`), principal, rate_monthly (numeric, decimal 0–1), index (`none`/`incc`/`ipca`/`igpm`), installments (1–600), start_date, end_date, installment_amount, ends_at_completion, starts_after_completion |
 | `debt_installments` | id, space_id, debt_id, phase_id, number, due_date, amount, principal_part, interest_part, estimated, paid_amount, paid_date, discount, status (`pending`/`paid`/`late`/`partial`), transaction_id, deleted_at (parcelas pendentes regeneradas são excluídas logicamente) |
 | `debt_events` | id, space_id, debt_id, type (`amortization`/`payoff`/`index_correction`/`completion_date_change`), amount, date, data (jsonb), created_by |
-| `index_values` | index (`incc`/`ipca`/`igpm`), month (`YYYY-MM`, único por índice), value (numeric, ex.: 0.0045), global (não pertence a espaço) |
+| `index_values` | index (`incc`/`ipca`/`igpm`), month (`YYYY-MM`, único por índice), value (numeric, ex.: 0.0045), global (não pertence a espaço), source (`manual`/`auto`: o automático não sobrescreve o manual) |
 
 ## Planejamento
 | Tabela | Colunas principais |

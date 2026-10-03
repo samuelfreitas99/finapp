@@ -4,11 +4,13 @@ import type { Db } from '../db/client';
 import type { PushSender } from '../modules/notifications/push';
 import { notifyDueReminders } from '../modules/notifications/reminders';
 import { generateAlerts, sendPending } from './alerts';
+import { syncIndexValues } from './indexes';
 import { generateAllRecurrences } from './recurrences';
 
 export const RECURRENCES_JOB = 'recurrences-generate';
 export const ALERTS_JOB = 'alerts-daily';
 export const SEND_JOB = 'notifications-send';
+export const INDEXES_JOB = 'indexes-sync';
 
 /** Erros de conexão derrubada/fechada (57P01 admin_shutdown, pool encerrando). */
 export function isConnectionShutdown(err: unknown): boolean {
@@ -56,6 +58,15 @@ export async function startJobs({
   await boss.work(RECURRENCES_JOB, async () => {
     const created = await generateAllRecurrences(db, todayIn());
     log.info({ created }, 'recorrências geradas');
+  });
+
+  // Índices de correção (INCC, IPCA, IGP-M) do Banco Central e do IBGE, uma vez por dia
+  // (e na subida, para recuperar o que ficou para trás). Falha de rede só vai para o log.
+  await boss.createQueue(INDEXES_JOB);
+  await boss.schedule(INDEXES_JOB, '30 9 * * *', null, { tz: REFERENCE_TIME_ZONE, missed: 'once' });
+  await boss.work(INDEXES_JOB, async () => {
+    const r = await syncIndexValues(db, todayIn());
+    log.info({ saved: r.saved, errors: r.errors }, 'índices atualizados');
   });
 
   // Alertas do dia às 08:00; o envio roda de hora em hora para o que ficou no silêncio.

@@ -11,6 +11,7 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  IndexValue,
   GoalDeposit,
   CreateCategoryBody,
   UpdateCategoryBody,
@@ -1135,4 +1136,27 @@ export function useInviteMutations() {
       onSuccess: refresh,
     }),
   };
+}
+
+export function useIndexValues() {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['index-values', spaceId],
+    queryFn: () =>
+      api<{ items: IndexValue[] }>(spacePath(spaceId, '/index-values')).then((r) => r.items),
+  });
+}
+
+/** Busca agora INCC, IPCA e IGP-M no Banco Central e no IBGE. */
+export function useSyncIndexValues() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api<{
+        saved: Record<'incc' | 'ipca' | 'igpm', number>;
+        errors: Partial<Record<'incc' | 'ipca' | 'igpm', string>>;
+      }>(spacePath(spaceId, '/index-values/sync'), { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['index-values', spaceId] }),
+  });
 }

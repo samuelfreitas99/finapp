@@ -207,6 +207,10 @@ export const indexValues = pgTable(
     index: text('index', { enum: DEBT_INDEXES }).notNull(),
     month: text('month').notNull(),
     value: numeric('value', { precision: 12, scale: 8, mode: 'number' }).notNull(),
+    /** `auto`: buscado no Banco Central/IBGE; `manual`: digitado (o automático não sobrescreve). */
+    source: text('source', { enum: ['manual', 'auto'] })
+      .notNull()
+      .default('manual'),
     createdAt: createdAt(),
     createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
   },
@@ -214,6 +218,7 @@ export const indexValues = pgTable(
     unique('index_values_index_month_uq').on(t.index, t.month),
     check('index_values_index_check', sql`${t.index} in ('incc', 'ipca', 'igpm')`),
     check('index_values_month_check', sql`${t.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+    check('index_values_source_check', sql`${t.source} in ('manual', 'auto')`),
     check('index_values_value_check', sql`${t.value} > -1 and ${t.value} < 1`),
   ],
 );

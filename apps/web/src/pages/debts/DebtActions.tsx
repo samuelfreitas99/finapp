@@ -4,7 +4,12 @@ import { MoneyInput } from '../../components/MoneyInput';
 import { useToast } from '../../components/Toast';
 import { today } from '../../lib/dates';
 import { formatDate, money } from '../../lib/format';
-import { useDebtActions, usePropertyActions } from '../../lib/queries';
+import {
+  useDebtActions,
+  useIndexValues,
+  usePropertyActions,
+  useSyncIndexValues,
+} from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
 
 const percent = (text: string) => Number(text.replace(',', '.')) / 100;
@@ -242,6 +247,18 @@ export function PropertyActions({ d }: { d: DebtDetail }) {
   const [indexMonth, setIndexMonth] = useState(today().slice(0, 7));
   const [indexValue, setIndexValue] = useState('');
   const indexedPhase = indexed.find((p) => p.id === phaseId);
+  const indexValues = useIndexValues();
+  const syncIndexes = useSyncIndexValues();
+  const available = indexValues.data?.find(
+    (v) => v.index === indexedPhase?.index && v.month === indexMonth,
+  );
+  // Sem nada digitado, mostra o valor que o app já buscou para o mês.
+  const shownValue =
+    indexValue !== ''
+      ? indexValue
+      : available
+        ? (Math.round(available.value * 10_000) / 100).toString().replace('.', ',')
+        : '';
   const error = completion.error ?? value.error ?? index.error;
 
   return (
@@ -373,7 +390,7 @@ export function PropertyActions({ d }: { d: DebtDetail }) {
                 phaseId,
                 index: indexedPhase.index as 'incc' | 'ipca' | 'igpm',
                 month: indexMonth,
-                value: percent(indexValue),
+                value: percent(shownValue),
               },
               {
                 onSuccess: () => {
@@ -423,19 +440,46 @@ export function PropertyActions({ d }: { d: DebtDetail }) {
                 className="input num"
                 inputMode="decimal"
                 placeholder="Ex.: 0,45"
-                value={indexValue}
+                value={shownValue}
                 onChange={(e) => setIndexValue(e.target.value)}
               />
             </div>
           </div>
           <span className="muted field-hint">
+            {available
+              ? available.source === 'auto'
+                ? `Valor buscado no ${indexedPhase.index === 'ipca' ? 'IBGE' : 'Banco Central'}. Pode trocar se quiser.`
+                : 'Valor que você mesmo cadastrou.'
+              : 'Ainda não há valor deste mês: busque abaixo ou digite.'}{' '}
             Corrige as parcelas pendentes de {indexedPhase.name} que vencem a partir desse mês. As
             pagas não mudam.
           </span>
           <button
+            type="button"
+            className="btn btn--ghost"
+            disabled={syncIndexes.isPending}
+            onClick={() =>
+              syncIndexes.mutate(undefined, {
+                onSuccess: (r) => {
+                  const failed = Object.keys(r.errors).length;
+                  const saved = r.saved.incc + r.saved.ipca + r.saved.igpm;
+                  toast({
+                    text: failed
+                      ? `Não consegui buscar ${failed === 3 ? 'nenhum índice' : 'todos os índices'}. Tente de novo mais tarde ou digite.`
+                      : saved
+                        ? 'Índices atualizados.'
+                        : 'Os índices já estão em dia.',
+                  });
+                },
+              })
+            }
+          >
+            {syncIndexes.isPending ? 'Buscando…' : 'Buscar índices no Banco Central/IBGE'}
+          </button>
+          <button
             type="submit"
             className="btn"
-            disabled={!indexMonth || indexValue.trim() === '' || index.isPending}
+            disabled={!indexMonth || shownValue.trim() === '' || index.isPending}
           >
             Aplicar correção
           </button>
