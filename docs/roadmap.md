@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **todas as fases concluídas** (Fases 1–9; pendentes só o backup offsite e o uso real; Fase 2 aguarda confirmar o uso real).
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 10 concluída** (Fases 1–10; pendentes só o uso real e, para abrir ao público, o cadastro aberto com Turnstile).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
