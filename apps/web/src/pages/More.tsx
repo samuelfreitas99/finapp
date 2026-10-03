@@ -1,6 +1,7 @@
 import type { Theme } from '@finapp/shared';
 import {
   BadgePercent,
+  Flag,
   CalendarRange,
   ChevronRight,
   ChartPie,
@@ -26,6 +27,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/dividas', label: 'Dívidas e empréstimos', icon: HandCoins },
   { to: '/planejamento', label: 'Planejamento', icon: CalendarRange },
   { to: '/orcamentos', label: 'Orçamentos', icon: BadgePercent },
+  { to: '/metas', label: 'Metas', icon: Flag },
   { to: '/fixas', label: 'Receitas e despesas fixas', icon: Repeat },
   { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
   { to: '/categorias', label: 'Categorias', icon: Tags },
@@ -36,7 +38,6 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
 const later: { label: string; icon: LucideIcon }[] = [
   { label: 'Racha', icon: Users },
   { label: 'Relatórios', icon: ChartPie },
-  { label: 'Metas', icon: BadgePercent },
 ];
 
 const themes: { value: Theme; label: string }[] = [

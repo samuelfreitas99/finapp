@@ -67,7 +67,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 
 ## Fase 7: Planejamento e relatórios
 - [x] Orçamentos por categoria com alertas
-- [ ] Metas
+- [x] Metas
 - [ ] Relatórios (categoria, mensal, patrimônio, dívidas)
 - [ ] Anexos de comprovantes
 - [ ] Importação OFX/CSV com deduplicação e regras de categoria
@@ -102,6 +102,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Projeção: despesas previstas já vencidas entram no 1º mês (ainda vão sair da conta); receitas previstas vencidas e não confirmadas ficam de fora (conservador).
 - Divisão (casal e racha): nos modos proporcionais cada parte é arredondada para baixo e o resto inteiro vai para quem pagou (se não participa, para o 1º participante). Simplificação gulosa com desempate por id.
 - Orçamentos: `consumido` conta só despesas **efetivadas** (previstas não entram), por competência (cartão pela fatura, estorno no cartão abate), e a categoria principal inclui as subcategorias; o orçamento é sempre da categoria principal. Orçamento de um mês específico sobrepõe o geral. A sobra acumulada olha até 12 meses para trás e só a partir do mês em que o orçamento geral foi criado; estouro zera a sobra (não vira dívida). Visão por data da compra no cartão (RN 1) ainda não existe.
+- Metas: com conta vinculada, o guardado é o **saldo atual** da conta (aporte = transferência para ela); sem conta, é o valor marcado à mão (guardar/retirar). `aporte_sugerido = ceil((alvo - guardado) / meses)`, contando o mês corrente (mínimo 1); prazo vencido sugere o que falta de uma vez; sem prazo não há sugestão. Metas não geram alerta por enquanto.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -144,3 +145,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: lembretes e checklist (`reminders`, migração 0008; `nextReminderAt` no core), aviso no horário pelo job de envio (agora a cada 5 minutos), tela "Lembretes" (Claude).
 - 03/10/2026: lançamentos offline: sem conexão, receita/despesa/compra no cartão do "+" fica numa fila no aparelho e é enviada quando a internet volta (faixa "Sem conexão"); mutações não pausam offline. **Fase 6 concluída** (Claude).
 - 03/10/2026: orçamentos por categoria: `packages/core/budgets` (faixas de 80%/100%, sobra acumulada, alertas), tabela `budgets` (migração 0009), `GET/PUT/DELETE /budgets`, aviso `budget` no job diário (uma vez por categoria, mês e faixa) e tela "Orçamentos" no menu Mais (Claude).
+- 03/10/2026: metas: `packages/core/goals` (`goalProgress`), tabela `goals` (migração 0010), `GET/POST/PATCH/DELETE /goals` e `POST /goals/:id/deposit`, tela "Metas" no menu Mais (Claude).

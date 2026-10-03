@@ -11,6 +11,10 @@ import type {
   UpdateDebtBody,
   Projection,
   Budgets,
+  Goal,
+  CreateGoalBody,
+  UpdateGoalBody,
+  GoalDepositBody,
   UpsertBudgetBody,
   OccurrencePreview,
   Recurrence,
@@ -659,6 +663,41 @@ export function useBudgetMutations() {
     }),
     remove: useMutation({
       mutationFn: (id: string) => api(spacePath(spaceId, `/budgets/${id}`), { method: 'DELETE' }),
+      onSuccess: invalidate,
+    }),
+  };
+}
+
+export function useGoals() {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['goals', spaceId],
+    queryFn: () => api<{ items: Goal[] }>(spacePath(spaceId, '/goals')).then((r) => r.items),
+  });
+}
+
+export function useGoalMutations() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['goals', spaceId] });
+  return {
+    create: useMutation({
+      mutationFn: (body: CreateGoalBody) =>
+        api<Goal>(spacePath(spaceId, '/goals'), { method: 'POST', body }),
+      onSuccess: invalidate,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, ...body }: UpdateGoalBody & { id: string }) =>
+        api<Goal>(spacePath(spaceId, `/goals/${id}`), { method: 'PATCH', body }),
+      onSuccess: invalidate,
+    }),
+    deposit: useMutation({
+      mutationFn: ({ id, ...body }: GoalDepositBody & { id: string }) =>
+        api<Goal>(spacePath(spaceId, `/goals/${id}/deposit`), { method: 'POST', body }),
+      onSuccess: invalidate,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => api(spacePath(spaceId, `/goals/${id}`), { method: 'DELETE' }),
       onSuccess: invalidate,
     }),
   };

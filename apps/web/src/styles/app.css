@@ -1857,3 +1857,22 @@ h3 {
   flex-direction: column;
   gap: 2px;
 }
+
+.goal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.goal-row__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.budget-tag--ok {
+  background: var(--surface-sunken);
+  color: var(--income);
+}

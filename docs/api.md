@@ -66,7 +66,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `GET /projection?months=12` ✅ (1–36; saldo atual das contas que somam nos totais + previstos dessas contas por tipo (receita, fixa = recorrência, parcela = carnê, outras) + o que falta pagar de cada fatura no vencimento; transferências fora; RN 7)
 - `GET /reports/by-category?from=&to=`, `/reports/monthly?from=&to=`, `/reports/net-worth`
 - `GET /budgets?month=` (situação do mês: limite, sobra, gasto, faixa), `PUT /budgets` (cria/atualiza por categoria e mês; `month` nulo = todo mês), `DELETE /budgets/:id`
-- `/goals` CRUD
+- `GET/POST /goals`, `PATCH/DELETE /goals/:id` (situação e aporte sugerido calculados), `POST /goals/:id/deposit` (guardar/retirar à mão, só sem conta vinculada)
 
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
