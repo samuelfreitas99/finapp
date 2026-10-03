@@ -92,7 +92,10 @@ export const debtBodySchema = z
     principal: z.int().min(0).optional(),
     paymentAccountId: z.uuid().nullish(),
     paymentCardId: z.uuid().nullish(),
+    /** Previsão de entrega das chaves (usada no cronograma e na projeção). */
     completionDate: isoDateSchema.nullish(),
+    /** Prazo do contrato para a entrega (data máxima). */
+    completionDeadline: isoDateSchema.nullish(),
     assetValue: z.int().min(0).nullish(),
     notes: z.string().trim().max(2000).nullish(),
     /** Dívida em andamento: as primeiras N parcelas já foram pagas (sem lançamento). */
@@ -134,6 +137,7 @@ export type DebtBody = z.input<typeof debtBodySchema>;
 export const updateDebtBodySchema = z
   .object({
     name: nameSchema,
+    completionDeadline: isoDateSchema.nullable(),
     contactId: z.uuid().nullable(),
     institution: z.string().trim().max(120).nullable(),
     assetValue: z.int().min(0).nullable(),
@@ -203,6 +207,9 @@ export const debtSchema = z.object({
   paymentAccountId: z.uuid().nullable(),
   paymentCardId: z.uuid().nullable(),
   completionDate: isoDateSchema.nullable(),
+  completionDeadline: isoDateSchema.nullable(),
+  /** A entrega já aconteceu (data real). */
+  completionConfirmed: z.boolean(),
   assetValue: z.int().nullable(),
   /** Patrimônio líquido: valor do bem − saldo devedor (imóvel). */
   equity: z.int().nullable(),
@@ -281,7 +288,11 @@ export const debtInstallmentParamsSchema = z.object({
 });
 
 /** `PATCH /debts/:id/completion-date`: nova data de entrega das chaves. @see RN 6.7 */
-export const completionDateBodySchema = z.object({ completionDate: isoDateSchema });
+export const completionDateBodySchema = z.object({
+  completionDate: isoDateSchema,
+  /** `true` = "Recebi as chaves": a data é a real, não mais estimativa. */
+  confirmed: z.boolean().default(false),
+});
 
 /** `POST /debts/:id/phases/:phaseId/values`: valor real do mês numa fase variável. @see RN 6.1 */
 export const phaseValueBodySchema = z.object({ month: yearMonth, amount: z.int().min(0) });

@@ -105,7 +105,7 @@ export function debtPropertyRoutes(
    */
   app.patch('/debts/:id/completion-date', async (request) => {
     const { spaceId, id } = spaceItemParamsSchema.parse(request.params);
-    const { completionDate } = completionDateBodySchema.parse(request.body ?? {});
+    const { completionDate, confirmed } = completionDateBodySchema.parse(request.body ?? {});
     const userId = currentUser(request).id;
     await db.transaction(async (tx) => {
       const debt = await findDebt(tx, spaceId, id);
@@ -158,14 +158,20 @@ export function debtPropertyRoutes(
           .set({ installments: all.length, startDate: all[0]?.dueDate ?? p.startDate })
           .where(eq(debtPhases.id, p.id));
       }
-      await tx.update(debts).set({ completionDate }).where(eq(debts.id, debt.id));
+      if (debt.completionConfirmed && !confirmed) {
+        throw badRequest('completion_confirmed', 'A entrega já foi confirmada.');
+      }
+      await tx
+        .update(debts)
+        .set({ completionDate, ...(confirmed ? { completionConfirmed: true } : {}) })
+        .where(eq(debts.id, debt.id));
       await tx.insert(debtEvents).values({
         spaceId,
         debtId: debt.id,
         type: 'completion_date_change',
         date: today(),
         createdBy: userId,
-        data: { from: debt.completionDate, to: completionDate },
+        data: { from: debt.completionDate, to: completionDate, confirmed },
       });
       await renumber(tx, debt.id);
       await syncPlannedEntries(tx, { ...debt, completionDate }, today(), userId);

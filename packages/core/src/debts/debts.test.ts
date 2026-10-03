@@ -17,6 +17,7 @@ import {
   variableSchedule,
   type DebtInstallmentState,
   type ScheduleRow,
+  principalFromPayment,
 } from './index';
 
 const sum = (rows: ScheduleRow[], key: 'amount' | 'principalPart' | 'interestPart') =>
@@ -344,5 +345,15 @@ describe('debtSchedule: imóvel na planta (RN 6.7)', () => {
 
   it('requires a completion date for dependent phases', () => {
     expect(() => debtSchedule(phases)).toThrow(RangeError);
+  });
+});
+
+describe('principalFromPayment (RN 6.1)', () => {
+  it('derives the outstanding principal from installment, rate and remaining count', () => {
+    const principal = principalFromPayment(8885, 0.01, 12);
+    expect(principal).toBe(100001);
+    // O cronograma gerado com esse saldo cobra a mesma parcela.
+    expect(pricePayment(principal, 0.01, 12)).toBe(8885);
+    expect(principalFromPayment(5000, 0, 10)).toBe(50000);
   });
 });

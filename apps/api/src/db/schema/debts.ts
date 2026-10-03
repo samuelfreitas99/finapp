@@ -63,8 +63,12 @@ export const debts = pgTable(
     paymentCardId: uuid('payment_card_id').references(() => creditCards.id, {
       onDelete: 'set null',
     }),
-    /** Imóvel na planta: entrega das chaves (fim dos juros de obra). */
+    /** Imóvel na planta: entrega das chaves prevista (fim dos juros de obra). */
     completionDate: date('completion_date', { mode: 'string' }),
+    /** Prazo máximo de entrega do contrato (pior caso). */
+    completionDeadline: date('completion_deadline', { mode: 'string' }),
+    /** A entrega já aconteceu ("Recebi as chaves"): a data deixa de ser estimativa. */
+    completionConfirmed: boolean('completion_confirmed').notNull().default(false),
     /** Valor do bem (manual), para o patrimônio líquido. */
     assetValue: bigint('asset_value', { mode: 'number' }),
     status: text('status', { enum: DEBT_STATUSES }).notNull().default('active'),

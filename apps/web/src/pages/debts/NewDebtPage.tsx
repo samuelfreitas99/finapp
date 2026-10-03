@@ -1,4 +1,4 @@
-import { addMonths, todayIn } from '@finapp/core';
+import { addMonths, principalFromPayment, todayIn } from '@finapp/core';
 import type { DebtBody, DebtKind, DebtSystem } from '@finapp/shared';
 import { Plus, X } from 'lucide-react';
 import { useDeferredValue, useState, type FormEvent } from 'react';
@@ -36,13 +36,30 @@ interface FormState {
   name: string;
   institution: string;
   target: string;
+  /** Previsão de entrega (imóvel). */
   completionDate: string;
+  /** Prazo do contrato para a entrega (pior caso). */
+  completionDeadline: string;
   assetValue: number;
-  paidInstallments: number;
+  /** Modo simples: "Começando agora" ou "Já estou pagando". */
+  mode: 'new' | 'ongoing';
+  /** Mostra o editor de fases (sistema, SAC, várias fases). */
+  advanced: boolean;
+  simple: SimpleState;
   /** Valor recebido (devo) ou emprestado (me devem) e onde entrou/saiu. */
   moneyAmount: number;
   moneyAccountId: string;
   phases: PhaseState[];
+}
+
+interface SimpleState {
+  count: number;
+  installment: number;
+  ratePercent: string;
+  firstDue: string;
+  left: number;
+  nextDue: string;
+  totalCount: number;
 }
 
 const MONEY_KINDS: DebtKind[] = ['bank_loan', 'card_loan', 'personal_loan', 'financing', 'other'];
@@ -154,8 +171,89 @@ function phaseReady(p: PhaseState, hasCompletion: boolean): boolean {
   }
 }
 
+const simpleRate = (s: SimpleState) =>
+  s.ratePercent.trim() ? Number(s.ratePercent.replace(',', '.')) / 100 : null;
+
+/** Fases do modo simples, a partir do que a pessoa vê no contrato ou no app do banco. */
+function simplePhases(f: FormState): {
+  phases: DebtBody['phases'];
+  paidInstallments: number;
+  principal?: number;
+} {
+  const s = f.simple;
+  const rate = simpleRate(s);
+  if (f.mode === 'ongoing') {
+    if (rate !== null && rate > 0) {
+      // Com a taxa, o saldo devedor sai do valor presente das parcelas que faltam.
+      return {
+        phases: [
+          {
+            name: 'Parcelas',
+            system: 'price',
+            principal: principalFromPayment(s.installment, rate, s.left),
+            rateMonthly: rate,
+            installments: s.left,
+            firstDueDate: s.nextDue,
+          },
+        ],
+        paidInstallments: 0,
+      };
+    }
+    const done = Math.max(0, s.totalCount - s.left);
+    return {
+      phases: [
+        {
+          name: 'Parcelas',
+          system: 'fixed',
+          installments: done + s.left,
+          installmentAmount: s.installment,
+          firstDueDate: done ? addMonths(s.nextDue, -done) : s.nextDue,
+        },
+      ],
+      paidInstallments: done,
+    };
+  }
+  if (s.installment > 0) {
+    return {
+      phases: [
+        {
+          name: 'Parcelas',
+          system: 'fixed',
+          installments: s.count,
+          installmentAmount: s.installment,
+          firstDueDate: s.firstDue,
+        },
+      ],
+      paidInstallments: 0,
+    };
+  }
+  return {
+    phases: [
+      {
+        name: 'Parcelas',
+        system: 'price',
+        principal: f.moneyAmount,
+        rateMonthly: rate ?? 0,
+        installments: s.count,
+        firstDueDate: s.firstDue,
+      },
+    ],
+    paidInstallments: 0,
+    principal: f.moneyAmount,
+  };
+}
+
+function simpleReady(f: FormState): boolean {
+  const s = f.simple;
+  if (f.mode === 'ongoing') return s.left > 0 && s.installment > 0 && Boolean(s.nextDue);
+  if (!(s.count > 0 && s.firstDue)) return false;
+  return s.installment > 0 || (simpleRate(s) !== null && f.moneyAmount > 0);
+}
+
 function toBody(f: FormState): DebtBody {
   const card = isCardTarget(f.target) ? f.target.slice(CARD_PREFIX.length) : null;
+  const useSimple = f.kind !== 'property' && !f.advanced;
+  const simple = useSimple ? simplePhases(f) : null;
   return {
     name: f.name.trim() || DEBT_KIND_META[f.kind].label,
     kind: f.kind,
@@ -163,12 +261,13 @@ function toBody(f: FormState): DebtBody {
     institution: f.institution.trim() || null,
     ...(card ? { paymentCardId: card } : f.target ? { paymentAccountId: f.target } : {}),
     completionDate: f.kind === 'property' && f.completionDate ? f.completionDate : null,
+    completionDeadline: f.kind === 'property' && f.completionDeadline ? f.completionDeadline : null,
     assetValue: f.kind === 'property' && f.assetValue > 0 ? f.assetValue : null,
-    paidInstallments: f.paidInstallments,
+    paidInstallments: simple?.paidInstallments ?? 0,
     ...(MONEY_KINDS.includes(f.kind) && f.moneyAccountId && f.moneyAmount > 0
       ? { moneyAccountId: f.moneyAccountId, principal: f.moneyAmount }
       : {}),
-    phases: f.phases.map(phaseBody),
+    phases: simple ? simple.phases : f.phases.map(phaseBody),
   };
 }
 
@@ -458,8 +557,19 @@ export function NewDebtPage() {
     institution: '',
     target: '',
     completionDate: '',
+    completionDeadline: '',
     assetValue: 0,
-    paidInstallments: 0,
+    mode: 'new',
+    advanced: false,
+    simple: {
+      count: 12,
+      installment: 0,
+      ratePercent: '',
+      firstDue: nextMonthDay(),
+      left: 12,
+      nextDue: nextMonthDay(),
+      totalCount: 0,
+    },
     moneyAmount: 0,
     moneyAccountId: '',
     phases: [phase({ system: 'price' })],
@@ -472,8 +582,12 @@ export function NewDebtPage() {
   const isProperty = form.kind === 'property';
   const hasCompletion = Boolean(form.completionDate);
   const needsCompletion = form.phases.some((p) => p.endsAtCompletion || p.startsAfterCompletion);
-  const ready =
-    form.phases.every((p) => phaseReady(p, hasCompletion)) && (!needsCompletion || hasCompletion);
+  const useSimple = !isProperty && !form.advanced;
+  const ready = useSimple
+    ? simpleReady(form)
+    : form.phases.every((p) => phaseReady(p, hasCompletion)) && (!needsCompletion || hasCompletion);
+  const setSimple = (next: Partial<SimpleState>) =>
+    setForm((f) => ({ ...f, simple: { ...f.simple, ...next } }));
   const deferred = useDeferredValue(form);
   const preview = useDebtPreview(ready ? toBody(deferred) : null);
 
@@ -624,7 +738,7 @@ export function NewDebtPage() {
               Cada parcela vira um lançamento previsto e entra no Planejamento.
             </span>
           </div>
-          {MONEY_KINDS.includes(form.kind) && (
+          {MONEY_KINDS.includes(form.kind) && (form.mode === 'new' || form.advanced) && (
             <div className="field-row">
               <div className="field">
                 <label htmlFor="money-amount">
@@ -659,7 +773,7 @@ export function NewDebtPage() {
           {isProperty && (
             <div className="field-row">
               <div className="field">
-                <label htmlFor="completion">Entrega das chaves</label>
+                <label htmlFor="completion">Previsão de entrega</label>
                 <input
                   id="completion"
                   type="date"
@@ -678,53 +792,214 @@ export function NewDebtPage() {
               </div>
             </div>
           )}
-          <div className="field">
-            <label htmlFor="paid">Parcelas já pagas</label>
-            <input
-              id="paid"
-              className="input num"
-              type="number"
-              min={0}
-              value={form.paidInstallments}
-              onChange={(e) => set('paidInstallments', Math.max(0, Number(e.target.value) || 0))}
-            />
-            <span className="muted field-hint">
-              Para dívidas que já estão em andamento (sem lançar nada).
-            </span>
-          </div>
+          {isProperty && (
+            <div className="field">
+              <label htmlFor="deadline">Prazo do contrato (opcional)</label>
+              <input
+                id="deadline"
+                type="date"
+                className="input"
+                value={form.completionDeadline}
+                onChange={(e) => set('completionDeadline', e.target.value)}
+              />
+              <span className="muted field-hint">
+                A previsão é só uma estimativa: o cronograma usa ela até você tocar em &quot;Recebi
+                as chaves&quot; no painel. O prazo do contrato é a data máxima.
+              </span>
+            </div>
+          )}
         </section>
 
-        <section className="stack" aria-label="Fases">
-          <h2>{form.phases.length > 1 ? 'Fases' : 'Parcelas'}</h2>
-          {form.phases.map((p, i) => (
-            <PhaseEditor
-              key={i}
-              p={p}
-              i={i}
-              isProperty={isProperty}
-              canRemove={form.phases.length > 1}
-              onChange={(next) => setPhase(i, next)}
-              onRemove={() =>
-                set(
-                  'phases',
-                  form.phases.filter((_, k) => k !== i),
-                )
-              }
-            />
-          ))}
-          {form.phases.length < 8 && (
+        {!isProperty && (
+          <section className="card card--pad form" aria-label="Parcelas">
+            <div className="segmented" role="group" aria-label="Situação">
+              <button
+                type="button"
+                aria-pressed={form.mode === 'new'}
+                onClick={() => set('mode', 'new')}
+              >
+                Começando agora
+              </button>
+              <button
+                type="button"
+                aria-pressed={form.mode === 'ongoing'}
+                onClick={() => set('mode', 'ongoing')}
+              >
+                Já estou pagando
+              </button>
+            </div>
+            {!form.advanced && form.mode === 'new' && (
+              <>
+                <div className="field-row">
+                  <div className="field">
+                    <label htmlFor="s-count">Quantas parcelas</label>
+                    <input
+                      id="s-count"
+                      className="input num"
+                      type="number"
+                      min={1}
+                      max={600}
+                      value={form.simple.count}
+                      onChange={(e) =>
+                        setSimple({ count: Math.max(1, Number(e.target.value) || 1) })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="s-first">1ª parcela vence em</label>
+                    <input
+                      id="s-first"
+                      type="date"
+                      className="input"
+                      value={form.simple.firstDue}
+                      onChange={(e) => e.target.value && setSimple({ firstDue: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="s-installment">Valor de cada parcela</label>
+                  <MoneyInput
+                    id="s-installment"
+                    value={form.simple.installment}
+                    onChange={(v) => setSimple({ installment: Math.max(0, v) })}
+                  />
+                  <span className="muted field-hint">
+                    Não sabe? Deixe em branco e informe os juros ao mês e o valor que recebeu: o
+                    FinApp calcula a parcela.
+                  </span>
+                </div>
+                {form.simple.installment === 0 && (
+                  <div className="field">
+                    <label htmlFor="s-rate">Juros ao mês (%)</label>
+                    <input
+                      id="s-rate"
+                      className="input num"
+                      inputMode="decimal"
+                      placeholder="Ex.: 1,99"
+                      value={form.simple.ratePercent}
+                      onChange={(e) => setSimple({ ratePercent: e.target.value })}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+            {!form.advanced && form.mode === 'ongoing' && (
+              <>
+                <p className="muted">Use o que aparece no app do banco ou no boleto.</p>
+                <div className="field-row">
+                  <div className="field">
+                    <label htmlFor="o-left">Quantas parcelas faltam</label>
+                    <input
+                      id="o-left"
+                      className="input num"
+                      type="number"
+                      min={1}
+                      max={600}
+                      value={form.simple.left}
+                      onChange={(e) =>
+                        setSimple({ left: Math.max(1, Number(e.target.value) || 1) })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="o-next">Próximo vencimento</label>
+                    <input
+                      id="o-next"
+                      type="date"
+                      className="input"
+                      value={form.simple.nextDue}
+                      onChange={(e) => e.target.value && setSimple({ nextDue: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="o-installment">Valor da parcela</label>
+                  <MoneyInput
+                    id="o-installment"
+                    value={form.simple.installment}
+                    onChange={(v) => setSimple({ installment: Math.max(0, v) })}
+                  />
+                </div>
+                <details className="entry__more">
+                  <summary>Sabe a taxa ou o total de parcelas? (opcional)</summary>
+                  <div className="field-row">
+                    <div className="field">
+                      <label htmlFor="o-rate">Juros ao mês (%)</label>
+                      <input
+                        id="o-rate"
+                        className="input num"
+                        inputMode="decimal"
+                        placeholder="Ex.: 1,99"
+                        value={form.simple.ratePercent}
+                        onChange={(e) => setSimple({ ratePercent: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="o-total">Total de parcelas do contrato</label>
+                      <input
+                        id="o-total"
+                        className="input num"
+                        type="number"
+                        min={0}
+                        value={form.simple.totalCount || ''}
+                        onChange={(e) =>
+                          setSimple({ totalCount: Math.max(0, Number(e.target.value) || 0) })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <span className="muted field-hint">
+                    Com a taxa, o app calcula quanto custaria quitar hoje. Com o total, mostra o
+                    progresso desde o começo.
+                  </span>
+                </details>
+              </>
+            )}
             <button
               type="button"
               className="btn btn--ghost"
-              onClick={() =>
-                set('phases', [...form.phases, phase({ name: `Fase ${form.phases.length + 1}` })])
-              }
+              onClick={() => set('advanced', !form.advanced)}
             >
-              <Plus size={16} aria-hidden="true" />
-              Adicionar fase
+              {form.advanced
+                ? 'Voltar ao modo simples'
+                : 'Detalhes avançados (SAC, várias fases, intermediárias)'}
             </button>
-          )}
-        </section>
+          </section>
+        )}
+
+        {(isProperty || form.advanced) && (
+          <section className="stack" aria-label="Fases">
+            <h2>{form.phases.length > 1 ? 'Fases' : 'Parcelas'}</h2>
+            {form.phases.map((p, i) => (
+              <PhaseEditor
+                key={i}
+                p={p}
+                i={i}
+                isProperty={isProperty}
+                canRemove={form.phases.length > 1}
+                onChange={(next) => setPhase(i, next)}
+                onRemove={() =>
+                  set(
+                    'phases',
+                    form.phases.filter((_, k) => k !== i),
+                  )
+                }
+              />
+            ))}
+            {form.phases.length < 8 && (
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() =>
+                  set('phases', [...form.phases, phase({ name: `Fase ${form.phases.length + 1}` })])
+                }
+              >
+                <Plus size={16} aria-hidden="true" />
+                Adicionar fase
+              </button>
+            )}
+          </section>
+        )}
 
         {ready && (
           <section className="preview" aria-live="polite" aria-label="Prévia do cronograma">

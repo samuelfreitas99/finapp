@@ -266,6 +266,7 @@ export async function insertDebt(
       paymentAccountId: body.paymentAccountId ?? null,
       paymentCardId: body.paymentCardId ?? null,
       completionDate: body.completionDate ?? null,
+      completionDeadline: body.completionDeadline ?? null,
       assetValue: body.assetValue ?? null,
       notes: body.notes ?? null,
     })

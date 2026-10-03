@@ -558,10 +558,16 @@ export function usePropertyActions(id: string) {
   const { invalidate } = useDebtMutations();
   return {
     completion: useMutation({
-      mutationFn: (completionDate: string) =>
+      mutationFn: ({
+        completionDate,
+        confirmed = false,
+      }: {
+        completionDate: string;
+        confirmed?: boolean;
+      }) =>
         api<DebtDetail>(spacePath(spaceId, `/debts/${id}/completion-date`), {
           method: 'PATCH',
-          body: { completionDate },
+          body: { completionDate, confirmed },
         }),
       onSuccess: invalidate,
     }),

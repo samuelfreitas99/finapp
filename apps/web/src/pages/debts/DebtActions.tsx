@@ -252,19 +252,24 @@ export function PropertyActions({ d }: { d: DebtDetail }) {
           {errorText(error)}
         </p>
       )}
-      {d.completionDate && (
+      {d.completionDate && !d.completionConfirmed && (
         <form
           className="inline-form"
           onSubmit={(e) => {
             e.preventDefault();
-            completion.mutate(date, {
-              onSuccess: () =>
-                toast({ text: `Entrega alterada para ${formatDate(date)}. Cronograma refeito.` }),
-            });
+            completion.mutate(
+              { completionDate: date },
+              {
+                onSuccess: () =>
+                  toast({
+                    text: `Previsão alterada para ${formatDate(date)}. Cronograma refeito.`,
+                  }),
+              },
+            );
           }}
         >
           <div className="field">
-            <label htmlFor="completion-date">Entrega das chaves</label>
+            <label htmlFor="completion-date">Previsão de entrega</label>
             <input
               id="completion-date"
               type="date"
@@ -272,15 +277,48 @@ export function PropertyActions({ d }: { d: DebtDetail }) {
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
+            <span className="muted field-hint">
+              É uma estimativa
+              {d.completionDeadline
+                ? ` (o contrato vai até ${formatDate(d.completionDeadline)})`
+                : ''}
+              . Os juros de obra vão até ela e o financiamento começa no mês seguinte.
+            </span>
           </div>
-          <button
-            type="submit"
-            className="btn"
-            disabled={!date || date === d.completionDate || completion.isPending}
-          >
-            Mudar entrega
-          </button>
+          <div className="form-actions">
+            <button
+              type="submit"
+              className="btn"
+              disabled={!date || date === d.completionDate || completion.isPending}
+            >
+              Mudar previsão
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={completion.isPending}
+              onClick={() => {
+                const real = today();
+                if (!window.confirm(`Confirmar a entrega das chaves em ${formatDate(real)}?`))
+                  return;
+                completion.mutate(
+                  { completionDate: real, confirmed: true },
+                  {
+                    onSuccess: () =>
+                      toast({
+                        text: 'Chaves recebidas! Os juros de obra param e o financiamento começa no mês que vem.',
+                      }),
+                  },
+                );
+              }}
+            >
+              Recebi as chaves
+            </button>
+          </div>
         </form>
+      )}
+      {d.completionConfirmed && d.completionDate && (
+        <p className="muted">Chaves recebidas em {formatDate(d.completionDate)}.</p>
       )}
 
       {variable && openMonths.length > 0 && (

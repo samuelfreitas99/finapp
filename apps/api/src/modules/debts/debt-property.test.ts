@@ -207,5 +207,49 @@ describe.skipIf(!testDatabaseUrl)(
           .error.code,
       ).toBe('no_index');
     });
+
+    it('keeps the contract deadline and confirms the real handover ("Recebi as chaves")', async () => {
+      const res = await api('POST', '/debts', {
+        name: 'Apto Leste',
+        kind: 'property',
+        completionDate: '2027-10-31',
+        completionDeadline: '2029-09-30',
+        paymentAccountId: accountId,
+        phases: [
+          {
+            name: 'Juros de obra',
+            system: 'variable',
+            firstDueDate: '2026-11-15',
+            endsAtCompletion: true,
+            values: [{ month: '2026-11', amount: 1000 }],
+          },
+          {
+            name: 'Financiamento',
+            system: 'price',
+            principal: 100000,
+            rateMonthly: 0.01,
+            installments: 12,
+            firstDueDate: '2027-01-10',
+            startsAfterCompletion: true,
+          },
+        ],
+      });
+      const debt = res.json();
+      expect(debt).toMatchObject({ completionDeadline: '2029-09-30', completionConfirmed: false });
+      const keys = (
+        await api('PATCH', `/debts/${debt.id}/completion-date`, {
+          completionDate: '2027-08-20',
+          confirmed: true,
+        })
+      ).json();
+      expect(keys).toMatchObject({ completionDate: '2027-08-20', completionConfirmed: true });
+      expect(phaseRows(keys, 'Juros de obra').at(-1)?.dueDate).toBe('2027-08-15');
+      expect(phaseRows(keys, 'Financiamento')[0]?.dueDate).toBe('2027-09-10');
+      expect(
+        (
+          await api('PATCH', `/debts/${debt.id}/completion-date`, { completionDate: '2027-09-01' })
+        ).json().error.code,
+      ).toBe('completion_confirmed');
+    });
   },
 );

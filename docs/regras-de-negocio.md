@@ -165,6 +165,9 @@ Se a dívida é paga **por cartão** (ex.: empréstimo na fatura), as parcelas v
 - `juros_pagos`, `juros_a_pagar`, `data_prevista_quitação`
 - Atrasadas: `due_date < hoje` e não pagas.
 
+### 6.4.1 Cadastro de dívida em andamento
+A pessoa informa o que vê no app do banco: quantas parcelas faltam, o próximo vencimento e o valor da parcela. Com a taxa mensal (opcional), a fase vira Price com o saldo devedor calculado pelo valor presente das parcelas restantes (`principalFromPayment`, arredondado para baixo); sem a taxa, parcelas fixas. Com o total de parcelas do contrato (opcional), as anteriores entram como já pagas (sem lançamento) para mostrar o progresso desde o começo.
+
 ### 6.5 Pagar adiantado e amortizar
 - **Pagar parcela adiantada**: marcar parcela futura como paga hoje (com desconto opcional, igual 5.5).
 - **Amortização extraordinária** (price/sac): valor extra abate o saldo devedor. Opção `reduce_term` (mantém a parcela, recalcula e remove parcelas do fim) ou `reduce_installment` (mantém o prazo, recalcula as parcelas). Recalcular só parcelas pendentes.
@@ -186,7 +189,8 @@ Exemplo de cadastro:
 | Juros de obra | `variable` | desde a assinatura até `completion_date` | valor muda todo mês |
 | Financiamento | `price` ou `sac` | a partir de `completion_date + 1 mês` | índice IPCA/IGP-M + juros |
 
-- `completion_date` (entrega das chaves) fica na dívida; alterá-la estende/encurta os juros de obra e desloca o início do financiamento (regenera parcelas pendentes dessas fases).
+- `completion_date` é a **previsão** de entrega das chaves (o contrato costuma dar um prazo maior, `completion_deadline`, que é só informativo: o pior caso). O cronograma e a projeção usam a previsão. Alterá-la estende/encurta os juros de obra e desloca o início do financiamento (regenera só as parcelas pendentes dessas fases; as pagas ficam).
+- **"Recebi as chaves"**: grava a data real (`completion_confirmed = true`), os juros de obra terminam no mês da entrega e o financiamento começa no mês seguinte. Depois disso a data não muda mais como estimativa.
 - Painel do imóvel: pago e restante por fase e total, % geral, valor do imóvel (manual) e patrimônio líquido = valor - saldo devedor.
 
 ---

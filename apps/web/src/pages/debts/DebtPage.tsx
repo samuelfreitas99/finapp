@@ -129,7 +129,7 @@ export function DebtPage() {
           )}
           {d.completionDate && (
             <div>
-              <dt>Entrega das chaves</dt>
+              <dt>{d.completionConfirmed ? 'Entrega das chaves' : 'Entrega prevista'}</dt>
               <dd>{formatDate(d.completionDate)}</dd>
             </div>
           )}

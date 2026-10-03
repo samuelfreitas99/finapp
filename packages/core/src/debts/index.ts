@@ -591,3 +591,23 @@ export function debtSchedule(
   );
   return all.map((r, i) => ({ ...r, number: i + 1 }));
 }
+
+/**
+ * Saldo devedor (valor presente) de uma dívida Price em andamento a partir do que o banco
+ * mostra: valor da parcela, taxa mensal e quantas parcelas faltam.
+ * `PV = PMT · (1 − (1+i)^−n) / i` (com taxa 0, `PMT · n`), arredondado para baixo, para
+ * o cronograma gerado nunca cobrar parcela maior que a informada.
+ * @see RN 6.1, 6.4
+ */
+export function principalFromPayment(
+  payment: Cents,
+  monthlyRate: number,
+  installments: number,
+): Cents {
+  assertCents(payment, 'parcela');
+  assertRate(monthlyRate);
+  assertCount(installments);
+  if (monthlyRate === 0) return payment * installments;
+  const pv = (payment * (1 - (1 + monthlyRate) ** -installments)) / monthlyRate;
+  return Math.floor(pv + 1e-9);
+}

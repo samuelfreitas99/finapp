@@ -54,6 +54,8 @@ export function debtRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
       paymentAccountId: debt.paymentAccountId,
       paymentCardId: debt.paymentCardId,
       completionDate: debt.completionDate,
+      completionDeadline: debt.completionDeadline,
+      completionConfirmed: debt.completionConfirmed,
       assetValue: debt.assetValue,
       equity: debt.assetValue !== null ? debt.assetValue - summary.outstandingPrincipal : null,
       status: debt.status,
