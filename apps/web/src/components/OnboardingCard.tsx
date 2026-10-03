@@ -33,9 +33,11 @@ function usePushOn(): boolean | null {
  */
 export function OnboardingCard({
   hasAccounts,
+  hasImports = false,
   fallback = null,
 }: {
   hasAccounts: boolean;
+  hasImports?: boolean;
   /** O que mostrar quando os primeiros passos estão escondidos ou concluídos. */
   fallback?: ReactNode;
 }) {
@@ -56,6 +58,7 @@ export function OnboardingCard({
       income: recs.some((r) => r.type === 'income'),
       expenses: recs.some((r) => r.type === 'expense'),
       debts: (debts.data ?? []).length > 0,
+      import: hasImports,
       notifications: pushOn,
     },
     me.onboarding,

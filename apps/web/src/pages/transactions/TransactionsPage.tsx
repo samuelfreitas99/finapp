@@ -52,14 +52,19 @@ function toneOf(t: Transaction) {
 export function TransactionsPage() {
   const [month, setMonth] = useState(currentMonth);
   const [filter, setFilter] = useState<Filter>('all');
-  const [accountId, setAccountId] = useState('');
+  // Conta ou cartão (`card:<id>`) e categoria.
+  const [source, setSource] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [search, setSearch] = useState('');
   const q = useDeferredValue(search.trim());
   const { hidden } = useHiddenValues();
 
   const filters: TransactionFilters = {
     ...monthRange(month),
-    accountId,
+    ...(source.startsWith('card:')
+      ? { cardId: source.slice('card:'.length) }
+      : { accountId: source }),
+    categoryId,
     q: q.length >= 2 ? q : '',
     status: filter === 'planned' || filter === 'receivable' ? 'planned' : '',
     type:
@@ -157,16 +162,49 @@ export function TransactionsPage() {
         ))}
         <select
           className="chip chip--select"
-          aria-label="Conta"
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
+          aria-label="Conta ou cartão"
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
         >
           <option value="">Todas as contas</option>
-          {(accounts.data ?? []).map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
+          <optgroup label="Contas">
+            {(accounts.data ?? []).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </optgroup>
+          {(cards.data ?? []).length > 0 && (
+            <optgroup label="Cartões">
+              {(cards.data ?? []).map((c) => (
+                <option key={c.id} value={`card:${c.id}`}>
+                  {c.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+        <select
+          className="chip chip--select"
+          aria-label="Categoria"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
+          <option value="">Todas as categorias</option>
+          {(categories.data ?? [])
+            .filter((c) => !c.isSystem && !c.parentId)
+            .flatMap((c) => [
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>,
+              ...(categories.data ?? [])
+                .filter((sub) => sub.parentId === c.id)
+                .map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {'  '}↳ {sub.name}
+                  </option>
+                )),
+            ])}
         </select>
       </div>
 
@@ -198,7 +236,7 @@ export function TransactionsPage() {
           <ListOrdered size={40} strokeWidth={1.5} aria-hidden="true" />
           <h2>Nada em {monthLabel(month)}</h2>
           <p className="muted">
-            {q || filter !== 'all' || accountId
+            {q || filter !== 'all' || source || categoryId
               ? 'Nenhum lançamento com esses filtros.'
               : 'Use o + para lançar uma despesa, receita ou transferência.'}
           </p>

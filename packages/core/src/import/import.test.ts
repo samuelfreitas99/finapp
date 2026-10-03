@@ -227,7 +227,7 @@ describe('reconcileStatement', () => {
     expect(
       reconcileStatement(
         [{ date: '2026-10-10', amount: 5000 }],
-        [c('saida', '2026-10-10', -5000, 'settled'), c('longe', '2026-10-20', 5000, 'planned')],
+        [c('saida', '2026-10-10', -5000, 'settled'), c('longe', '2026-10-25', 5000, 'planned')],
       ),
     ).toEqual([null]);
   });

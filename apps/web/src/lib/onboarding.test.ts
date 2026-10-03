@@ -7,6 +7,7 @@ const none = {
   income: false,
   expenses: false,
   debts: false,
+  import: false,
   notifications: false,
 };
 
@@ -20,6 +21,7 @@ describe('onboardingSteps', () => {
       ['income', 'todo'],
       ['expenses', 'todo'],
       ['debts', 'todo'],
+      ['import', 'todo'],
       ['notifications', 'todo'],
     ]);
     // A conta é obrigatória: não tem "pular".
@@ -32,10 +34,13 @@ describe('onboardingSteps', () => {
     expect(showOnboarding(onboardingSteps(none, open), open)).toBe(true);
     const all = Object.fromEntries(Object.keys(none).map((k) => [k, true])) as typeof none;
     expect(showOnboarding(onboardingSteps(all, open), open)).toBe(false);
-    const skippedRest = { dismissed: false, skipped: ['debts' as const, 'notifications' as const] };
+    const skippedRest = {
+      dismissed: false,
+      skipped: ['debts' as const, 'import' as const, 'notifications' as const],
+    };
     expect(
       showOnboarding(
-        onboardingSteps({ ...all, debts: false, notifications: false }, skippedRest),
+        onboardingSteps({ ...all, debts: false, import: false, notifications: false }, skippedRest),
         skippedRest,
       ),
     ).toBe(false);

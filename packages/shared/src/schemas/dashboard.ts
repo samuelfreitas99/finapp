@@ -28,5 +28,7 @@ export const dashboardSchema = z.object({
   upcoming: z.array(transactionSchema),
   overdueCount: z.int(),
   hasAccounts: z.boolean(),
+  /** Algum extrato ou fatura já foi importado no espaço (primeiros passos). */
+  hasImports: z.boolean(),
 });
 export type Dashboard = z.infer<typeof dashboardSchema>;

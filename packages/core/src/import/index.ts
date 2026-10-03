@@ -330,7 +330,10 @@ export interface ReconcileEntry {
 export interface ReconcileCandidate extends ReconcileEntry {
   id: string;
   status: 'planned' | 'settled';
-  /** Valor estimado (conta variável, salário que muda): aceita diferença no valor. */
+  /**
+   * O valor pode mudar: previsto estimado (conta variável, salário que muda) ou parcela de
+   * dívida/carnê (correção por índice, juros de atraso, desconto). Aceita diferença no valor.
+   */
   estimated: boolean;
   /** Já veio de uma importação (tem `import_key`). */
   imported: boolean;
@@ -348,7 +351,8 @@ export interface ReconcileMatch {
   kind: ReconcileKind;
 }
 
-const PLANNED_DAYS = 5;
+/** Salário que cai antes, boleto pago alguns dias depois do vencimento. */
+const PLANNED_DAYS = 10;
 const SETTLED_DAYS = 2;
 const ESTIMATED_TOLERANCE = 0.3;
 
@@ -357,7 +361,7 @@ const dayDistance = (a: ISODate, b: ISODate) =>
 
 /**
  * Conciliação do extrato com o que já existe na conta. Lançado à mão: mesmo valor até 2
- * dias. Previsto: mesmo valor até 5 dias (o salário pode cair antes); se estimado, até 30%
+ * dias. Previsto: mesmo valor até 10 dias (salário antes, boleto depois); se estimado, até 30%
  * de diferença. Mesmo sentido (entrada/saída) sempre. Cada lançamento existente casa com
  * um item só; prefere o já lançado, depois valor exato, depois a data mais próxima.
  * @see RN 8 (Importação)

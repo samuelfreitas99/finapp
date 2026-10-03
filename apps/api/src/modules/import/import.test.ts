@@ -230,6 +230,35 @@ describe.skipIf(!testDatabaseUrl)('import API (integration)', () => {
     expect((await api('GET', `/debts/${debt.id}`)).json().status).toBe('paid_off');
   });
 
+  it('confirms a booklet installment paid late with interest (different amount)', async () => {
+    const debt = (
+      await api('POST', '/debts', {
+        name: 'Entrada construtora',
+        kind: 'other',
+        paymentAccountId: accountId,
+        phases: [
+          {
+            system: 'fixed',
+            installments: 2,
+            installmentAmount: 50000,
+            firstDueDate: '2026-10-01',
+          },
+        ],
+      })
+    ).json();
+    // Pago 8 dias depois, com R$ 10 de juros.
+    const csv = 'Data;Descrição;Valor\n09/10/2026;PAGTO BOLETO CONSTRUTORA;-510,00';
+    const pre = (await preview(csv, 'csv')).json();
+    expect(pre.rows[0].match).toMatchObject({ kind: 'planned', amount: 50000 });
+    await api('POST', '/import/commit', {
+      accountId,
+      items: [{ ...pre.rows[0], matchId: pre.rows[0].match.id }],
+    });
+    const after = (await api('GET', `/debts/${debt.id}`)).json();
+    expect(after.installments[0]).toMatchObject({ status: 'paid', paidAmount: 51000 });
+    expect(after.installments[1].status).toBe('pending');
+  });
+
   it('imports a card invoice CSV into the chosen invoice, without duplicating', async () => {
     const cardId = (
       await api('POST', '/cards', {

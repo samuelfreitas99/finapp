@@ -1,6 +1,6 @@
 import { addDays, endOfMonth, isPastDue, monthFlow, yearMonthOf, type ISODate } from '@finapp/core';
 import { dashboardQuerySchema, type Dashboard } from '@finapp/shared';
-import { and, asc, eq, gte, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../../db/client';
 import { accounts, categories, transactions } from '../../db/schema';
@@ -66,6 +66,11 @@ export async function buildDashboard(
       .where(and(live, eq(transactions.status, 'planned'), lt(transactions.date, t))),
   ]);
 
+  const [imported] = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(and(eq(transactions.spaceId, spaceId), isNotNull(transactions.importKey)))
+    .limit(1);
   const included = rows.filter((r) => r.includeInTotals);
   const balances = await balancesFor(db, spaceId, included, t, forecastDate);
   let balance = 0;
@@ -96,6 +101,7 @@ export async function buildDashboard(
     // Vencido em fim de semana/feriado ainda pode ser pago no dia útil seguinte.
     overdueCount: pastRows.filter((r) => isPastDue(r.date, t)).length,
     hasAccounts: rows.length > 0,
+    hasImports: Boolean(imported),
   };
 }
 

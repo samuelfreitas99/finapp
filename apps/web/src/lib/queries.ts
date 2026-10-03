@@ -183,6 +183,8 @@ export interface TransactionFilters {
   from?: string;
   to?: string;
   accountId?: string;
+  cardId?: string;
+  categoryId?: string;
   type?: string;
   status?: string;
   q?: string;

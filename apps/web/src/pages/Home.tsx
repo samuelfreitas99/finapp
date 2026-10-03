@@ -93,7 +93,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <OnboardingCard hasAccounts />
+      <OnboardingCard hasAccounts hasImports={d.hasImports} />
 
       {consolidated.data && (
         <section className="card card--pad stack" aria-labelledby="all-spaces">

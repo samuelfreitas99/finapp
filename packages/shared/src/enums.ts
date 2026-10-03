@@ -105,6 +105,7 @@ export const ONBOARDING_STEPS = [
   'income',
   'expenses',
   'debts',
+  'import',
   'notifications',
 ] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];

@@ -58,6 +58,12 @@ function HowItWorks() {
           dívida), ele é confirmado com o valor e a data do banco.
         </p>
         <p>
+          <strong>Cadastre cada compromisso uma vez só</strong>, no lugar mais específico e na conta
+          (ou cartão) que paga: empréstimo de alguém em Dívidas (pessoa), boleto da construtora como
+          parte do imóvel na planta, assinatura no cartão em Fixas apontando para o cartão. Assim o
+          extrato confirma o previsto em vez de criar outro.
+        </p>
+        <p>
           <strong>Formato:</strong> prefira OFX (o mais confiável). CSV também funciona; se as
           saídas vierem positivas, marque &quot;Inverter os sinais&quot;.
         </p>

@@ -46,6 +46,13 @@ const TEXT: Record<OnboardingStep, Omit<OnboardingStepView, 'step' | 'status'>> 
     action: 'Nova dívida',
     skipLabel: 'Não tenho dívidas',
   },
+  import: {
+    title: 'Importe os extratos e as faturas',
+    hint: 'Baixe no app do banco o extrato da conta e a fatura do cartão: o FinApp confere com o que você cadastrou, confirma os previstos e não duplica.',
+    to: '/importar',
+    action: 'Importar extrato',
+    skipLabel: 'Prefiro lançar à mão',
+  },
   notifications: {
     title: 'Ligue os avisos neste aparelho',
     hint: 'Vencimentos, faturas e orçamento estourando chegam como notificação.',

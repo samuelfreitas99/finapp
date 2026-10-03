@@ -31,8 +31,8 @@ import { recordInstallmentPayment } from '../debts/service';
 import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 
 const BODY_LIMIT = 3 * 1024 * 1024;
-/** Janela de busca de lançamentos existentes (o previsto pode estar até 5 dias longe). */
-const MATCH_WINDOW_DAYS = 5;
+/** Janela de busca de lançamentos existentes (o previsto pode estar até 10 dias longe). */
+const MATCH_WINDOW_DAYS = 10;
 
 /** Importação de extrato (OFX/CSV) com deduplicação e regras de categoria. */
 export function importRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
@@ -119,6 +119,8 @@ export function importRoutes(app: FastifyInstance, { db, today }: SpaceContext) 
               type: transactions.type,
               status: transactions.status,
               estimated: transactions.estimated,
+              debtInstallmentId: transactions.debtInstallmentId,
+              installmentPlanId: transactions.installmentPlanId,
               description: transactions.description,
             })
             .from(transactions)
@@ -161,7 +163,8 @@ export function importRoutes(app: FastifyInstance, { db, today }: SpaceContext) 
             date: e.date,
             amount: e.type === 'income' ? e.amount : -e.amount,
             status: e.status as 'planned' | 'settled',
-            estimated: e.estimated,
+            // Parcela de dívida ou carnê pode vir corrigida, com juros ou desconto.
+            estimated: e.estimated || Boolean(e.debtInstallmentId || e.installmentPlanId),
             imported: Boolean(e.key),
           })),
         // Na fatura, só os itens dela entram e a data pode ser a da compra original.
