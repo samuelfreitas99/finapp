@@ -11,6 +11,10 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  GroupDetail,
+  GroupExpenseBody,
+  GroupSettlementBody,
+  GroupSummary,
   CoupleBalance,
   CoupleSplit,
   CoupleSplitBody,
@@ -951,6 +955,71 @@ export function useCoupleMutations() {
       mutationFn: (body: SplitSettingsBody) =>
         api<SplitSettings>(spacePath(spaceId, '/split-settings'), { method: 'PUT', body }),
       onSuccess: invalidate,
+    }),
+  };
+}
+
+export function useGroups() {
+  return useQuery({
+    queryKey: ['racha', 'groups'],
+    queryFn: () => api<{ items: GroupSummary[] }>('/api/split-groups').then((r) => r.items),
+  });
+}
+
+export function useGroup(id: string) {
+  return useQuery({
+    queryKey: ['racha', 'group', id],
+    queryFn: () => api<GroupDetail>(`/api/split-groups/${id}`),
+  });
+}
+
+export function useRachaMutations(groupId?: string) {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: ['racha'] });
+  const base = `/api/split-groups/${groupId ?? ''}`;
+  return {
+    create: useMutation({
+      mutationFn: (body: { name: string; friends?: string[] }) =>
+        api<{ id: string }>('/api/split-groups', { method: 'POST', body }),
+      onSuccess: refresh,
+    }),
+    join: useMutation({
+      mutationFn: (body: { code: string; participantId?: string }) =>
+        api<{ id: string }>('/api/split-groups/join', { method: 'POST', body }),
+      onSuccess: refresh,
+    }),
+    update: useMutation({
+      mutationFn: (body: { name?: string; archived?: boolean }) =>
+        api(base, { method: 'PATCH', body }),
+      onSuccess: refresh,
+    }),
+    addParticipant: useMutation({
+      mutationFn: (name: string) => api(`${base}/participants`, { method: 'POST', body: { name } }),
+      onSuccess: refresh,
+    }),
+    removeParticipant: useMutation({
+      mutationFn: (id: string) => api(`${base}/participants/${id}`, { method: 'DELETE' }),
+      onSuccess: refresh,
+    }),
+    saveExpense: useMutation({
+      mutationFn: ({ id, ...body }: GroupExpenseBody & { id?: string }) =>
+        id
+          ? api(`${base}/expenses/${id}`, { method: 'PUT', body })
+          : api(`${base}/expenses`, { method: 'POST', body }),
+      onSuccess: refresh,
+    }),
+    removeExpense: useMutation({
+      mutationFn: (id: string) => api(`${base}/expenses/${id}`, { method: 'DELETE' }),
+      onSuccess: refresh,
+    }),
+    settle: useMutation({
+      mutationFn: (body: GroupSettlementBody) =>
+        api(`${base}/settlements`, { method: 'POST', body }),
+      onSuccess: refresh,
+    }),
+    undoSettlement: useMutation({
+      mutationFn: (id: string) => api(`${base}/settlements/${id}`, { method: 'DELETE' }),
+      onSuccess: refresh,
     }),
   };
 }

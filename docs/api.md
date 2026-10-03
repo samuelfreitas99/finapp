@@ -84,11 +84,13 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - Divisão no espaço compartilhado ✅: `GET/PUT /transactions/:id/split` (`{ mode: equal|percent|amount|none, paidByUserId?, parts? }`; 204; resto vai para quem pagou), `GET/PUT /split-settings` (padrão; PUT só o dono), `GET /couple/balance` (saldo por membro, pagamentos simplificados, acertos, `staleCount`), `POST /couple/settlements` (`{ fromUserId?, toUserId, amount, date?, notes? }`), `DELETE /couple/settlements/:id`. Espaço pessoal responde 400 `not_shared_space`.
 
-## Racha (fora de espaço)
-- `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
-- `/api/split-groups/:id/expenses` CRUD
-- `GET /api/split-groups/:id/balances?simplify=true`
-- `POST /api/split-groups/:id/settlements`
+## Racha (fora de espaço) ✅
+- `GET/POST /api/split-groups` (lista com seu saldo; `{ name, friends?: string[] }`), `GET /api/split-groups/:id` (participantes, despesas, acertos, saldos), `PATCH /api/split-groups/:id` (`{ name?, archived? }`)
+- `POST /api/split-groups/:id/participants` (`{ name }`), `DELETE .../participants/:pid` (só quem não aparece em despesa/acerto)
+- `GET /api/split-groups/join/:code` (nome do grupo e nomes sem dono), `POST /api/split-groups/join` (`{ code, participantId? }`)
+- `POST /api/split-groups/:id/expenses`, `PUT/DELETE .../expenses/:eid` (`{ description, amount, date, mode: equal|percent|amount|shares, category?, payers: [{ participantId, amount }], shares: [{ participantId, percent? | amount? | weight? }] }`; pagamentos somam o valor)
+- `GET /api/split-groups/:id/balances?simplify=true` (saldo por participante + pagamentos mínimos)
+- `POST /api/split-groups/:id/settlements` (`{ fromParticipantId, toParticipantId, amount, date?, method? }`), `DELETE .../settlements/:sid`
 
 ## Notificações
 - `GET /api/push/vapid-key` ✅ (503 `push_disabled` sem chaves), `POST/DELETE /api/push/subscriptions` ✅ (`PushSubscription.toJSON()`; upsert por endpoint), `POST /api/push/test` ✅

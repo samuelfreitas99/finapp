@@ -27,6 +27,8 @@ import { ExportPage } from './pages/export/ExportPage';
 import { AuditPage } from './pages/audit/AuditPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { CouplePage } from './pages/couple/CouplePage';
+import { GroupPage } from './pages/racha/GroupPage';
+import { RachaPage } from './pages/racha/RachaPage';
 import { BudgetsPage } from './pages/planning/BudgetsPage';
 import { RemindersPage } from './pages/RemindersPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -69,6 +71,8 @@ export const router = createBrowserRouter([
           { path: '/mais', element: <MorePage /> },
           { path: '/configuracoes', element: <SettingsPage /> },
           { path: '/notificacoes', element: <NotificationsPage /> },
+          { path: '/racha', element: <RachaPage /> },
+          { path: '/racha/:id', element: <GroupPage /> },
           { path: '/casal', element: <CouplePage /> },
           { path: '/espacos', element: <SpacesPage /> },
           { path: '/historico', element: <AuditPage /> },

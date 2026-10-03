@@ -120,6 +120,13 @@
       "when": 1791028130697,
       "tag": "0016_couple_split",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791028369475,
+      "tag": "0017_racha",
+      "breakpoints": true
     }
   ]
 }

@@ -27,6 +27,7 @@ import { attachmentRoutes } from './modules/attachments/routes';
 import { reportRoutes } from './modules/reports/routes';
 import { goalRoutes } from './modules/goals/routes';
 import { budgetRoutes } from './modules/budgets/routes';
+import { rachaRoutes } from './modules/racha/routes';
 import { spaceRoutes } from './modules/spaces/routes';
 import { reminderRoutes } from './modules/notifications/reminders';
 import { notificationRoutes } from './modules/notifications/routes';
@@ -91,6 +92,7 @@ export function buildApp({
     notificationRoutes(app, db, push);
     reminderRoutes(app, db);
     spaceRoutes(app, db, today);
+    rachaRoutes(app, db, today);
     spaceScoped(app, db, (scoped) => {
       const ctx = { db, today };
       accountRoutes(scoped, ctx);

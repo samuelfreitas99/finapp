@@ -69,12 +69,12 @@ Itens da fatura = `transactions` com `invoice_id` (e `card_id`). Total da fatura
 |---|---|
 | `transaction_splits` | id, space_id, transaction_id, user_id, amount (parte do membro, ≥0), paid_by_user_id; único por (transaction_id, user_id) |
 | `space_settlements` | id, space_id, from_user_id (quem pagou), to_user_id, amount (>0), date, notes, created_by, deleted_at |
-| `split_groups` | id, name, created_by, currency, archived_at |
-| `split_participants` | id, group_id, user_id (opcional), contact_name, invite_code |
-| `split_expenses` | id, group_id, description, amount, date, split_mode (`equal`/`percent`/`amount`/`shares`), category, created_by |
+| `split_groups` | id, name, currency, join_code (único), created_by, archived_at |
+| `split_participants` | id, group_id, user_id (opcional; único por grupo), name |
+| `split_expenses` | id, group_id, description, amount, date, split_mode (`equal`/`percent`/`amount`/`shares`), category, created_by, deleted_at |
 | `split_expense_payers` | expense_id, participant_id, amount |
 | `split_expense_shares` | expense_id, participant_id, amount, weight |
-| `split_settlements` | id, group_id, from_participant_id, to_participant_id, amount, date, method, transaction_id |
+| `split_settlements` | id, group_id, from_participant_id, to_participant_id, amount, date, method, created_by, deleted_at (`transaction_id` virá com a integração ao espaço pessoal) |
 
 Grupos de racha **não** pertencem a um espaço: o acesso é por `split_participants.user_id`.
 

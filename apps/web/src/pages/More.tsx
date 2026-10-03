@@ -33,6 +33,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/orcamentos', label: 'Orçamentos', icon: BadgePercent },
   { to: '/metas', label: 'Metas', icon: Flag },
   { to: '/importar', label: 'Importar extrato', icon: FileUp },
+  { to: '/racha', label: 'Racha entre amigos', icon: Users },
   { to: '/casal', label: 'Divisão do espaço (casal)', icon: Scale },
   { to: '/espacos', label: 'Espaços e membros', icon: Users },
   { to: '/historico', label: 'Histórico de alterações', icon: History },
@@ -44,8 +45,6 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/lembretes', label: 'Lembretes e checklist', icon: ListChecks },
   { to: '/configuracoes', label: 'Notificações e configurações', icon: Settings },
 ];
-
-const later: { label: string; icon: LucideIcon }[] = [{ label: 'Racha', icon: Users }];
 
 const themes: { value: Theme; label: string }[] = [
   { value: 'system', label: 'Automático' },
@@ -75,15 +74,6 @@ export function MorePage() {
               <span className="menu-row__label">{label}</span>
               <ChevronRight size={18} aria-hidden="true" />
             </Link>
-          </li>
-        ))}
-        {later.map(({ label, icon: Icon }) => (
-          <li key={label}>
-            <span className="menu-row" aria-disabled="true">
-              <Icon size={22} aria-hidden="true" />
-              <span className="menu-row__label">{label}</span>
-              <span className="badge">Em breve</span>
-            </span>
           </li>
         ))}
       </ul>
