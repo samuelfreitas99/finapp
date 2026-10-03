@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 6** (Fases 1–5 concluídas; Fase 2 aguarda confirmar o uso real).
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 7** (Fases 1–6 concluídas; Fase 2 aguarda confirmar o uso real).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -63,7 +63,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Imóvel com entrega incerta: prazo do contrato + previsão de entrega, aviso de estimativa, ação "Recebi as chaves" (pior caso no Planejamento fica para depois)
 - [x] Salário variável (horas extras, feriados): "valor muda todo mês" também em receitas, inclusive salário em partes
 - [x] Lembretes e checklist com notificação no horário
-- [ ] Lançamentos offline com fila
+- [x] Lançamentos offline com fila
 
 ## Fase 7: Planejamento e relatórios
 - [ ] Orçamentos por categoria com alertas
@@ -141,4 +141,5 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: alertas (RN 9) com regra no core (`buildAlerts`, `inQuietHours`), job diário às 08:00 e envio de hora em hora respeitando o silêncio; sino com contador e central de notificações. Itens novos da Fase 6 pedidos pelo Samuel (cadastro de dívida guiado, entrega incerta, salário variável, lembretes) (Claude).
 - 03/10/2026: salário variável (receita com valor estimado, também em partes). Cadastro de dívida guiado ("Começando agora" / "Já estou pagando" com o que o app do banco mostra, `principalFromPayment` no core, avançado recolhido); imóvel com previsão de entrega + prazo do contrato e "Recebi as chaves" (migração 0007) (Claude).
 - 03/10/2026: lembretes e checklist (`reminders`, migração 0008; `nextReminderAt` no core), aviso no horário pelo job de envio (agora a cada 5 minutos), tela "Lembretes" (Claude).
+- 03/10/2026: lançamentos offline: sem conexão, receita/despesa/compra no cartão do "+" fica numa fila no aparelho e é enviada quando a internet volta (faixa "Sem conexão"); mutações não pausam offline. **Fase 6 concluída** (Claude).
 

@@ -1,5 +1,6 @@
 import type { Transaction, TransactionList } from '@finapp/shared';
 import { api, spacePath } from '../../lib/api';
+import { enqueueEntry, isOffline } from '../../lib/offline-queue';
 import { Landmark, Trash2 } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { PageHeader } from '../../components/PageHeader';
@@ -185,28 +186,34 @@ export function NewEntryPage() {
       );
       return;
     }
-    createTx.mutate(
-      {
-        ...common,
-        type: s.kind,
-        ...(cardId ? { cardId } : { accountId: s.accountId }),
-        categoryId: s.categoryId,
-        description: describe(s, category?.name),
-        paymentMethod: cardId ? null : s.pix ? 'pix' : null,
-        pixCounterparty: !cardId && s.pix ? s.pixCounterparty.trim() || null : null,
-      },
-      {
-        onSuccess: (t) => {
-          const text = cardId
-            ? s.kind === 'income'
-              ? 'Estorno salvo.'
-              : 'Compra salva.'
-            : SAVED[s.kind];
-          toast({ text, action: undo([t.id]) });
+    const body: Parameters<typeof createTx.mutate>[0] = {
+      ...common,
+      type: s.kind,
+      ...(cardId ? { cardId } : { accountId: s.accountId }),
+      categoryId: s.categoryId,
+      description: describe(s, category?.name),
+      paymentMethod: cardId ? null : s.pix ? 'pix' : null,
+      pixCounterparty: !cardId && s.pix ? s.pixCounterparty.trim() || null : null,
+    };
+    createTx.mutate(body, {
+      onError: (err) => {
+        // Sem conexão: guarda no aparelho e envia quando a internet voltar.
+        if (isOffline(err)) {
+          enqueueEntry(spaceId, body);
+          toast({ text: 'Sem conexão: lançamento guardado no aparelho, envio quando voltar.' });
           back();
-        },
+        }
       },
-    );
+      onSuccess: (t) => {
+        const text = cardId
+          ? s.kind === 'income'
+            ? 'Estorno salvo.'
+            : 'Compra salva.'
+          : SAVED[s.kind];
+        toast({ text, action: undo([t.id]) });
+        back();
+      },
+    });
   };
 
   return (

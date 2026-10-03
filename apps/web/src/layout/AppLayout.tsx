@@ -1,6 +1,7 @@
 import { Bell, Eye, EyeOff, Wallet } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router';
 import { useActiveSpace } from '../auth/session';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { useHiddenValues } from '../lib/hidden-values';
 import { useNotifications } from '../lib/queries';
 import { bottomNav, newEntry, sideNav, type NavItem } from './nav';
@@ -78,6 +79,7 @@ export function AppLayout() {
         ))}
       </nav>
       <main className="app__main">
+        <OfflineBanner />
         <Outlet />
       </main>
       <nav className="bottom-nav" aria-label="Principal">

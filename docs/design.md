@@ -49,7 +49,7 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 ## Estados
 - Vazio: ilustração simples + ação principal ("Cadastre seu primeiro cartão").
 - Carregando: skeletons, nunca spinner de tela cheia.
-- Offline: faixa discreta "Offline, mostrando dados de HH:MM".
+- Offline: faixa discreta "Sem conexão"; lançamentos feitos no "+" ficam guardados no aparelho (`lib/offline-queue.ts`) e são enviados quando a conexão volta.
 - Erro: mensagem humana + tentar de novo.
 
 ## Formatos

@@ -18,6 +18,8 @@ registerSW({ immediate: true });
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, refetchOnWindowFocus: true },
+    // Sem pausar offline: a tela trata a falha (ex.: guarda o lançamento na fila).
+    mutations: { networkMode: 'always' },
   },
 });
 
