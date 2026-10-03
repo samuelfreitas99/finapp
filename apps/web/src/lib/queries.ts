@@ -11,6 +11,7 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  SimulatePayoff,
   IndexValue,
   GoalDeposit,
   CreateCategoryBody,
@@ -1158,5 +1159,17 @@ export function useSyncIndexValues() {
         errors: Partial<Record<'incc' | 'ipca' | 'igpm', string>>;
       }>(spacePath(spaceId, '/index-values/sync'), { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['index-values', spaceId] }),
+  });
+}
+
+/** "E se eu quitar ou amortizar R$ X?": simula sem gravar nada. */
+export function useSimulateDebt() {
+  const spaceId = useSpaceId();
+  return useMutation({
+    mutationFn: ({ id, amount, phaseId }: { id: string; amount?: number; phaseId?: string }) =>
+      api<SimulatePayoff>(spacePath(spaceId, `/debts/${id}/simulate`), {
+        method: 'POST',
+        body: { ...(amount ? { amount } : {}), ...(phaseId ? { phaseId } : {}) },
+      }),
   });
 }

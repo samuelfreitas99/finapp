@@ -20,3 +20,4 @@ export * from './reports';
 export * from './import';
 export * from './export';
 export * from './indexes';
+export * from './simulators';

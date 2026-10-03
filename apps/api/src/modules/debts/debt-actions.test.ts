@@ -192,4 +192,54 @@ describe.skipIf(!testDatabaseUrl)('debt payments, amortization and payoff (integ
     const r = (await api('POST', `/debts/${tracked.id}/installments/1/pay`, {})).json();
     expect(r.installments[0].status).toBe('paid');
   });
+
+  it('simulates payoff and amortization without saving, matching the real result', async () => {
+    const debt = await create({ name: 'Simular' });
+    const paid = (await api('POST', `/debts/${debt.id}/installments/1/pay`, {})).json();
+    const planned = (await plannedOf('Simular')).length;
+    const before = await balance();
+
+    const sim = (await api('POST', `/debts/${debt.id}/simulate`, { amount: 30000 })).json();
+    expect(sim.current.remainingCount).toBe(11);
+    expect(sim.payoff.pay).toBe(paid.summary.outstandingPrincipal);
+    expect(sim.payoff.saves).toBe(sim.current.remainingAmount - sim.payoff.pay);
+    expect(sim.payoff.saves).toBeGreaterThan(0);
+    expect(sim.amortization.reduceTerm.count).toBeLessThan(11);
+    expect(sim.amortization.reduceInstallment.count).toBe(11);
+    expect(sim.amortization.reduceInstallment.installment).toBeLessThan(
+      sim.amortization.reduceTerm.installment + 1,
+    );
+    expect(sim.amortization.reduceTerm.interestSaved).toBeGreaterThan(0);
+
+    // Nada foi gravado.
+    expect(await balance()).toBe(before);
+    expect((await plannedOf('Simular')).length).toBe(planned);
+
+    // A amortização real dá o mesmo prazo e a mesma parcela simulados.
+    const real = (
+      await api('POST', `/debts/${debt.id}/amortize`, { amount: 30000, mode: 'reduce_term' })
+    ).json();
+    const pending = real.installments.filter((i: { status: string }) => i.status !== 'paid');
+    expect(pending).toHaveLength(sim.amortization.reduceTerm.count);
+    expect(pending[0].amount).toBe(sim.amortization.reduceTerm.installment);
+  });
+
+  it('simulates only the payoff when there is no extra amount, and validates', async () => {
+    const debt = await create({ name: 'Simular quitação' });
+    const sim = (await api('POST', `/debts/${debt.id}/simulate`, {})).json();
+    expect(sim.amortization).toBeNull();
+    expect(sim.payoff.pay).toBe(100000);
+    const tooBig = await api('POST', `/debts/${debt.id}/simulate`, { amount: 100000 });
+    expect(tooBig.json().error.code).toBe('invalid_amount');
+    const fixed = await create({
+      name: 'Fixa simular',
+      phases: [
+        { system: 'fixed', installments: 3, installmentAmount: 1000, firstDueDate: '2026-11-10' },
+      ],
+    });
+    expect(
+      (await api('POST', `/debts/${fixed.id}/simulate`, { amount: 100 })).json().error.code,
+    ).toBe('invalid_phase');
+    expect((await api('POST', `/debts/${fixed.id}/simulate`, {})).json().payoff.pay).toBe(3000);
+  });
 });

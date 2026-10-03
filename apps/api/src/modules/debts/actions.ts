@@ -13,6 +13,8 @@ import {
   debtInstallmentParamsSchema,
   payInstallmentBodySchema,
   payoffBodySchema,
+  simulatePayoffBodySchema,
+  type SimulatePayoff,
   spaceItemParamsSchema,
 } from '@finapp/shared';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -183,6 +185,94 @@ export function debtActionRoutes(
       await markPaidOffIfDone(tx, debt);
     });
     return detail(spaceId, id);
+  });
+
+  /**
+   * Simulação (nada é gravado): quanto custa quitar hoje e o que muda ao amortizar um valor
+   * extra, nas duas opções (menos parcelas ou parcela menor).
+   */
+  app.post('/debts/:id/simulate', async (request): Promise<SimulatePayoff> => {
+    const { spaceId, id } = spaceItemParamsSchema.parse(request.params);
+    const body = simulatePayoffBodySchema.parse(request.body ?? {});
+    const debt = await findDebt(db, spaceId, id);
+    if (debt.status !== 'active')
+      throw badRequest('debt_not_active', 'Esta dívida não está ativa.');
+    const rows = await installmentsOf(db, debt.id);
+    const open = rows.filter((r) => !isPaid(r));
+    if (open.length === 0) throw badRequest('nothing_to_pay', 'Não há parcelas em aberto.');
+    const remainingAmount = open.reduce((s, r) => s + (r.amount - r.paidAmount), 0);
+    const interestToPay = open.reduce((s, r) => s + r.interestPart, 0);
+    const balance = payoffAmount(open.map((r) => ({ ...r, paid: false })));
+    const lastDue = (list: { dueDate: ISODate }[]) =>
+      list.reduce<ISODate | null>(
+        (m, r) => (m === null || compareDates(r.dueDate, m) > 0 ? r.dueDate : m),
+        null,
+      );
+
+    let amortization: SimulatePayoff['amortization'] = null;
+    if (body.amount !== undefined) {
+      const phases = await phasesOf(db, debt.id);
+      const candidates = phases.filter(
+        (p) => (p.system === 'price' || p.system === 'sac') && open.some((r) => r.phaseId === p.id),
+      );
+      const phase = body.phaseId ? candidates.find((p) => p.id === body.phaseId) : candidates[0];
+      if (!phase || (!body.phaseId && candidates.length > 1)) {
+        throw badRequest(
+          'invalid_phase',
+          candidates.length > 1
+            ? 'Escolha a fase (Price ou SAC) a simular.'
+            : 'Só fases Price ou SAC com parcelas em aberto podem ser amortizadas.',
+        );
+      }
+      const pending = open
+        .filter((r) => r.phaseId === phase.id)
+        .sort((a, b) => a.number - b.number);
+      if (pending.some((r) => r.paidAmount > 0)) {
+        throw badRequest('partial_installment', 'Termine de pagar a parcela parcial antes.');
+      }
+      const phaseBalance = payoffAmount(pending.map((r) => ({ ...r, paid: false })));
+      if (body.amount >= phaseBalance) {
+        throw badRequest('invalid_amount', 'O valor cobre o saldo devedor: veja a quitação.');
+      }
+      const phaseRemaining = pending.reduce((s, r) => s + r.amount, 0);
+      const first = pending[0] as InstallmentRow;
+      const scenario = (mode: 'reduce_term' | 'reduce_installment') => {
+        const next = amortizeExtra({
+          system: phase.system as 'price' | 'sac',
+          balance: phaseBalance,
+          monthlyRate: phase.rateMonthly,
+          remainingInstallments: pending.length,
+          extra: body.amount as number,
+          mode,
+          nextDueDate: first.dueDate,
+        });
+        const after = next.reduce((s, r) => s + r.amount, 0);
+        return {
+          count: next.length,
+          installment: next[0]?.amount ?? 0,
+          lastDueDate: lastDue(next),
+          remainingAmount: after,
+          interestSaved: phaseRemaining - ((body.amount as number) + after),
+        };
+      };
+      amortization = {
+        phaseId: phase.id,
+        phaseName: phase.name,
+        amount: body.amount,
+        reduceTerm: scenario('reduce_term'),
+        reduceInstallment: scenario('reduce_installment'),
+      };
+    }
+    return {
+      current: {
+        remainingCount: open.length,
+        remainingAmount,
+        interestToPay,
+        lastDueDate: lastDue(open),
+      },
+      payoff: { pay: balance, saves: remainingAmount - balance },
+      amortization,
+    };
   });
 
   /**

@@ -1,6 +1,7 @@
 import type { Theme } from '@finapp/shared';
 import {
   BadgePercent,
+  Calculator,
   Download,
   FileUp,
   Flag,
@@ -34,6 +35,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/orcamentos', label: 'Orçamentos', icon: BadgePercent },
   { to: '/metas', label: 'Metas', icon: Flag },
   { to: '/importar', label: 'Importar extrato', icon: FileUp },
+  { to: '/simuladores', label: 'Simuladores', icon: Calculator },
   { to: '/racha', label: 'Racha entre amigos', icon: Users },
   { to: '/casal', label: 'Divisão do espaço (casal)', icon: Scale },
   { to: '/convites', label: 'Convidar pessoas', icon: UserPlus },

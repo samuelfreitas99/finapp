@@ -323,3 +323,46 @@ export type IndexValue = z.infer<typeof indexValueSchema>;
  * @see RN 6.2
  */
 export const applyIndexBodySchema = z.object({ month: yearMonth });
+
+/** Corpo de `POST /debts/:id/simulate`: "e se eu quitar ou amortizar R$ X?". Não grava nada. */
+export const simulatePayoffBodySchema = z.object({
+  /** Valor extra a amortizar (Price/SAC). Sem ele, só mostra a quitação hoje. */
+  amount: z.int().positive().optional(),
+  phaseId: z.uuid().optional(),
+});
+export type SimulatePayoffBody = z.infer<typeof simulatePayoffBodySchema>;
+
+const simulatedScenarioSchema = z.object({
+  /** Parcelas que sobram depois da amortização. */
+  count: z.int(),
+  /** Valor da próxima parcela (0 se quitou). */
+  installment: z.int(),
+  lastDueDate: isoDateSchema.nullable(),
+  /** O que ainda se paga em parcelas depois do extra. */
+  remainingAmount: z.int(),
+  /** Juros que deixam de ser pagos: `restante antes − (extra + restante depois)`. */
+  interestSaved: z.int(),
+});
+
+export const simulatePayoffSchema = z.object({
+  /** Situação hoje (parcelas em aberto de toda a dívida). */
+  current: z.object({
+    remainingCount: z.int(),
+    remainingAmount: z.int(),
+    interestToPay: z.int(),
+    lastDueDate: isoDateSchema.nullable(),
+  }),
+  /** Quitar tudo hoje: paga o saldo devedor, sem juros futuros. */
+  payoff: z.object({ pay: z.int(), saves: z.int() }),
+  /** Amortização com o valor informado (só Price/SAC). */
+  amortization: z
+    .object({
+      phaseId: z.uuid(),
+      phaseName: z.string(),
+      amount: z.int(),
+      reduceTerm: simulatedScenarioSchema,
+      reduceInstallment: simulatedScenarioSchema,
+    })
+    .nullable(),
+});
+export type SimulatePayoff = z.infer<typeof simulatePayoffSchema>;
