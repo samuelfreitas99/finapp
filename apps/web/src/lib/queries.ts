@@ -11,6 +11,7 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  AuditItem,
   CategoryRule,
   ImportCommitBody,
   ImportPreview,
@@ -809,5 +810,18 @@ export function useDeleteCategoryRule() {
     mutationFn: (id: string) =>
       api(spacePath(spaceId, `/category-rules/${id}`), { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['category-rules', spaceId] }),
+  });
+}
+
+export function useAuditLog() {
+  const spaceId = useSpaceId();
+  return useInfiniteQuery({
+    queryKey: ['audit-log', spaceId],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      api<{ items: AuditItem[]; nextCursor: string | null }>(
+        spacePath(spaceId, `/audit-log?limit=30${pageParam ? `&cursor=${pageParam}` : ''}`),
+      ),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 }

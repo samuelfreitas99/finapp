@@ -84,5 +84,5 @@ Grupos de racha **não** pertencem a um espaço: o acesso é por `split_particip
 | `notification_settings` | user_id, type, enabled, days_before, quiet_start, quiet_end |
 | `notifications` | id, user_id, space_id, type, title, body, entity_type, entity_id, dedupe_key (unique), read_at, sent_at |
 | `reminders` | id, user_id, title, notes, due_at (timestamptz, opcional: sem horário = checklist), repeat (`none`/`daily`/`weekly`/`monthly`/`yearly`), done_at, notified_for, deleted_at (migração `0008`) |
-| `audit_log` | id, space_id, user_id, entity_type, entity_id, action, before (jsonb), after (jsonb), at |
+| `audit_log` | id, space_id, user_id, entity_type, entity_id, action, before (jsonb, hoje sempre nulo), after (jsonb: corpo enviado sem campos sensíveis), at |
 | `import_batches` (V2) | id, space_id, account_id/card_id, source, file_name, created_at; `transactions.import_batch_id`, `external_id` |

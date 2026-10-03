@@ -19,6 +19,7 @@ import { spaceScoped } from './modules/spaces/scope';
 import { transactionRoutes } from './modules/transactions/routes';
 import { inviteRoutes } from './modules/invites/routes';
 import { meRoutes } from './modules/me/routes';
+import { auditRoutes } from './modules/audit/routes';
 import { exportRoutes } from './modules/export/routes';
 import { importRoutes } from './modules/import/routes';
 import { attachmentRoutes } from './modules/attachments/routes';
@@ -104,6 +105,7 @@ export function buildApp({
       attachmentRoutes(scoped, ctx);
       importRoutes(scoped, ctx);
       exportRoutes(scoped, ctx);
+      auditRoutes(scoped, ctx);
     });
   }
 

@@ -8,3 +8,4 @@ export * from './debts';
 export * from './notifications';
 export * from './planning';
 export * from './attachments';
+export * from './audit';

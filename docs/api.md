@@ -72,6 +72,8 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - `POST /import/preview` (`{ accountId, format: ofx|csv, content, invert? }` → linhas com `duplicate` (`exact`/`possible`), categoria sugerida por regra e `beforeInitialDate`; não grava), `POST /import/commit` (`{ accountId, items: [{ date, type, amount, description, importKey, categoryId?, saveRule? }] }` → `{ created, skipped, rulesCreated }`; efetivados, repetidos ignorados), `GET/POST /category-rules`, `DELETE /category-rules/:id`
 
+- `GET /audit-log?limit=&cursor=&entity=` ✅ (histórico de alterações do espaço, mais recentes primeiro; `nextCursor`)
+
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
 - `/api/split-groups/:id/expenses` CRUD

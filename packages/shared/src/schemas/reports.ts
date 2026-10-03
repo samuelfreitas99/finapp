@@ -64,3 +64,21 @@ export type NetWorthReport = z.infer<typeof netWorthSchema>;
 export const exportQuerySchema = z.object({
   format: z.enum(['csv', 'xlsx', 'json']).default('csv'),
 });
+
+export const auditQuerySchema = z.object({
+  cursor: z.uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  /** Filtra por entidade (`transactions`, `accounts`...). */
+  entity: z.string().max(40).optional(),
+});
+
+export const auditItemSchema = z.object({
+  id: z.uuid(),
+  at: z.string(),
+  userName: z.string().nullable(),
+  entityType: z.string(),
+  entityId: z.uuid().nullable(),
+  action: z.string(),
+  after: z.record(z.string(), z.unknown()).nullable(),
+});
+export type AuditItem = z.infer<typeof auditItemSchema>;

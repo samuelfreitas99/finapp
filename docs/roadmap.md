@@ -72,7 +72,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Anexos de comprovantes
 - [x] Importação OFX/CSV com deduplicação e regras de categoria
 - [x] Exportação CSV/XLSX/JSON
-- [ ] Passkeys, 2FA, bloqueio por PIN, audit log
+- [ ] Passkeys, 2FA, bloqueio por PIN, audit log (feito: audit log; falta: PIN, 2FA, passkeys)
 
 ## Fase 8: Compartilhamento e racha
 - [ ] Espaço compartilhado: convites, membros, seletor de espaço, visão consolidada
@@ -109,6 +109,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 
 - Importação: só extrato de **conta** (fatura de cartão em CSV ainda não). Cada item vira receita/despesa **efetivada** na conta escolhida, com chave `import_key` única por conta (FITID do OFX, ou data+valor+descrição com contador); a chave vale mesmo para lançamentos excluídos depois, então o que foi apagado não volta. Itens com valor igual a até 2 dias de um lançamento existente aparecem como "parece repetido" e vêm desmarcados. Itens anteriores ao saldo inicial da conta são ignorados. Regras de categoria casam por trecho da descrição (sem acento e caixa; vence o trecho mais longo) e são por tipo (despesa ou receita); a regra sugerida usa as 3 primeiras palavras sem números. CSV: colunas reconhecidas pelo nome (data, descrição, valor ou débito/crédito); "Inverter sinais" para bancos que mostram saída como positiva. Não há conciliação com lançamentos previstos.
 - Exportação: espaço ativo inteiro, sem filtro de período; CSV (`;`, BOM, valores com sinal e vírgula, células que parecem fórmula recebem apóstrofo), XLSX (abas Lançamentos e Contas) e JSON completo em centavos. Não inclui anexos nem dados de usuários.
+- Audit log: uma linha por requisição de escrita bem-sucedida no espaço (hook em `spaceScoped`), com usuário, entidade, id, ação (`create`/`update`/`delete` ou o verbo da rota) e o corpo enviado sem campos sensíveis (`after`); `before` não é preenchido (só o que foi enviado). Importação e anexos registram só a ação (sem conteúdo). Qualquer membro do espaço vê o histórico.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -156,3 +157,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: comprovantes: tabela `attachments` (migração 0011, ADR-016), `GET/POST /transactions/:id/attachments` (corpo cru, `?name=`), `GET /attachments/:id/file`, `DELETE /attachments/:id`; seção "Comprovantes" na edição do lançamento, com foto reduzida no aparelho (Claude).
 - 03/10/2026: importação de extrato: `packages/core/import` (OFX, CSV, chave de deduplicação, regras), `transactions.import_key` e `category_rules` (migração 0012), `POST /import/preview|commit`, `GET/POST/DELETE /category-rules` e tela "Importar extrato" (Claude).
 - 03/10/2026: exportação: `packages/core/export` (CSV seguro), `GET /export?format=csv|xlsx|json` (dependência `exceljs`, gratuita) e tela "Exportar dados" (Claude).
+- 03/10/2026: histórico de alterações: tabela `audit_log` (migração 0013), registro automático das escritas do espaço, `GET /audit-log` (cursor) e tela "Histórico de alterações" (Claude).
