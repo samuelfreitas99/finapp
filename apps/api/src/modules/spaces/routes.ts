@@ -4,8 +4,10 @@ import {
   activeSpaceBodySchema,
   consolidatedQuerySchema,
   createSpaceBodySchema,
+  deleteSpaceBodySchema,
   spaceItemParamsSchema,
   spaceParamsSchema,
+  transferSpaceBodySchema,
   updateSpaceBodySchema,
   type Consolidated,
   type SpaceMember,
@@ -102,7 +104,10 @@ export function spaceRoutes(app: FastifyInstance, db: Db, today: () => ISODate) 
         .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, targetId)));
       if (!target) throw notFound('Membro');
       if (target.role === 'owner') {
-        throw badRequest('owner_cannot_leave', 'O dono não pode sair nem ser removido do espaço.');
+        throw badRequest(
+          'owner_cannot_leave',
+          'O dono não pode sair nem ser removido. Passe a posse para outro membro antes de sair.',
+        );
       }
       await db.transaction(async (tx) => {
         await tx
@@ -120,6 +125,73 @@ export function spaceRoutes(app: FastifyInstance, db: Db, today: () => ISODate) 
       return reply.code(204).send();
     },
   );
+
+  /**
+   * O dono passa a posse para outro membro (que vira dono); quem passou continua como membro
+   * e pode sair depois.
+   */
+  app.post('/api/spaces/:spaceId/transfer', { preHandler: requireUser }, async (request) => {
+    const { spaceId } = spaceParamsSchema.parse(request.params);
+    const body = transferSpaceBodySchema.parse(request.body ?? {});
+    const user = currentUser(request);
+    const { space, role } = await memberSpace(db, user.id, spaceId);
+    ownerOnly(role, 'passar a posse');
+    if (space.type === 'personal')
+      throw badRequest('personal_space', 'O espaço pessoal não pode mudar de dono.');
+    if (body.userId === user.id) throw badRequest('already_owner', 'Você já é o dono.');
+    const [target] = await db
+      .select({ role: spaceMembers.role })
+      .from(spaceMembers)
+      .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, body.userId)));
+    if (!target) throw notFound('Membro');
+    await db.transaction(async (tx) => {
+      await tx
+        .update(spaceMembers)
+        .set({ role: 'owner' })
+        .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, body.userId)));
+      await tx
+        .update(spaceMembers)
+        .set({ role: 'member' })
+        .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, user.id)));
+    });
+    return { id: space.id, name: space.name, type: space.type, role: 'member' };
+  });
+
+  /**
+   * O dono exclui um espaço compartilhado (confirmando o nome). Exclusão lógica: o espaço
+   * some para todos, os dados ficam no banco (`deleted_at`), convites não usados caem e quem
+   * estava nele volta para o espaço pessoal.
+   */
+  app.delete('/api/spaces/:spaceId', { preHandler: requireUser }, async (request, reply) => {
+    const { spaceId } = spaceParamsSchema.parse(request.params);
+    const body = deleteSpaceBodySchema.parse(request.body ?? {});
+    const user = currentUser(request);
+    const { space, role } = await memberSpace(db, user.id, spaceId);
+    ownerOnly(role, 'excluir o espaço');
+    if (space.type === 'personal')
+      throw badRequest('personal_space', 'O espaço pessoal não pode ser excluído.');
+    if (body.confirmName.toLowerCase() !== space.name.trim().toLowerCase()) {
+      throw badRequest('confirm_name', 'Digite o nome do espaço exatamente como aparece.');
+    }
+    const members = await db
+      .select({ userId: spaceMembers.userId })
+      .from(spaceMembers)
+      .where(eq(spaceMembers.spaceId, spaceId));
+    await db.transaction(async (tx) => {
+      await tx.update(spaces).set({ deletedAt: new Date() }).where(eq(spaces.id, spaceId));
+      await tx.delete(invites).where(and(eq(invites.spaceId, spaceId), isNull(invites.usedAt)));
+      for (const m of members) {
+        const personal = (await userSpaces(tx as unknown as Db, m.userId)).find(
+          (s) => s.type === 'personal',
+        );
+        await tx
+          .update(userSettings)
+          .set({ activeSpaceId: personal?.id ?? null })
+          .where(and(eq(userSettings.userId, m.userId), eq(userSettings.activeSpaceId, spaceId)));
+      }
+    });
+    return reply.code(204).send();
+  });
 
   /** Usuário que já tem conta entra num espaço compartilhado com o código de convite. */
   app.post('/api/invites/accept', { preHandler: requireUser }, async (request) => {

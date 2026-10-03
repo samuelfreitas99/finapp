@@ -19,7 +19,13 @@ import { badRequest } from '../../http/errors';
  */
 export async function deleteUserData(db: Db, userId: string): Promise<void> {
   const mine = await db
-    .select({ id: spaces.id, type: spaces.type, role: spaceMembers.role, name: spaces.name })
+    .select({
+      id: spaces.id,
+      type: spaces.type,
+      role: spaceMembers.role,
+      name: spaces.name,
+      deletedAt: spaces.deletedAt,
+    })
     .from(spaceMembers)
     .innerJoin(spaces, eq(spaces.id, spaceMembers.spaceId))
     .where(eq(spaceMembers.userId, userId));
@@ -27,7 +33,8 @@ export async function deleteUserData(db: Db, userId: string): Promise<void> {
   const toDelete: string[] = [];
   for (const space of mine) {
     if (space.role !== 'owner') continue;
-    if (space.type === 'shared') {
+    // Espaço já excluído pelo dono: some de vez junto com a conta.
+    if (space.type === 'shared' && !space.deletedAt) {
       const others = await db
         .select({ userId: spaceMembers.userId })
         .from(spaceMembers)
@@ -35,7 +42,7 @@ export async function deleteUserData(db: Db, userId: string): Promise<void> {
       if (others.length > 0) {
         throw badRequest(
           'owns_shared_space',
-          `Você é dono do espaço "${space.name}" e ele tem outros membros. Remova-os em Espaços e membros antes de excluir a conta.`,
+          `Você é dono do espaço "${space.name}" e ele tem outros membros. Em Espaços e membros, passe a posse para outro membro ou exclua o espaço antes de excluir a conta.`,
         );
       }
     }

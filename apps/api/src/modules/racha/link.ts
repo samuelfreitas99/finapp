@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Db } from '../../db/client';
+import { spaceRole } from '../spaces/access';
 import {
   accounts,
   splitExpensePostings,
@@ -46,7 +47,9 @@ export async function syncGroupLink(db: Db, link: Link): Promise<SyncResult> {
     .where(
       and(eq(splitParticipants.groupId, link.groupId), eq(splitParticipants.userId, link.userId)),
     );
-  if (!group || !account || !me) return result;
+  // Quem saiu do espaço (ou o espaço foi excluído) não lança mais nele.
+  const member = await spaceRole(db, link.userId, link.spaceId);
+  if (!group || !account || !me || !member) return result;
 
   const expenses = await db
     .select()

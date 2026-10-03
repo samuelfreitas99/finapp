@@ -518,4 +518,35 @@ describe.skipIf(!testDatabaseUrl)('racha → personal space (integration)', () =
     expect((await call(ana, 'GET', g('/link'))).json().linked).toBe(false);
     expect((await call(ana, 'POST', g('/link/sync'))).json().error.code).toBe('not_linked');
   });
+
+  it('stops posting into a shared space after the user leaves it', async () => {
+    const space = (await call(ana, 'POST', '/api/spaces', { name: 'Casa' })).json().id;
+    const invite = (await call(ana, 'POST', '/api/invites', { spaceId: space })).json();
+    await call(bia, 'POST', '/api/invites/accept', { code: invite.code });
+    const account = (
+      await call(bia, 'POST', `/api/spaces/${space}/accounts`, {
+        name: 'Conta da casa',
+        type: 'checking',
+        initialBalance: 0,
+        initialDate: '2026-01-01',
+      })
+    ).json().id;
+    expect(
+      (await call(bia, 'PUT', g('/link'), { spaceId: space, accountId: account })).statusCode,
+    ).toBe(200);
+    const inSpace = async () =>
+      (
+        (await call(ana, 'GET', `/api/spaces/${space}/transactions?limit=50`)).json().items as {
+          description: string;
+        }[]
+      ).filter((t) => t.description.startsWith('Racha')).length;
+    // As despesas antigas já foram lançadas no espaço pessoal; uma nova vai para a casa.
+    await addExpense(4000, 'Mercado da casa');
+    const before = await inSpace();
+    expect(before).toBe(1);
+
+    await call(bia, 'DELETE', `/api/spaces/${space}/members/${bia.id}`);
+    await addExpense(3000, 'Depois de sair');
+    expect(await inSpace()).toBe(before);
+  });
 });

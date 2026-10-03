@@ -9,6 +9,14 @@ export type CreateSpaceBody = z.infer<typeof createSpaceBodySchema>;
 export const updateSpaceBodySchema = z.object({ name: nameSchema });
 export type UpdateSpaceBody = z.infer<typeof updateSpaceBodySchema>;
 
+/** `POST /api/spaces/:spaceId/transfer`: o dono passa a posse para outro membro. */
+export const transferSpaceBodySchema = z.object({ userId: z.uuid() });
+export type TransferSpaceBody = z.infer<typeof transferSpaceBodySchema>;
+
+/** `DELETE /api/spaces/:spaceId`: o nome do espaço digitado, para confirmar. */
+export const deleteSpaceBodySchema = z.object({ confirmName: z.string().trim().min(1) });
+export type DeleteSpaceBody = z.infer<typeof deleteSpaceBodySchema>;
+
 export const spaceMemberSchema = z.object({
   userId: z.uuid(),
   name: z.string(),

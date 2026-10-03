@@ -12,7 +12,9 @@ Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato plan
 
 ## Espaços
 - `POST /api/spaces` ✅ (`{ name }`; cria compartilhado, você é dono), `PATCH /api/spaces/:id` ✅ (dono; só compartilhado), `PUT /api/me/active-space` ✅ (`{ spaceId }`)
-- `GET /api/spaces/:id/members` ✅, `DELETE /api/spaces/:id/members/:userId` ✅ (dono remove; o próprio membro sai; o dono não)
+- `GET /api/spaces/:id/members` ✅, `DELETE /api/spaces/:id/members/:userId` ✅ (dono remove; o próprio membro sai; o dono não, precisa passar a posse antes)
+- `POST /api/spaces/:id/transfer` ✅ (`{ userId }`; dono passa a posse para um membro e vira membro)
+- `DELETE /api/spaces/:id` ✅ (`{ confirmName }`; dono, só compartilhado; exclusão lógica, apaga convites não usados, quem estava nele volta para o pessoal)
 - `POST /api/invites/accept` ✅ (`{ code }`; só convite de espaço, e-mail conferido se o convite tiver)
 - `GET /api/consolidated?month=` ✅ (todos os espaços do usuário: por espaço e total de saldo, previsto, receitas e despesas efetivadas)
 

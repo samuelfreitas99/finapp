@@ -1,6 +1,7 @@
 import type { Invite } from '@finapp/shared';
 import { Copy, Link as LinkIcon, Share2, Trash2, UserPlus } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
 import { copyText } from '../../lib/clipboard';
@@ -60,8 +61,9 @@ export function InvitesPage() {
     <>
       <PageHeader title="Convidar pessoas" back="/mais" />
       <p className="muted">
-        Só quem tem um convite consegue criar conta. Cada código vale uma vez. Para dar acesso a um
-        espaço compartilhado, use &quot;Espaços e membros&quot;.
+        Este convite só cria a conta no FinApp: a pessoa começa com o espaço pessoal dela e não vê
+        nada seu. Para dividir as finanças da casa com alguém, gere o convite do espaço em{' '}
+        <Link to="/espacos">Espaços e membros</Link> (serve também para quem ainda não tem conta).
       </p>
       {error && (
         <p className="alert alert--error" role="alert">

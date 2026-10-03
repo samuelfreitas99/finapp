@@ -198,6 +198,78 @@ describe.skipIf(!testDatabaseUrl)('shared spaces (integration)', () => {
     );
     expect((await call(bia, 'GET', `/api/spaces/${shared}/accounts`)).statusCode).toBe(404);
   });
+
+  it('transfers ownership to a member, who can then rename; the old owner can leave', async () => {
+    const invite = (await call(ana, 'POST', '/api/invites', { spaceId: shared })).json();
+    await call(bia, 'POST', '/api/invites/accept', { code: invite.code });
+    // Membro não passa a posse; dono não passa para si nem para quem não é membro.
+    expect(
+      (await call(bia, 'POST', `/api/spaces/${shared}/transfer`, { userId: bia.id })).statusCode,
+    ).toBe(403);
+    expect(
+      (await call(ana, 'POST', `/api/spaces/${shared}/transfer`, { userId: ana.id })).json().error
+        .code,
+    ).toBe('already_owner');
+    expect(
+      (await call(ana, 'POST', `/api/spaces/${shared}/transfer`, { userId: crypto.randomUUID() }))
+        .statusCode,
+    ).toBe(404);
+    expect(
+      (await call(ana, 'POST', `/api/spaces/${ana.personal}/transfer`, { userId: bia.id }))
+        .statusCode,
+    ).toBe(400);
+    // O dono não sai antes de passar a posse.
+    expect(
+      (await call(ana, 'DELETE', `/api/spaces/${shared}/members/${ana.id}`)).json().error.code,
+    ).toBe('owner_cannot_leave');
+
+    const res = await call(ana, 'POST', `/api/spaces/${shared}/transfer`, { userId: bia.id });
+    expect(res.statusCode).toBe(200);
+    const roles = (await call(bia, 'GET', `/api/spaces/${shared}/members`)).json().items;
+    expect(roles.map((m: { name: string; role: string }) => [m.name, m.role])).toEqual([
+      ['Ana', 'member'],
+      ['Bia', 'owner'],
+    ]);
+    expect(
+      (await call(bia, 'PATCH', `/api/spaces/${shared}`, { name: 'Casa nova' })).statusCode,
+    ).toBe(200);
+    expect((await call(ana, 'DELETE', `/api/spaces/${shared}/members/${ana.id}`)).statusCode).toBe(
+      204,
+    );
+  });
+
+  it('deletes a shared space after confirming the name, for every member', async () => {
+    const space = (await call(bia, 'POST', '/api/spaces', { name: 'Viagem' })).json().id;
+    const invite = (await call(bia, 'POST', '/api/invites', { spaceId: space })).json();
+    await call(ana, 'POST', '/api/invites/accept', { code: invite.code });
+    await call(ana, 'PUT', '/api/me/active-space', { spaceId: space });
+    const pending = (await call(bia, 'POST', '/api/invites', { spaceId: space })).json();
+
+    expect(
+      (await call(ana, 'DELETE', `/api/spaces/${space}`, { confirmName: 'Viagem' })).statusCode,
+    ).toBe(403);
+    expect(
+      (await call(bia, 'DELETE', `/api/spaces/${space}`, { confirmName: 'Outro' })).json().error
+        .code,
+    ).toBe('confirm_name');
+    expect(
+      (await call(bia, 'DELETE', `/api/spaces/${bia.personal}`, { confirmName: 'Pessoal' }))
+        .statusCode,
+    ).toBe(400);
+    expect(
+      (await call(bia, 'DELETE', `/api/spaces/${space}`, { confirmName: ' viagem ' })).statusCode,
+    ).toBe(204);
+
+    const anaMe = (await call(ana, 'GET', '/api/me')).json();
+    expect(anaMe.spaces.some((s: { id: string }) => s.id === space)).toBe(false);
+    expect(anaMe.activeSpaceId).toBe(ana.personal);
+    expect((await call(bia, 'GET', `/api/spaces/${space}/accounts`)).statusCode).toBe(404);
+    // Convite pendente do espaço excluído não funciona mais.
+    const carla = await signUp('Carla', 'carla@ex.com');
+    expect(
+      (await call(carla, 'POST', '/api/invites/accept', { code: pending.code })).statusCode,
+    ).toBe(400);
+  });
 });
 
 describe.skipIf(!testDatabaseUrl)('invites management (integration)', () => {

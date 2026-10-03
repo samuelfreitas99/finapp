@@ -1,6 +1,7 @@
 import type { SpaceSummary } from '@finapp/shared';
-import { Copy, Link as LinkIcon, Trash2, UserPlus, Users } from 'lucide-react';
+import { Copy, Crown, Link as LinkIcon, Trash2, UserPlus, Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { useMe } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
@@ -11,7 +12,7 @@ import { errorText } from '../transactions/EntryForm';
 function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
   const toast = useToast();
   const members = useSpaceMembers(space.id);
-  const { rename, invite, removeMember } = useSpaceMutations();
+  const { rename, invite, removeMember, transfer, remove } = useSpaceMutations();
   const switchSpace = useSwitchSpace();
   const { data: me } = useMe();
   const isOwner = space.role === 'owner';
@@ -19,7 +20,10 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
   const [name, setName] = useState(space.name);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState<string | null>(null);
-  const error = rename.error ?? invite.error ?? removeMember.error;
+  const [confirmName, setConfirmName] = useState('');
+  const error =
+    rename.error ?? invite.error ?? removeMember.error ?? transfer.error ?? remove.error;
+  const others = (members.data ?? []).filter((m) => m.userId !== myId);
 
   const copy = async (text: string, done = 'Código copiado.') => {
     toast({
@@ -72,6 +76,29 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
                     {m.email} · {m.role === 'owner' ? 'dono' : 'membro'}
                   </span>
                 </span>
+                {isOwner && m.userId !== myId && (
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={`Passar a posse para ${m.name}`}
+                    title="Passar a posse"
+                    disabled={transfer.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Passar a posse de "${space.name}" para ${m.name}? Você continua como membro e poderá sair do espaço.`,
+                        )
+                      ) {
+                        transfer.mutate(
+                          { spaceId: space.id, userId: m.userId },
+                          { onSuccess: () => toast({ text: `${m.name} agora é dono do espaço.` }) },
+                        );
+                      }
+                    }}
+                  >
+                    <Crown size={18} aria-hidden="true" />
+                  </button>
+                )}
                 {m.role !== 'owner' && (isOwner || m.userId === myId) && (
                   <button
                     type="button"
@@ -91,6 +118,12 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
               </li>
             ))}
           </ul>
+          {isOwner && others.length > 0 && (
+            <p className="muted field-hint">
+              Para sair, passe a posse para outro membro (ícone da coroa). Você continua como membro
+              e depois pode sair.
+            </p>
+          )}
 
           {isOwner && (
             <>
@@ -149,8 +182,9 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
                     onChange={(e) => setEmail(e.target.value)}
                   />
                   <p className="muted">
-                    O convite vale por 7 dias e funciona uma vez. Quem já tem conta usa &quot;Entrar
-                    com um código&quot;; quem não tem usa o código ao criar a conta.
+                    A pessoa passa a ver e editar tudo de {space.name}. Quem ainda não tem conta usa
+                    o mesmo código para criar a conta e já entra no espaço; quem já tem usa
+                    &quot;Entrar com um código&quot; aqui embaixo. Vale por 7 dias, uma vez.
                   </p>
                 </div>
                 <button type="submit" className="btn btn--primary" disabled={invite.isPending}>
@@ -184,6 +218,50 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
                   </div>
                 )}
               </form>
+
+              <details className="entry__more">
+                <summary>Excluir este espaço</summary>
+                <form
+                  className="form"
+                  onSubmit={(e: FormEvent) => {
+                    e.preventDefault();
+                    // O cartão some ao recarregar os espaços: o aviso não pode depender dele.
+                    remove
+                      .mutateAsync({ spaceId: space.id, confirmName })
+                      .then(() => toast({ text: `Espaço "${space.name}" excluído.` }))
+                      .catch(() => undefined);
+                  }}
+                >
+                  <p className="muted">
+                    O espaço some para todos os membros, com as contas, lançamentos e dívidas dele.
+                    Quem estava usando volta para o espaço pessoal. Se quiser guardar uma cópia, use{' '}
+                    <Link to="/exportar">Exportar dados</Link> com este espaço em uso antes.
+                  </p>
+                  <div className="field">
+                    <label htmlFor={`del-${space.id}`}>
+                      Para confirmar, digite o nome: {space.name}
+                    </label>
+                    <input
+                      id={`del-${space.id}`}
+                      className="input"
+                      autoComplete="off"
+                      value={confirmName}
+                      onChange={(e) => setConfirmName(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn--danger"
+                    disabled={
+                      remove.isPending ||
+                      confirmName.trim().toLowerCase() !== space.name.trim().toLowerCase()
+                    }
+                  >
+                    <Trash2 size={18} aria-hidden="true" />
+                    Excluir espaço
+                  </button>
+                </form>
+              </details>
             </>
           )}
         </>

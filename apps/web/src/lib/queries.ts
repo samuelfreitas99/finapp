@@ -923,6 +923,23 @@ export function useSpaceMutations() {
         api<SpaceSummary>('/api/invites/accept', { method: 'POST', body: { code } }),
       onSuccess: refreshMe,
     }),
+    transfer: useMutation({
+      mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
+        api<SpaceSummary>(`/api/spaces/${spaceId}/transfer`, {
+          method: 'POST',
+          body: { userId },
+        }),
+      onSuccess: async () => {
+        await qc.invalidateQueries({ queryKey: ['space-members'] });
+        await refreshMe();
+      },
+    }),
+    // Excluir pode tirar o espaço ativo: recarrega tudo (o ativo volta para o pessoal).
+    remove: useMutation({
+      mutationFn: ({ spaceId, confirmName }: { spaceId: string; confirmName: string }) =>
+        api(`/api/spaces/${spaceId}`, { method: 'DELETE', body: { confirmName } }),
+      onSuccess: () => qc.invalidateQueries(),
+    }),
     removeMember: useMutation({
       mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
         api(`/api/spaces/${spaceId}/members/${userId}`, { method: 'DELETE' }),
