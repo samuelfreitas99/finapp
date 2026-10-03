@@ -6,3 +6,4 @@ export * from './cards';
 export * from './recurrences';
 export * from './debts';
 export * from './notifications';
+export * from './planning';

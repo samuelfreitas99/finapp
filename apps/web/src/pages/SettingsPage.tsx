@@ -121,7 +121,7 @@ function AlertSettings() {
       <h2 id="alerts-title">Quais avisos receber</h2>
       <ul className="list settings-list">
         {s.types
-          .filter((t) => !['budget', 'split_pending'].includes(t.type))
+          .filter((t) => !['split_pending'].includes(t.type))
           .map((t) => {
             const meta = TYPE_LABEL[t.type];
             return (

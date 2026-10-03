@@ -19,6 +19,7 @@ import { spaceScoped } from './modules/spaces/scope';
 import { transactionRoutes } from './modules/transactions/routes';
 import { inviteRoutes } from './modules/invites/routes';
 import { meRoutes } from './modules/me/routes';
+import { budgetRoutes } from './modules/budgets/routes';
 import { reminderRoutes } from './modules/notifications/reminders';
 import { notificationRoutes } from './modules/notifications/routes';
 import type { PushSender } from './modules/notifications/push';
@@ -92,6 +93,7 @@ export function buildApp({
       recurrenceRoutes(scoped, ctx);
       projectionRoutes(scoped, ctx);
       debtRoutes(scoped, ctx);
+      budgetRoutes(scoped, ctx);
     });
   }
 

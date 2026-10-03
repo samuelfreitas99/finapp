@@ -13,3 +13,4 @@ export * from './schemas/projection';
 export * from './schemas/debts';
 export * from './schemas/notifications';
 export * from './schemas/reminders';
+export * from './schemas/budgets';

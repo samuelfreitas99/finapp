@@ -10,6 +10,8 @@ import type {
   DebtPreview,
   UpdateDebtBody,
   Projection,
+  Budgets,
+  UpsertBudgetBody,
   OccurrencePreview,
   Recurrence,
   RecurrenceBody,
@@ -632,6 +634,31 @@ export function useNotificationActions() {
     }),
     readAll: useMutation({
       mutationFn: () => api('/api/notifications/read-all', { method: 'POST', body: {} }),
+      onSuccess: invalidate,
+    }),
+  };
+}
+
+export function useBudgets(month: string) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['budgets', spaceId, month],
+    queryFn: () => api<Budgets>(spacePath(spaceId, `/budgets?month=${month}`)),
+  });
+}
+
+export function useBudgetMutations() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['budgets', spaceId] });
+  return {
+    save: useMutation({
+      mutationFn: (body: UpsertBudgetBody) =>
+        api(spacePath(spaceId, '/budgets'), { method: 'PUT', body }),
+      onSuccess: invalidate,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => api(spacePath(spaceId, `/budgets/${id}`), { method: 'DELETE' }),
       onSuccess: invalidate,
     }),
   };

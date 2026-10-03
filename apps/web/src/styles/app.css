@@ -1804,3 +1804,56 @@ h3 {
   font-size: 13px;
   font-weight: 600;
 }
+
+.budget-row__btn {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.budget-row__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.budget-bar--ok {
+  background: var(--primary);
+}
+
+.budget-bar--warning {
+  background: var(--warning-text);
+}
+
+.budget-bar--exceeded {
+  background: var(--expense);
+}
+
+.budget-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.budget-tag--warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.budget-tag--exceeded {
+  background: var(--danger-bg);
+  color: var(--expense);
+}
+
+.budget-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

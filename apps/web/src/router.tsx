@@ -20,6 +20,7 @@ import { DebtPage } from './pages/debts/DebtPage';
 import { DebtsPage } from './pages/debts/DebtsPage';
 import { NewDebtPage } from './pages/debts/NewDebtPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { BudgetsPage } from './pages/planning/BudgetsPage';
 import { RemindersPage } from './pages/RemindersPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SignUpPage } from './pages/SignUp';
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: '/mais', element: <MorePage /> },
           { path: '/configuracoes', element: <SettingsPage /> },
           { path: '/notificacoes', element: <NotificationsPage /> },
+          { path: '/orcamentos', element: <BudgetsPage /> },
           { path: '/lembretes', element: <RemindersPage /> },
         ],
       },

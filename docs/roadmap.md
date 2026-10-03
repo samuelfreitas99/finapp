@@ -66,7 +66,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Lançamentos offline com fila
 
 ## Fase 7: Planejamento e relatórios
-- [ ] Orçamentos por categoria com alertas
+- [x] Orçamentos por categoria com alertas
 - [ ] Metas
 - [ ] Relatórios (categoria, mensal, patrimônio, dívidas)
 - [ ] Anexos de comprovantes
@@ -101,6 +101,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Dívidas: SAC divide a amortização com a regra de 5.1 (resto na 1ª); Price com taxa 0 usa parcela arredondada para cima e a última ajusta. Fase `variable`: antes do primeiro valor informado, usa esse primeiro valor como estimativa. Fases que começam após a entrega usam o mês seguinte ao de `completion_date`, no dia do vencimento cadastrado. Quitação = principal ainda não amortizado das parcelas não pagas (sem juros futuros). Correção por índice é aplicada pelo chamador às parcelas pendentes do mês (aniversário/mensal).
 - Projeção: despesas previstas já vencidas entram no 1º mês (ainda vão sair da conta); receitas previstas vencidas e não confirmadas ficam de fora (conservador).
 - Divisão (casal e racha): nos modos proporcionais cada parte é arredondada para baixo e o resto inteiro vai para quem pagou (se não participa, para o 1º participante). Simplificação gulosa com desempate por id.
+- Orçamentos: `consumido` conta só despesas **efetivadas** (previstas não entram), por competência (cartão pela fatura, estorno no cartão abate), e a categoria principal inclui as subcategorias; o orçamento é sempre da categoria principal. Orçamento de um mês específico sobrepõe o geral. A sobra acumulada olha até 12 meses para trás e só a partir do mês em que o orçamento geral foi criado; estouro zera a sobra (não vira dívida). Visão por data da compra no cartão (RN 1) ainda não existe.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -142,4 +143,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: salário variável (receita com valor estimado, também em partes). Cadastro de dívida guiado ("Começando agora" / "Já estou pagando" com o que o app do banco mostra, `principalFromPayment` no core, avançado recolhido); imóvel com previsão de entrega + prazo do contrato e "Recebi as chaves" (migração 0007) (Claude).
 - 03/10/2026: lembretes e checklist (`reminders`, migração 0008; `nextReminderAt` no core), aviso no horário pelo job de envio (agora a cada 5 minutos), tela "Lembretes" (Claude).
 - 03/10/2026: lançamentos offline: sem conexão, receita/despesa/compra no cartão do "+" fica numa fila no aparelho e é enviada quando a internet volta (faixa "Sem conexão"); mutações não pausam offline. **Fase 6 concluída** (Claude).
-
+- 03/10/2026: orçamentos por categoria: `packages/core/budgets` (faixas de 80%/100%, sobra acumulada, alertas), tabela `budgets` (migração 0009), `GET/PUT/DELETE /budgets`, aviso `budget` no job diário (uma vez por categoria, mês e faixa) e tela "Orçamentos" no menu Mais (Claude).

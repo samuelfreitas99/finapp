@@ -15,7 +15,8 @@ export type AlertType =
   | 'invoice_due'
   | 'income_unconfirmed'
   | 'negative_forecast'
-  | 'card_limit';
+  | 'card_limit'
+  | 'budget';
 
 export interface AlertSettings {
   enabled: boolean;
@@ -67,7 +68,7 @@ export interface Alert {
   title: string;
   body: string;
   url: string;
-  entityType: 'transaction' | 'invoice' | 'card' | 'space';
+  entityType: 'transaction' | 'invoice' | 'card' | 'space' | 'category';
   entityId: string | null;
 }
 

@@ -1,11 +1,14 @@
 import {
   addDays,
   buildAlerts,
+  buildBudgetAlerts,
   endOfMonth,
   inQuietHours,
+  yearMonthOf,
   REFERENCE_TIME_ZONE,
   type AlertSettings,
   type AlertType,
+  type Alert,
   type CardLimitSnapshot,
   type InvoiceSnapshot,
   type ISODate,
@@ -14,12 +17,14 @@ import { and, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import {
   accounts,
+  categories,
   creditCards,
   notifications,
   spaceMembers,
   spaces,
   transactions,
 } from '../db/schema';
+import { budgetStatuses } from '../modules/budgets/service';
 import { balancesFor } from '../modules/accounts/service';
 import { cardLedger } from '../modules/cards/service';
 import type { PushSender } from '../modules/notifications/push';
@@ -130,6 +135,33 @@ export async function generateAlerts(db: Db, today: ISODate): Promise<number> {
       .reduce((s, i) => s + i.remaining, 0);
     const forecastWithInvoices = forecast === null ? null : forecast - invoiceDue;
 
+    // Orçamentos do mês: avisos de 80% e 100% (uma vez por categoria, mês e faixa).
+    const month = yearMonthOf(today);
+    const [statuses, cats] = await Promise.all([
+      budgetStatuses(db, spaceId, month),
+      db
+        .select({ id: categories.id, name: categories.name })
+        .from(categories)
+        .where(eq(categories.spaceId, spaceId)),
+    ]);
+    const nameOf = new Map(cats.map((c) => [c.id, c.name]));
+    const budgetAlerts: Alert[] = buildBudgetAlerts(
+      statuses.map(({ budget, progress }) => ({
+        categoryId: budget.categoryId,
+        categoryName: nameOf.get(budget.categoryId) ?? 'categoria',
+        month,
+        progress,
+      })),
+    ).map((a) => ({
+      type: 'budget',
+      dedupeKey: a.dedupeKey,
+      title: a.title,
+      body: a.body,
+      url: a.url,
+      entityType: 'category',
+      entityId: a.categoryId,
+    }));
+
     for (const { userId } of members) {
       const s = await settingsOf(db, userId);
       const settings: Partial<Record<AlertType, AlertSettings>> = {};
@@ -149,6 +181,7 @@ export async function generateAlerts(db: Db, today: ISODate): Promise<number> {
         cards,
         forecastEndOfMonth: forecastWithInvoices,
       });
+      if (settings.budget?.enabled ?? true) alerts.push(...budgetAlerts);
       if (!alerts.length) continue;
       const inserted = await db
         .insert(notifications)
