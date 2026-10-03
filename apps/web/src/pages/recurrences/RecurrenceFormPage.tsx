@@ -122,7 +122,7 @@ function toBody(f: FormState): RecurrenceBody {
     endDate: f.endDate || null,
     ...(cardId ? { cardId } : { accountId: f.target }),
     categoryId: f.categoryId,
-    variableAmount: f.type === 'expense' && f.variableAmount,
+    variableAmount: f.variableAmount,
   };
 }
 
@@ -290,21 +290,21 @@ function RecurrenceForm({
           onChange={(v) => set('amount', Math.max(0, v))}
         />
       </div>
-      {form.type === 'expense' && (
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={form.variableAmount}
-            onChange={(e) => set('variableAmount', e.target.checked)}
-          />
-          <span>
-            <strong>Valor muda todo mês</strong>
-            <span className="muted">
-              Luz, água: o valor acima é a estimativa; ao pagar, você informa o real.
-            </span>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={form.variableAmount}
+          onChange={(e) => set('variableAmount', e.target.checked)}
+        />
+        <span>
+          <strong>Valor muda todo mês</strong>
+          <span className="muted">
+            {form.type === 'income'
+              ? 'Horas extras, feriados, comissão: o valor acima é a estimativa; quando cair, você confirma com o valor real.'
+              : 'Luz, água: o valor acima é a estimativa; ao pagar, você informa o real.'}
           </span>
-        </label>
-      )}
+        </span>
+      </label>
       <div className="field-row">
         <div className="field">
           <label htmlFor="frequency">Repete</label>

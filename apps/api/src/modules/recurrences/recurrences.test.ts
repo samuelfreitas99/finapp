@@ -288,4 +288,35 @@ describe.skipIf(!testDatabaseUrl)('recurrences API (integration)', () => {
     expect(dates).not.toContain('2026-10-10');
     expect(dates.at(-1)).toBe('2026-11-10');
   });
+
+  it('estimates variable income (overtime) and confirms with the real amount (RN 3)', async () => {
+    const rec = (
+      await api('POST', '/recurrences', {
+        type: 'income',
+        description: 'Salário variável',
+        amount: 400000,
+        frequency: 'monthly',
+        startDate: '2026-10-01',
+        accountId,
+        variableAmount: true,
+        parts: [
+          { label: 'Adiantamento', percent: 40, dayRule: { kind: 'fixed_day', day: 20 } },
+          {
+            label: 'Salário',
+            percent: 60,
+            dayRule: { kind: 'nth_business_day', n: 5 },
+            monthOffset: 1,
+          },
+        ],
+      })
+    ).json();
+    const occ = await occurrences(rec.id);
+    expect(occ.every((o) => o.estimated)).toBe(true);
+    const first = occ.find((o) => o.date === '2026-10-20');
+    expect(first?.amount).toBe(160000);
+    const settled = (
+      await api('POST', `/transactions/${first?.id}/settle`, { amount: 187500, date: '2026-10-15' })
+    ).json();
+    expect(settled).toMatchObject({ estimated: false, amount: 187500, status: 'settled' });
+  });
 });

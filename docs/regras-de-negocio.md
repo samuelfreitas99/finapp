@@ -62,7 +62,7 @@ Percentuais: a última parte recebe o resto, para a soma bater no centavo.
 ### Edição
 - Alterar valor/regra **"a partir deste mês"**: encerra a recorrência atual no mês anterior e cria uma nova. Lançamentos já `settled` nunca mudam.
 - Alterar **só uma ocorrência**: edita o lançamento gerado e marca `detached = true` (o job não sobrescreve).
-- Valor variável (conta de luz): o `planned` usa o valor estimado; ao confirmar, informa o valor real.
+- Valor variável (`variable_amount`), em despesas (conta de luz) **e em receitas** (salário com horas extras, feriados, comissão), inclusive no salário em partes: os `planned` usam o valor informado como estimativa (`estimated = true`) e, ao confirmar, a pessoa informa o valor real (o lançamento deixa de ser estimado). Os meses seguintes continuam com a estimativa.
 
 ### Receitas avulsas
 Lançamento único `planned` (a receber) com data prevista, ou `settled` se já recebido.

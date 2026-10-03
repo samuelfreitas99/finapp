@@ -61,7 +61,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Job diário de alertas e central de notificações
 - [ ] Cadastro de dívida mais guiado: "Começando agora" ou "Já estou pagando" (quantas faltam, próximo vencimento, valor da parcela; taxa opcional), campos avançados recolhidos
 - [ ] Imóvel com entrega incerta: prazo do contrato + previsão de entrega, aviso de estimativa, ação "Recebi as chaves", pior caso no Planejamento
-- [ ] Salário variável (horas extras, feriados): "valor muda todo mês" também em receitas, inclusive salário em partes
+- [x] Salário variável (horas extras, feriados): "valor muda todo mês" também em receitas, inclusive salário em partes
 - [ ] Lembretes e checklist com notificação no horário
 - [ ] Lançamentos offline com fila
 
