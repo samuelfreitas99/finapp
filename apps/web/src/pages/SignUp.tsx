@@ -114,6 +114,10 @@ export function SignUpPage() {
           >
             {signUp.isPending ? 'Criando…' : 'Criar conta'}
           </button>
+          <span className="muted field-hint">
+            Ao criar a conta, você concorda com os <Link to="/termos">termos de uso</Link> e a{' '}
+            <Link to="/privacidade">política de privacidade</Link>.
+          </span>
         </form>
         <p className="auth__switch">
           Já tem conta? <Link to="/entrar">Entrar</Link>

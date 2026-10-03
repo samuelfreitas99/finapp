@@ -174,6 +174,9 @@ export function LoginPage() {
         <p className="auth__switch">
           Recebeu um convite? <Link to="/criar-conta">Criar conta</Link>
         </p>
+        <p className="auth__switch muted">
+          <Link to="/privacidade">Privacidade</Link> · <Link to="/termos">Termos de uso</Link>
+        </p>
       </div>
     </main>
   );

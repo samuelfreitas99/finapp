@@ -98,8 +98,8 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Troca de domínio: script do túnel com hostname por parâmetro e roteiro de migração
 - Antes de abrir ao público:
   - [x] Esqueci a senha (link por e-mail via SMTP, ou gerado pelo servidor com `--reset-link`)
-  - [ ] Conta de e-mail para envio (SMTP) configurada no `.env`
-  - [ ] Política de privacidade e termos de uso (LGPD)
+  - [x] Conta de e-mail para envio (SMTP) configurada no `.env` (Gmail `contato.finappoficial@gmail.com` com senha de app)
+  - [x] Política de privacidade e termos de uso (LGPD): `/privacidade` e `/termos`, públicas; texto simples, **sem revisão jurídica** (recomendada antes de abrir a estranhos)
   - [ ] Backup externo (offsite)
   - [ ] Cadastro aberto com Cloudflare Turnstile (só quando sair do convite)
 
@@ -205,3 +205,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: espaços: `POST /api/spaces/:id/transfer` e `DELETE /api/spaces/:id` (com o nome para confirmar), coroa "passar a posse" e "Excluir este espaço" na tela, textos dos dois convites; racha deixa de lançar em espaço do qual a pessoa saiu (Claude).
 - 03/10/2026: troca de domínio preparada: `infra/cloudflared/add-hostname.sh <hostname>` (antes `add-financas-hostname.sh`), `REDIRECT_HOSTS` (a API responde 301 do domínio antigo para `APP_URL`) e roteiro `docs/trocar-dominio.md` (Claude).
 - 03/10/2026: esqueci a senha: `sendResetPassword` com SMTP opcional (`SMTP_URL`/`MAIL_FROM`, nodemailer), link direto para `/redefinir-senha`, sessões encerradas ao trocar, `--reset-link email` no servidor (24 h), `GET /api/auth-features` e telas "Esqueci a senha" e "Escolha uma senha nova" (Claude).
+- 03/10/2026: e-mail ligado em produção (Gmail do FinApp, teste de envio OK); páginas públicas de privacidade e termos (`pages/legal/LegalPages.tsx`; responsável "FinApp, mantido por Samuel Freitas", contato `contato.finappoficial@gmail.com`), links no login, aviso no cadastro e item em Mais. Ao mudar algo que a política descreve (dados guardados, serviços de terceiros, retenção do backup), atualize o texto e a data da versão (Claude).

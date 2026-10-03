@@ -49,6 +49,9 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 ## Primeiros passos (Início)
 Cartão "Primeiros passos" no Início, em sequência: contas → cartões → salário → contas fixas → dívidas → avisos neste aparelho. Cada passo se marca sozinho quando o dado existe no espaço ativo (avisos: inscrição de push deste aparelho); o passo atual fica aberto com a ação principal e, se for opcional, um "não se aplica" (Não uso cartão, Não tenho renda fixa...). Conta não pode ser pulada. O cartão some quando tudo está feito ou pulado, ou com "Esconder primeiros passos". O estado (escondido e pulados) fica no servidor (`user_settings.onboarding`), vale em todos os aparelhos. Sem conta, ele substitui o estado vazio "Comece pelas suas contas" (que volta se o cartão estiver escondido).
 
+## Privacidade e termos
+`/privacidade` e `/termos` são públicas (fora do login), com link no login, aviso de concordância no cadastro e item em Mais › Dados e configurações. Texto em `pages/legal/LegalPages.tsx` (contato em `LEGAL_CONTACT`); deve descrever só o que o app realmente faz.
+
 ## Estados
 - Vazio: ilustração simples + ação principal ("Cadastre seu primeiro cartão").
 - Carregando: skeletons, nunca spinner de tela cheia.
