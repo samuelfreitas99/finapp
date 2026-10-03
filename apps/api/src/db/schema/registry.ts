@@ -81,6 +81,27 @@ export const categories = pgTable(
   ],
 );
 
+/**
+ * Regras de categoria da importação: descrição que contém `pattern` (sem diferenciar
+ * maiúsculas e acentos) recebe a categoria. Vence o trecho mais longo.
+ */
+export const categoryRules = pgTable(
+  'category_rules',
+  {
+    ...domain(),
+    pattern: text('pattern').notNull(),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    index('category_rules_space_idx').on(t.spaceId, t.deletedAt),
+    uniqueIndex('category_rules_space_pattern_uq')
+      .on(t.spaceId, t.pattern)
+      .where(sql`${t.deletedAt} is null`),
+  ],
+);
+
 export const tags = pgTable(
   'tags',
   {

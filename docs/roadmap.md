@@ -70,7 +70,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Metas
 - [x] Relatórios (categoria, mensal, patrimônio, dívidas)
 - [x] Anexos de comprovantes
-- [ ] Importação OFX/CSV com deduplicação e regras de categoria
+- [x] Importação OFX/CSV com deduplicação e regras de categoria
 - [ ] Exportação CSV/XLSX/JSON
 - [ ] Passkeys, 2FA, bloqueio por PIN, audit log
 
@@ -106,6 +106,8 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Relatórios: só lançamentos **efetivados**, sem categorias técnicas; despesa por competência (cartão pela fatura, estorno abate), receita pela data; subcategoria soma na categoria principal; as 9 maiores aparecem e o resto vira "Outras". Patrimônio líquido = contas positivas + a receber de pessoas + imóveis já entregues − faturas em aberto − contas negativas − principal das dívidas ativas (sem juros futuros); não há histórico mês a mês do patrimônio ainda. O relatório de dívidas usa `GET /debts` (sem endpoint próprio).
 
 - Anexos: o arquivo fica no Postgres (ADR-016), no máximo 8 MB e 10 por lançamento; aceita JPG, PNG, WebP e PDF. Comprovante só no lançamento aberto para edição (não em transferências); exclusão é lógica (os bytes ficam no banco). Não há anexo em dívida, fatura ou meta, nem envio offline na fila.
+
+- Importação: só extrato de **conta** (fatura de cartão em CSV ainda não). Cada item vira receita/despesa **efetivada** na conta escolhida, com chave `import_key` única por conta (FITID do OFX, ou data+valor+descrição com contador); a chave vale mesmo para lançamentos excluídos depois, então o que foi apagado não volta. Itens com valor igual a até 2 dias de um lançamento existente aparecem como "parece repetido" e vêm desmarcados. Itens anteriores ao saldo inicial da conta são ignorados. Regras de categoria casam por trecho da descrição (sem acento e caixa; vence o trecho mais longo) e são por tipo (despesa ou receita); a regra sugerida usa as 3 primeiras palavras sem números. CSV: colunas reconhecidas pelo nome (data, descrição, valor ou débito/crédito); "Inverter sinais" para bancos que mostram saída como positiva. Não há conciliação com lançamentos previstos.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -151,3 +153,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: metas: `packages/core/goals` (`goalProgress`), tabela `goals` (migração 0010), `GET/POST/PATCH/DELETE /goals` e `POST /goals/:id/deposit`, tela "Metas" no menu Mais (Claude).
 - 03/10/2026: relatórios: `packages/core/reports` (`categoryBreakdown`, `savingsRate`, `netWorth`), `GET /reports/by-category|monthly|net-worth` e tela "Relatórios" (categorias, mensal com gráfico, patrimônio, dívidas) no menu Mais (Claude).
 - 03/10/2026: comprovantes: tabela `attachments` (migração 0011, ADR-016), `GET/POST /transactions/:id/attachments` (corpo cru, `?name=`), `GET /attachments/:id/file`, `DELETE /attachments/:id`; seção "Comprovantes" na edição do lançamento, com foto reduzida no aparelho (Claude).
+- 03/10/2026: importação de extrato: `packages/core/import` (OFX, CSV, chave de deduplicação, regras), `transactions.import_key` e `category_rules` (migração 0012), `POST /import/preview|commit`, `GET/POST/DELETE /category-rules` e tela "Importar extrato" (Claude).

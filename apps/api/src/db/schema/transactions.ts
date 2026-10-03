@@ -65,6 +65,8 @@ export const transactions = pgTable(
      * Única por recorrência mesmo depois de excluída: o job não recria o que o usuário apagou.
      */
     recurrenceKey: text('recurrence_key'),
+    /** Chave de deduplicação de lançamentos importados de extrato (OFX/CSV). */
+    importKey: text('import_key'),
     /** Ocorrência editada individualmente: o job de recorrência não sobrescreve. */
     detached: boolean('detached').notNull().default(false),
     debtInstallmentId: uuid('debt_installment_id').references(
@@ -90,6 +92,8 @@ export const transactions = pgTable(
     index('transactions_transfer_idx').on(t.transferId),
     index('transactions_card_idx').on(t.cardId),
     uniqueIndex('transactions_recurrence_key_uq').on(t.recurrenceId, t.recurrenceKey),
+    // Vale também para lançamentos excluídos: o que foi apagado não volta a ser importado.
+    uniqueIndex('transactions_import_key_uq').on(t.accountId, t.importKey),
     index('transactions_installment_plan_idx').on(t.installmentPlanId),
     index('transactions_debt_installment_idx').on(t.debtInstallmentId),
     check(

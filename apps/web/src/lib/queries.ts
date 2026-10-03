@@ -11,6 +11,11 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  CategoryRule,
+  ImportCommitBody,
+  ImportPreview,
+  ImportPreviewBody,
+  ImportResult,
   Budgets,
   ByCategoryReport,
   MonthlyReport,
@@ -766,4 +771,43 @@ export function useAttachmentMutations(transactionId: string) {
       onSuccess: invalidate,
     }),
   };
+}
+
+export function useImport() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  return {
+    preview: useMutation({
+      mutationFn: (body: ImportPreviewBody) =>
+        api<ImportPreview>(spacePath(spaceId, '/import/preview'), { method: 'POST', body }),
+    }),
+    commit: useMutation({
+      mutationFn: (body: ImportCommitBody) =>
+        api<ImportResult>(spacePath(spaceId, '/import/commit'), { method: 'POST', body }),
+      onSuccess: () => {
+        void qc.invalidateQueries({ queryKey: keys.accounts(spaceId) });
+        void qc.invalidateQueries({ queryKey: keys.transactions(spaceId) });
+        void qc.invalidateQueries({ queryKey: ['category-rules', spaceId] });
+      },
+    }),
+  };
+}
+
+export function useCategoryRules() {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['category-rules', spaceId],
+    queryFn: () =>
+      api<{ items: CategoryRule[] }>(spacePath(spaceId, '/category-rules')).then((r) => r.items),
+  });
+}
+
+export function useDeleteCategoryRule() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api(spacePath(spaceId, `/category-rules/${id}`), { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['category-rules', spaceId] }),
+  });
 }

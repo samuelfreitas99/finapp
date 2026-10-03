@@ -70,6 +70,8 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - `GET /transactions/:id/attachments`, `POST /transactions/:id/attachments?name=` (corpo = o arquivo cru; `image/jpeg|png|webp` ou `application/pdf`, até 8 MB, 10 por lançamento; 400 `invalid_file` se o conteúdo não for do tipo aceito, 413 se grande), `GET /attachments/:id/file` (abre o arquivo), `DELETE /attachments/:id` (lógico)
 
+- `POST /import/preview` (`{ accountId, format: ofx|csv, content, invert? }` → linhas com `duplicate` (`exact`/`possible`), categoria sugerida por regra e `beforeInitialDate`; não grava), `POST /import/commit` (`{ accountId, items: [{ date, type, amount, description, importKey, categoryId?, saveRule? }] }` → `{ created, skipped, rulesCreated }`; efetivados, repetidos ignorados), `GET/POST /category-rules`, `DELETE /category-rules/:id`
+
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
 - `/api/split-groups/:id/expenses` CRUD

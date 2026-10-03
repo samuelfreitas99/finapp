@@ -27,6 +27,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 | `accounts` | id, space_id, name, type (`checking`/`savings`/`cash`/`investment`/`benefit`/`wallet`), initial_balance, initial_date, color, icon, include_in_totals, archived_at, owner_user_id (no espaço compartilhado: de quem é) |
 | `credit_cards` | id, space_id, name, brand (`visa`/`mastercard`/`elo`/`amex`/`hipercard`/`other`), limit_amount (≥0), closing_day e due_day (1–31), closing_day_goes_to_next (padrão true), payment_account_id, color, archived_at, parent_card_id (adicional) |
 | `categories` | id, space_id, name, kind (`income`/`expense`), parent_id, icon, color, is_system, system_key (`invoice_payment`/`adjustment`/`transfer`/`loan`, único por espaço: identifica as técnicas), archived_at |
+| `category_rules` | id, space_id, pattern (normalizado: sem acento, minúsculas; único por espaço), category_id, deleted_at |
 | `tags` | id, space_id, name, color |
 | `contacts` | id, space_id, name, pix_key, phone, linked_user_id |
 | `holidays` | id, space_id (null = nacional), date, name |
@@ -34,7 +35,7 @@ Regras detalhadas em `regras-de-negocio.md`.
 ## Movimentação
 | Tabela | Colunas principais |
 |---|---|
-| `transactions` | id, space_id, type (`income`/`expense`/`transfer_in`/`transfer_out`/`adjustment`), status (`planned`/`settled`), amount (>0; no `adjustment`, a diferença com sinal, ≠0, ADR-013), date, description, notes, category_id, account_id **ou** invoice_id (check: exatamente um), card_id, payment_method (`pix`/`debit`/`credit`/`cash`/`boleto`/`ted`/`other`), pix_counterparty, contact_id, transfer_id, installment_plan_id, installment_number, anticipated, recurrence_id, recurrence_key (identidade da ocorrência: `YYYY-MM#parte` ou a data no semanal; único por recorrência, inclusive excluídos), detached, debt_installment_id, invoice_payment_id, split_id, estimated, reconciled_at, settled_at |
+| `transactions` | id, space_id, type (`income`/`expense`/`transfer_in`/`transfer_out`/`adjustment`), status (`planned`/`settled`), amount (>0; no `adjustment`, a diferença com sinal, ≠0, ADR-013), date, description, notes, category_id, account_id **ou** invoice_id (check: exatamente um), card_id, payment_method (`pix`/`debit`/`credit`/`cash`/`boleto`/`ted`/`other`), pix_counterparty, contact_id, transfer_id, installment_plan_id, installment_number, anticipated, recurrence_id, recurrence_key (identidade da ocorrência: `YYYY-MM#parte` ou a data no semanal; único por recorrência, inclusive excluídos), detached, debt_installment_id, invoice_payment_id, split_id, estimated, import_key (chave de deduplicação da importação; única por conta, inclusive excluídos), reconciled_at, settled_at |
 | `transaction_tags` | transaction_id, tag_id |
 | `attachments` | id, space_id, transaction_id, file_name, mime, size, data (`bytea`, ADR-016), created_by, deleted_at |
 | `recurrences` | id, space_id, type (`income`/`expense`), description, amount (>0), frequency, interval (1–120), day_rule (jsonb: `{kind, day?, n?}`), adjust, parts (jsonb, salário dividido), start_date, end_date, account_id **ou** card_id (check), category_id, payment_method, variable_amount, generated_until (migração `0004`) |
@@ -85,4 +86,3 @@ Grupos de racha **não** pertencem a um espaço: o acesso é por `split_particip
 | `reminders` | id, user_id, title, notes, due_at (timestamptz, opcional: sem horário = checklist), repeat (`none`/`daily`/`weekly`/`monthly`/`yearly`), done_at, notified_for, deleted_at (migração `0008`) |
 | `audit_log` | id, space_id, user_id, entity_type, entity_id, action, before (jsonb), after (jsonb), at |
 | `import_batches` (V2) | id, space_id, account_id/card_id, source, file_name, created_at; `transactions.import_batch_id`, `external_id` |
-| `category_rules` (V2) | id, space_id, match (texto/regex), category_id, priority |

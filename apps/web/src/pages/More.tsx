@@ -1,6 +1,7 @@
 import type { Theme } from '@finapp/shared';
 import {
   BadgePercent,
+  FileUp,
   Flag,
   CalendarRange,
   ChevronRight,
@@ -28,6 +29,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/planejamento', label: 'Planejamento', icon: CalendarRange },
   { to: '/orcamentos', label: 'Orçamentos', icon: BadgePercent },
   { to: '/metas', label: 'Metas', icon: Flag },
+  { to: '/importar', label: 'Importar extrato', icon: FileUp },
   { to: '/relatorios', label: 'Relatórios', icon: ChartPie },
   { to: '/fixas', label: 'Receitas e despesas fixas', icon: Repeat },
   { to: '/parcelamentos', label: 'Parcelamentos e carnês', icon: Layers },
