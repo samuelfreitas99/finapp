@@ -9,6 +9,7 @@ import {
   type ISODate,
   type YearMonth,
 } from '../dates';
+import { isPastDue } from '../holidays';
 
 /**
  * Cartão de crédito: datas da fatura, em qual fatura cai uma compra, melhor dia de
@@ -171,7 +172,7 @@ export function invoiceStatus({
   if (compareDates(today, closingDate) < 0) return 'open';
   if (paid >= total) return 'paid';
   if (paid > 0) return 'partial';
-  if (compareDates(today, dueDate) > 0) return 'overdue';
+  if (isPastDue(dueDate, today)) return 'overdue';
   return 'closed';
 }
 

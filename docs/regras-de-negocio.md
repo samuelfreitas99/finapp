@@ -34,6 +34,7 @@ Dois lançamentos ligados por `transfer_id` (saída na origem, entrada no destin
 - `nthBusinessDay(ano, mês, n)`: n-ésimo dia útil do mês. Ex.: 5º dia útil de setembro/2026 = 08/09/2026 (01 ter, 02 qua, 03 qui, 04 sex, 07 é feriado, 08 ter).
 - `lastBusinessDay(ano, mês)`.
 - Ajuste para dia não útil (`businessDayAdjust`): `none` | `previous` (antecipa) | `next` (adia).
+- **Vencido de fato** (`isPastDue`): conta que vence em fim de semana ou feriado pode ser paga no dia útil seguinte sem multa, então só está atrasada **depois** desse dia útil. Vale para parcela de dívida (`late`), fatura (`overdue`), aviso "Venceu" e contagem de vencidos do Início. A data exibida continua sendo a do contrato.
 
 ---
 

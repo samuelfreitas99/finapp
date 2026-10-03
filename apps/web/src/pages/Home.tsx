@@ -1,4 +1,4 @@
-import { parseISODate } from '@finapp/core';
+import { isPastDue, parseISODate } from '@finapp/core';
 import { AlertTriangle, CalendarCheck, Landmark, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 import { useMe } from '../auth/session';
@@ -141,7 +141,7 @@ export function HomePage() {
           <ul className="list card">
             {d.upcoming.map((t) => {
               const { day, month: m } = parseISODate(t.date);
-              const late = t.date < d.today;
+              const late = isPastDue(t.date, d.today);
               const income = t.type === 'income' || t.type === 'transfer_in';
               return (
                 <li key={t.id}>

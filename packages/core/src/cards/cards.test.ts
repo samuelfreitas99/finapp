@@ -115,7 +115,10 @@ describe('invoiceStatus (RN 4)', () => {
     expect(invoiceStatus({ ...dates, total: 1000, paid: 0, today: '2026-10-02' })).toBe('open');
     expect(invoiceStatus({ ...dates, total: 1000, paid: 0, today: '2026-10-03' })).toBe('closed');
     expect(invoiceStatus({ ...dates, total: 1000, paid: 0, today: '2026-10-10' })).toBe('closed');
-    expect(invoiceStatus({ ...dates, total: 1000, paid: 0, today: '2026-10-11' })).toBe('overdue');
+    // Vence sábado 10/10; segunda 12/10 é feriado: só fica vencida na quarta 14/10.
+    expect(invoiceStatus({ ...dates, total: 1000, paid: 0, today: '2026-10-11' })).toBe('closed');
+    expect(invoiceStatus({ ...dates, total: 1000, paid: 0, today: '2026-10-13' })).toBe('closed');
+    expect(invoiceStatus({ ...dates, total: 1000, paid: 0, today: '2026-10-14' })).toBe('overdue');
     expect(invoiceStatus({ ...dates, total: 1000, paid: 400, today: '2026-10-11' })).toBe(
       'partial',
     );

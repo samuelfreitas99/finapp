@@ -13,7 +13,9 @@ import {
   useAccount,
   useAccounts,
   useAdjustBalance,
+  useCategories,
   useCreateAccount,
+  useCreateTransaction,
   useDeleteAccount,
   useUpdateAccount,
 } from '../../lib/queries';
@@ -199,47 +201,92 @@ export function NewAccountPage() {
   );
 }
 
+/** Tipos de conta em que o dinheiro costuma render. */
+const YIELDING: AccountType[] = ['investment', 'savings', 'checking'];
+
 function AdjustBalance({ account }: { account: Account }) {
   const adjust = useAdjustBalance();
+  const createTx = useCreateTransaction();
+  const categories = useCategories();
   const toast = useToast();
   const [real, setReal] = useState(account.balance);
+  const gain = real - account.balance;
+  // Saldo maior que o calculado numa conta que rende: em geral é o rendimento do mês.
+  const [asYield, setAsYield] = useState(account.type !== 'checking');
+  const yieldCategory = (categories.data ?? []).find(
+    (c) => c.kind === 'income' && !c.isSystem && c.name.toLowerCase() === 'rendimentos',
+  );
+  const canYield = gain > 0 && YIELDING.includes(account.type);
+  const useYield = canYield && asYield;
+  const error = adjust.error ?? createTx.error;
+  const pending = adjust.isPending || createTx.isPending;
+
+  const submit = () => {
+    if (useYield) {
+      createTx.mutate(
+        {
+          type: 'income',
+          amount: gain,
+          date: todayIn(),
+          description: 'Rendimento',
+          accountId: account.id,
+          categoryId: yieldCategory?.id ?? null,
+        },
+        { onSuccess: () => toast({ text: `Rendimento de ${money(gain)} lançado.` }) },
+      );
+      return;
+    }
+    adjust.mutate(
+      { accountId: account.id, realBalance: real },
+      {
+        onSuccess: (r) =>
+          toast({
+            text: r.adjustment
+              ? `Ajuste de ${money(r.adjustment.amount, false, true)} lançado.`
+              : 'O saldo já estava certo.',
+          }),
+      },
+    );
+  };
+
   return (
     <section className="card card--pad form" aria-labelledby="adjust-title">
       <div>
         <h2 id="adjust-title">Ajustar saldo</h2>
         <p className="muted">
           Saldo calculado hoje: <span className="num">{money(account.balance)}</span>. Se o banco
-          mostra outro valor, informe o real e o FinApp lança a diferença como ajuste.
+          mostra outro valor, informe o real e o FinApp lança a diferença.
         </p>
       </div>
-      {adjust.isError && (
+      {Boolean(error) && (
         <p className="alert alert--error" role="alert">
-          {errorText(adjust.error)}
+          {errorText(error)}
         </p>
       )}
       <div className="field">
         <label htmlFor="realBalance">Saldo real hoje</label>
         <MoneyInput id="realBalance" value={real} onChange={setReal} allowNegative replaceOnType />
       </div>
+      {canYield && (
+        <label className="toggle">
+          <input type="checkbox" checked={asYield} onChange={(e) => setAsYield(e.target.checked)} />
+          <span>
+            <strong>Os {money(gain)} a mais são rendimento</strong>
+            <span className="muted">
+              {' '}
+              Entram como receita em Rendimentos (aparecem nos relatórios). Desmarcado, vira só um
+              ajuste, fora das receitas.
+            </span>
+          </span>
+        </label>
+      )}
       <button
         type="button"
         className="btn"
-        disabled={adjust.isPending || real === account.balance}
-        onClick={() =>
-          adjust.mutate(
-            { accountId: account.id, realBalance: real },
-            {
-              onSuccess: (r) =>
-                toast({
-                  text: r.adjustment
-                    ? `Ajuste de ${money(r.adjustment.amount, false, true)} lançado.`
-                    : 'O saldo já estava certo.',
-                }),
-            },
-          )
-        }
+        disabled={pending || real === account.balance}
+        onClick={submit}
       >
-        Ajustar para {money(real)}
+        {useYield ? `Lançar rendimento de ${money(gain)}` : `Ajustar para ${money(real)}`}
       </button>
     </section>
   );

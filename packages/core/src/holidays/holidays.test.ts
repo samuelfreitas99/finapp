@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { easterSunday, nationalHolidayDates, nationalHolidays } from './index';
+import { easterSunday, isPastDue, nationalHolidayDates, nationalHolidays } from './index';
 
 describe('easterSunday (Meeus/Butcher)', () => {
   it.each([
@@ -51,5 +51,29 @@ describe('nationalHolidays (RN 2)', () => {
     expect(set.has('2026-12-25')).toBe(true);
     expect(set.has('2027-03-26')).toBe(true); // Sexta-feira Santa 2027
     expect(set.size).toBe(26);
+  });
+});
+
+describe('isPastDue (RN 2)', () => {
+  it('waits for the next business day when the due date is a weekend or holiday', () => {
+    // 10/10/2026 é sábado: pode pagar na segunda 12/10? Não, 12/10 é feriado (N. Sra.
+    // Aparecida); o primeiro dia útil é terça 13/10.
+    expect(isPastDue('2026-10-10', '2026-10-11')).toBe(false);
+    expect(isPastDue('2026-10-10', '2026-10-13')).toBe(false);
+    expect(isPastDue('2026-10-10', '2026-10-14')).toBe(true);
+  });
+
+  it('is overdue the day after a business-day due date', () => {
+    expect(isPastDue('2026-10-15', '2026-10-15')).toBe(false);
+    expect(isPastDue('2026-10-15', '2026-10-16')).toBe(true);
+    expect(isPastDue('2026-10-15', '2026-10-01')).toBe(false);
+  });
+
+  it('crosses the year with the next year holidays', () => {
+    // 31/12/2026 é quinta (dia útil); 01/01/2027 é feriado.
+    expect(isPastDue('2026-12-31', '2027-01-01')).toBe(true);
+    // Vencimento no feriado de 01/01/2027 (sexta): paga até segunda 04/01.
+    expect(isPastDue('2027-01-01', '2027-01-04')).toBe(false);
+    expect(isPastDue('2027-01-01', '2027-01-05')).toBe(true);
   });
 });

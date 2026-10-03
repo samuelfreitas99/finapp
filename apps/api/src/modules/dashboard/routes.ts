@@ -1,6 +1,6 @@
-import { addDays, endOfMonth, monthFlow, yearMonthOf, type ISODate } from '@finapp/core';
+import { addDays, endOfMonth, isPastDue, monthFlow, yearMonthOf, type ISODate } from '@finapp/core';
 import { dashboardQuerySchema, type Dashboard } from '@finapp/shared';
-import { and, asc, count, eq, gte, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../../db/client';
 import { accounts, categories, transactions } from '../../db/schema';
@@ -22,7 +22,7 @@ export async function buildDashboard(
   const forecastDate = endOfMonth(from);
 
   const live = and(eq(transactions.spaceId, spaceId), isNull(transactions.deletedAt));
-  const [rows, sums, upcomingRows, [overdue]] = await Promise.all([
+  const [rows, sums, upcomingRows, pastRows] = await Promise.all([
     db
       .select()
       .from(accounts)
@@ -61,7 +61,7 @@ export async function buildDashboard(
       .orderBy(asc(transactions.date), asc(transactions.id))
       .limit(UPCOMING_LIMIT),
     db
-      .select({ n: count() })
+      .select({ date: transactions.date })
       .from(transactions)
       .where(and(live, eq(transactions.status, 'planned'), lt(transactions.date, t))),
   ]);
@@ -93,7 +93,8 @@ export async function buildDashboard(
     income: flow.income,
     expense: flow.expense,
     upcoming: upcomingRows.map((r) => toTransaction(r, tagMap.get(r.id) ?? [])),
-    overdueCount: overdue?.n ?? 0,
+    // Vencido em fim de semana/feriado ainda pode ser pago no dia útil seguinte.
+    overdueCount: pastRows.filter((r) => isPastDue(r.date, t)).length,
     hasAccounts: rows.length > 0,
   };
 }

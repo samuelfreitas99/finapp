@@ -11,6 +11,7 @@ import {
   type ISODate,
   type YearMonth,
 } from '../dates';
+import { isPastDue } from '../holidays';
 
 /**
  * Dívidas e empréstimos: cronogramas por sistema (fixed, price, sac, variable, balloon),
@@ -500,7 +501,7 @@ export interface DebtInstallmentState {
 export function debtInstallmentStatus(i: DebtInstallmentState, today: ISODate): InstallmentStatus {
   if (i.paid) return 'paid';
   if (i.paidAmount > 0) return 'partial';
-  if (compareDates(i.dueDate, today) < 0) return 'late';
+  if (isPastDue(i.dueDate, today)) return 'late';
   return 'pending';
 }
 
@@ -578,7 +579,7 @@ export function debtSummary(
     if (s.expectedPayoffDate === null || compareDates(i.dueDate, s.expectedPayoffDate) > 0) {
       s.expectedPayoffDate = i.dueDate;
     }
-    if (compareDates(i.dueDate, today) < 0) {
+    if (isPastDue(i.dueDate, today)) {
       s.lateCount++;
       s.lateAmount += Math.max(0, i.amount - i.paidAmount);
     }

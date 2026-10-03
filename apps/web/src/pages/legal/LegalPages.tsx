@@ -5,7 +5,7 @@ import { PageHeader } from '../../components/PageHeader';
 
 /** Responsável e contato (LGPD). Mudou? Atualize também a data da versão. */
 export const LEGAL_CONTACT = 'contato.finappoficial@gmail.com';
-const RESPONSIBLE = 'FinApp, mantido por Samuel Freitas';
+const RESPONSIBLE = 'FinApp';
 const VERSION = '3 de outubro de 2026';
 
 function LegalShell({ title, children }: { title: string; children: ReactNode }) {
@@ -34,7 +34,7 @@ export function PrivacyPage() {
     <LegalShell title="Política de privacidade">
       <p>
         Esta política explica quais dados o FinApp guarda, para quê e o que você pode fazer com
-        eles. O responsável pelos dados (controlador) é o {RESPONSIBLE}, contato{' '}
+        eles. O responsável pelos dados (controlador) é o {RESPONSIBLE}, pelo contato{' '}
         <a href={`mailto:${LEGAL_CONTACT}`}>{LEGAL_CONTACT}</a>.
       </p>
 
@@ -137,8 +137,7 @@ export function TermsPage() {
     <LegalShell title="Termos de uso">
       <p>
         Ao criar uma conta no FinApp você concorda com estes termos e com a{' '}
-        <Link to="/privacidade">política de privacidade</Link>. O serviço é oferecido pelo{' '}
-        {RESPONSIBLE}.
+        <Link to="/privacidade">política de privacidade</Link>.
       </p>
 
       <h2>O que é o FinApp</h2>

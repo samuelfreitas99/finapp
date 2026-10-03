@@ -1,4 +1,11 @@
-import { addDays, toISODate, type ISODate } from '../dates';
+import {
+  addDays,
+  businessDayAdjust,
+  compareDates,
+  toISODate,
+  type HolidaySet,
+  type ISODate,
+} from '../dates';
 
 /**
  * Feriados nacionais brasileiros, calculados sem dependência externa.
@@ -88,4 +95,17 @@ export function nationalHolidayDates(
     for (const h of nationalHolidays(y, options)) set.add(h.date);
   }
   return set;
+}
+
+/**
+ * A conta já venceu de fato? Boleto, parcela ou fatura que vence em fim de semana ou feriado
+ * pode ser paga no dia útil seguinte sem multa, então só está atrasada **depois** desse dia.
+ * Sem `holidays`, usa os feriados nacionais do ano do vencimento e do seguinte.
+ * @see RN 2
+ */
+export function isPastDue(dueDate: ISODate, today: ISODate, holidays?: HolidaySet): boolean {
+  if (compareDates(today, dueDate) <= 0) return false;
+  const year = Number(dueDate.slice(0, 4));
+  const set = holidays ?? nationalHolidayDates(year, year + 1);
+  return compareDates(today, businessDayAdjust(dueDate, 'next', set)) > 0;
 }

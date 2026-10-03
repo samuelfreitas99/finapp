@@ -1,5 +1,6 @@
 import { formatBRL, type Cents } from '../money';
 import { addDays, diffDays, type ISODate } from '../dates';
+import { isPastDue } from '../holidays';
 
 /**
  * Alertas (RN 9): a partir de um retrato dos dados do espaço, decide quais avisos gerar.
@@ -94,6 +95,8 @@ export function buildAlerts(input: AlertInput): Alert[] {
   for (const p of input.planned) {
     const days = diffDays(today, p.date);
     if (p.type === 'expense') {
+      // Venceu no fim de semana/feriado: ainda dá para pagar no dia útil seguinte.
+      if (days < 0 && !isPastDue(p.date, today)) continue;
       if (days < 0 && cfg('overdue').enabled) {
         alerts.push({
           type: 'overdue',
