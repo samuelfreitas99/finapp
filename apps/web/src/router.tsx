@@ -10,7 +10,7 @@ import { EditCardPage, NewCardPage } from './pages/cards/CardFormPage';
 import { CardsPage } from './pages/cards/CardsPage';
 import { PlanPage } from './pages/cards/PlanPage';
 import { PlansPage } from './pages/cards/PlansPage';
-import { CategoriesPage } from './pages/Placeholders';
+import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { EditEntryPage, NewEntryPage } from './pages/transactions/EntryPages';
 import { TransactionsPage } from './pages/transactions/TransactionsPage';
 import { EditRecurrencePage, NewRecurrencePage } from './pages/recurrences/RecurrenceFormPage';
@@ -25,6 +25,7 @@ import { ReportsPage } from './pages/reports/ReportsPage';
 import { ImportPage } from './pages/import/ImportPage';
 import { ExportPage } from './pages/export/ExportPage';
 import { AuditPage } from './pages/audit/AuditPage';
+import { InvitesPage } from './pages/invites/InvitesPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { CouplePage } from './pages/couple/CouplePage';
 import { GroupPage } from './pages/racha/GroupPage';
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
           { path: '/racha', element: <RachaPage /> },
           { path: '/racha/:id', element: <GroupPage /> },
           { path: '/casal', element: <CouplePage /> },
+          { path: '/convites', element: <InvitesPage /> },
           { path: '/espacos', element: <SpacesPage /> },
           { path: '/historico', element: <AuditPage /> },
           { path: '/exportar', element: <ExportPage /> },

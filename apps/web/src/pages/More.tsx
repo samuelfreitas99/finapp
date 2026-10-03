@@ -17,6 +17,7 @@ import {
   Settings,
   Tags,
   Scale,
+  UserPlus,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -35,6 +36,7 @@ const ready: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/importar', label: 'Importar extrato', icon: FileUp },
   { to: '/racha', label: 'Racha entre amigos', icon: Users },
   { to: '/casal', label: 'Divisão do espaço (casal)', icon: Scale },
+  { to: '/convites', label: 'Convidar pessoas', icon: UserPlus },
   { to: '/espacos', label: 'Espaços e membros', icon: Users },
   { to: '/historico', label: 'Histórico de alterações', icon: History },
   { to: '/exportar', label: 'Exportar dados', icon: Download },

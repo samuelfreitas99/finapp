@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Copy } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { authErrorMessage } from '../auth/messages';
 import { meKey, useMe } from '../auth/session';
 import { useToast } from '../components/Toast';
 import { api } from '../lib/api';
+import { copyText } from '../lib/clipboard';
 
 interface Setup {
   totpURI: string;
@@ -100,9 +102,25 @@ export function TwoFactorCard() {
               </li>
             ))}
           </ul>
-          <button type="button" className="btn btn--primary" onClick={reset}>
-            Guardei os códigos
-          </button>
+          <div className="form__actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={async () =>
+                toast({
+                  text: (await copyText(setup.backupCodes.join('\n')))
+                    ? 'Códigos copiados.'
+                    : 'Não consegui copiar. Anote à mão.',
+                })
+              }
+            >
+              <Copy size={18} aria-hidden="true" />
+              Copiar todos
+            </button>
+            <button type="button" className="btn btn--primary" onClick={reset}>
+              Guardei os códigos
+            </button>
+          </div>
         </div>
       )}
 
@@ -118,9 +136,26 @@ export function TwoFactorCard() {
           {qr && (
             <img src={qr} width={192} height={192} alt="QR code para o aplicativo autenticador" />
           )}
-          <p className="muted">
-            Chave: <code>{secret}</code>
-          </p>
+          <div className="copy-line">
+            <span className="muted">Ou digite esta chave no aplicativo:</span>
+            <div className="copy-line__box">
+              <code className="copy-line__value">{secret}</code>
+              <button
+                type="button"
+                className="btn"
+                onClick={async () =>
+                  toast({
+                    text: (await copyText(secret))
+                      ? 'Chave copiada.'
+                      : 'Não consegui copiar. Selecione e copie à mão.',
+                  })
+                }
+              >
+                <Copy size={18} aria-hidden="true" />
+                Copiar chave
+              </button>
+            </div>
+          </div>
           <div className="field">
             <label htmlFor="tf-code">2. Digite o código de 6 números que o aplicativo mostra</label>
             <input

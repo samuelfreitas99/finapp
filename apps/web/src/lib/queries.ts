@@ -11,6 +11,9 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  GoalDeposit,
+  CreateCategoryBody,
+  UpdateCategoryBody,
   GroupLink,
   GroupLinkBody,
   SyncResult,
@@ -727,7 +730,24 @@ export function useGoalMutations() {
       mutationFn: (id: string) => api(spacePath(spaceId, `/goals/${id}`), { method: 'DELETE' }),
       onSuccess: invalidate,
     }),
+    undoDeposit: useMutation({
+      mutationFn: ({ goalId, depositId }: { goalId: string; depositId: string }) =>
+        api(spacePath(spaceId, `/goals/${goalId}/deposits/${depositId}`), { method: 'DELETE' }),
+      onSuccess: () => qc.invalidateQueries({ queryKey: ['goals', spaceId] }),
+    }),
   };
+}
+
+export function useGoalDeposits(goalId: string, enabled: boolean) {
+  const spaceId = useSpaceId();
+  return useQuery({
+    queryKey: ['goals', spaceId, 'deposits', goalId],
+    queryFn: () =>
+      api<{ items: GoalDeposit[] }>(spacePath(spaceId, `/goals/${goalId}/deposits`)).then(
+        (r) => r.items,
+      ),
+    enabled,
+  });
 }
 
 export function useReportByCategory(from: string, to: string, kind: 'expense' | 'income') {
@@ -1069,4 +1089,50 @@ export function useSpaceChoices(spaceId: string) {
       return { accounts: accounts.items, categories: categories.items };
     },
   });
+}
+
+export function useCategoryMutations() {
+  const spaceId = useSpaceId();
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: keys.categories(spaceId) });
+  return {
+    create: useMutation({
+      mutationFn: (body: CreateCategoryBody) =>
+        api<Category>(spacePath(spaceId, '/categories'), { method: 'POST', body }),
+      onSuccess: refresh,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, ...body }: UpdateCategoryBody & { id: string }) =>
+        api<Category>(spacePath(spaceId, `/categories/${id}`), { method: 'PATCH', body }),
+      onSuccess: refresh,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) =>
+        api(spacePath(spaceId, `/categories/${id}`), { method: 'DELETE' }),
+      onSuccess: refresh,
+    }),
+  };
+}
+
+export function useInvites() {
+  return useQuery({
+    queryKey: ['invites'],
+    queryFn: () => api<{ items: Invite[] }>('/api/invites').then((r) => r.items),
+  });
+}
+
+export function useInviteMutations() {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: ['invites'] });
+  return {
+    create: useMutation({
+      mutationFn: (body: { email?: string; expiresInDays?: number }) =>
+        api<Invite>('/api/invites', { method: 'POST', body }),
+      onSuccess: refresh,
+    }),
+    revoke: useMutation({
+      mutationFn: (id: string) => api(`/api/invites/${id}`, { method: 'DELETE' }),
+      onSuccess: refresh,
+    }),
+  };
 }

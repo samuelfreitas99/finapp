@@ -7,6 +7,7 @@ Cada endpoint tem schema Zod em `packages/shared`. Esta lista é o contrato plan
 ## Auth e usuário
 - `POST /api/auth/*` (Better Auth: `sign-up/email` com `inviteCode`, `sign-in/email`, `sign-out`, `GET get-session`) ✅
 - `GET /api/me` ✅ (usuário, espaços, espaço ativo); `PATCH /api/me`, `GET/PATCH /api/me/settings`
+- `DELETE /api/invites/:id` ✅ (cancela convite seu ainda não usado)
 - `POST /api/invites` ✅ (`{ spaceId?, email?, expiresInDays? }`; para espaço, só o dono), `GET /api/invites` ✅
 
 ## Espaços
@@ -68,7 +69,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `GET /projection?months=12` ✅ (1–36; saldo atual das contas que somam nos totais + previstos dessas contas por tipo (receita, fixa = recorrência, parcela = carnê, outras) + o que falta pagar de cada fatura no vencimento; transferências fora; RN 7)
 - `GET /reports/by-category?from=&to=&kind=expense|income` (meses `YYYY-MM`; total e itens com fatia, até 9 + "Outras"), `GET /reports/monthly?months=12` (receita, despesa, sobra e taxa de poupança por mês), `GET /reports/net-worth` (ativos, passivos e linhas); só efetivados, categorias técnicas fora
 - `GET /budgets?month=` (situação do mês: limite, sobra, gasto, faixa), `PUT /budgets` (cria/atualiza por categoria e mês; `month` nulo = todo mês), `DELETE /budgets/:id`
-- `GET/POST /goals`, `PATCH/DELETE /goals/:id` (situação e aporte sugerido calculados), `POST /goals/:id/deposit` (guardar/retirar à mão, só sem conta vinculada)
+- `GET/POST /goals`, `PATCH/DELETE /goals/:id` (situação e aporte sugerido calculados), `POST /goals/:id/deposit` (`{ amount, date?, note? }`, positivo guarda e negativo retira; cofrinho por meta), `GET /goals/:id/deposits`, `DELETE /goals/:id/deposits/:depositId`; a meta traz `accountBalance` e `reservedInAccount` quando tem conta
 
 - `GET /transactions/:id/attachments`, `POST /transactions/:id/attachments?name=` (corpo = o arquivo cru; `image/jpeg|png|webp` ou `application/pdf`, até 8 MB, 10 por lançamento; 400 `invalid_file` se o conteúdo não for do tipo aceito, 413 se grande), `GET /attachments/:id/file` (abre o arquivo), `DELETE /attachments/:id` (lógico)
 

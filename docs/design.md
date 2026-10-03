@@ -60,3 +60,9 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 2. Aprovado o protótipo, tokens vão para `apps/web/src/styles/tokens.css` (claro e escuro) e os componentes base são classes em `apps/web/src/styles/app.css` (`.btn`, `.input`, `.card`, `.chip`, `.segmented`, `.list`...), ver ADR-014.
 3. Implementação com a skill `frontend-design`; gráficos com a skill `dataviz`.
 4. Revisão de acessibilidade a cada tela (contraste, foco visível, labels, leitor de tela).
+
+
+## Navegação (ADR-018)
+- As 4 telas da barra inferior (Início, Lançamentos, Cartões, Mais) não têm botão "voltar"; toda outra tela tem, no canto esquerdo do título (`PageHeader` com `back`).
+- "Voltar" desfaz a última navegação; só vai para a tela-mãe (`back`) quando a tela foi aberta direto por link.
+- A rolagem é restaurada ao voltar e começa no topo em tela nova.

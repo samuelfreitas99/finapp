@@ -1,12 +1,12 @@
 import type { Goal } from '@finapp/shared';
-import { Archive, Flag, Trash2 } from 'lucide-react';
+import { Archive, Flag, Trash2, Undo2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { MoneyInput } from '../../components/MoneyInput';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
 import { formatDate, money } from '../../lib/format';
 import { useHiddenValues } from '../../lib/hidden-values';
-import { useAccounts, useGoalMutations, useGoals } from '../../lib/queries';
+import { useAccounts, useGoalDeposits, useGoalMutations, useGoals } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
 
 interface Draft {
@@ -45,6 +45,9 @@ function GoalCard({
 }) {
   const { hidden } = useHiddenValues();
   const pct = Math.round(goal.ratio * 100);
+  const [showHistory, setShowHistory] = useState(false);
+  const history = useGoalDeposits(goal.id, showHistory);
+  const { undoDeposit } = useGoalMutations();
   return (
     <li className="goal-row">
       <div className="goal-row__head">
@@ -66,9 +69,19 @@ function GoalCard({
         <span className="budget-bar budget-bar--ok" style={{ width: `${pct}%` }} />
       </span>
       <span className="muted">
-        {money(goal.saved, hidden)} de {money(goal.targetAmount, hidden)} ({pct}%)
-        {goal.accountName ? ` · saldo de ${goal.accountName}` : ''}
+        {money(goal.saved, hidden)} guardados de {money(goal.targetAmount, hidden)} ({pct}%)
       </span>
+      {goal.accountName && goal.accountBalance !== null && goal.reservedInAccount !== null && (
+        <span
+          className={goal.reservedInAccount > goal.accountBalance ? 'muted expense' : 'muted'}
+          role={goal.reservedInAccount > goal.accountBalance ? 'alert' : undefined}
+        >
+          Em {goal.accountName}: {money(goal.reservedInAccount, hidden)} reservados nas metas
+          {goal.reservedInAccount > goal.accountBalance
+            ? `, mais que o saldo de ${money(goal.accountBalance, hidden)}.`
+            : ` de ${money(goal.accountBalance, hidden)} de saldo.`}
+        </span>
+      )}
       {goal.status === 'on_track' && goal.suggestedMonthly !== null && (
         <span>
           Guarde <strong className="num">{money(goal.suggestedMonthly, hidden)}</strong> por mês até{' '}
@@ -85,15 +98,60 @@ function GoalCard({
         </span>
       )}
       <div className="form__actions">
-        {!goal.accountId && !goal.archived && (
+        {!goal.archived && (
           <button type="button" className="btn" onClick={onDeposit}>
             Guardar / retirar
           </button>
         )}
+        <button
+          type="button"
+          className="btn"
+          aria-expanded={showHistory}
+          onClick={() => setShowHistory((v) => !v)}
+        >
+          Histórico
+        </button>
         <button type="button" className="btn" onClick={onEdit}>
           Editar
         </button>
       </div>
+      {showHistory && (
+        <div className="stack">
+          {undoDeposit.isError && (
+            <p className="alert alert--error" role="alert">
+              {errorText(undoDeposit.error)}
+            </p>
+          )}
+          {history.isSuccess && history.data.length === 0 && (
+            <p className="muted">Nenhum aporte ainda.</p>
+          )}
+          <ul className="list">
+            {(history.data ?? []).map((d) => (
+              <li key={d.id} className="row-link">
+                <span className="row-link__main">
+                  <strong className={`num ${d.amount < 0 ? 'expense' : 'income'}`}>
+                    {money(d.amount, hidden, true)}
+                  </strong>
+                  <span className="muted">
+                    {formatDate(d.date)}
+                    {d.note ? ` · ${d.note}` : ''}
+                  </span>
+                </span>
+                {!goal.archived && (
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label="Desfazer este movimento"
+                    onClick={() => undoDeposit.mutate({ goalId: goal.id, depositId: d.id })}
+                  >
+                    <Undo2 size={18} aria-hidden="true" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </li>
   );
 }
@@ -152,7 +210,7 @@ export function GoalsPage() {
           targetAmount: draft.targetAmount,
           targetDate: draft.targetDate || null,
           accountId: draft.accountId || null,
-          savedAmount: draft.accountId ? 0 : draft.savedAmount,
+          savedAmount: draft.savedAmount,
         },
         { onSuccess: () => done('Meta criada.') },
       );
@@ -212,14 +270,14 @@ export function GoalsPage() {
             />
           </div>
           <div className="field">
-            <label htmlFor="g-account">Conta da meta (opcional)</label>
+            <label htmlFor="g-account">Onde o dinheiro está (opcional)</label>
             <select
               id="g-account"
               className="input"
               value={draft.accountId}
               onChange={(e) => setDraft({ ...draft, accountId: e.target.value })}
             >
-              <option value="">Nenhuma: eu marco quanto guardei</option>
+              <option value="">Nenhuma</option>
               {(accounts.data ?? []).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -227,10 +285,11 @@ export function GoalsPage() {
               ))}
             </select>
             <p className="muted">
-              Com conta, o guardado é o saldo dela e os aportes são transferências para ela.
+              Só informa onde o dinheiro está: cada meta guarda o próprio valor (como um cofrinho) e
+              o app avisa se o que está reservado passar do saldo da conta.
             </p>
           </div>
-          {!draft.id && !draft.accountId && (
+          {!draft.id && (
             <div className="field">
               <label htmlFor="g-saved">Já guardado</label>
               <MoneyInput

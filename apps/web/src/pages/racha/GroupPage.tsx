@@ -5,6 +5,7 @@ import { useParams } from 'react-router';
 import { MoneyInput } from '../../components/MoneyInput';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
+import { copyText } from '../../lib/clipboard';
 import { today } from '../../lib/dates';
 import { formatDate, money } from '../../lib/format';
 import { useHiddenValues } from '../../lib/hidden-values';
@@ -570,10 +571,13 @@ export function GroupPage() {
             type="button"
             className="icon-btn"
             aria-label="Copiar código"
-            onClick={() => {
-              void navigator.clipboard?.writeText(g.joinCode);
-              toast({ text: 'Código copiado.' });
-            }}
+            onClick={async () =>
+              toast({
+                text: (await copyText(g.joinCode))
+                  ? 'Código copiado.'
+                  : 'Copie o código manualmente.',
+              })
+            }
           >
             <Copy size={16} aria-hidden="true" />
           </button>

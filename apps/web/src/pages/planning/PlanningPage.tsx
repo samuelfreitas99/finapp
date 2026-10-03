@@ -75,7 +75,7 @@ export function PlanningPage() {
 
   return (
     <>
-      <PageHeader title="Planejamento" />
+      <PageHeader title="Planejamento" back="/mais" />
       <div className="segmented" role="group" aria-label="Período">
         {RANGES.map((r) => (
           <button key={r} type="button" aria-pressed={months === r} onClick={() => setMonths(r)}>

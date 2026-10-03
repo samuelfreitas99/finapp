@@ -5,11 +5,13 @@ import {
   spaceItemParamsSchema,
   updateGoalBodySchema,
   type Goal,
+  type GoalDeposit,
 } from '@finapp/shared';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import type { Db } from '../../db/client';
-import { accounts, goals } from '../../db/schema';
+import { accounts, goalDeposits, goals } from '../../db/schema';
 import { badRequest, notFound } from '../../http/errors';
 import { currentUser } from '../../plugins/auth';
 import { balancesFor, findAccount } from '../accounts/service';
@@ -17,7 +19,22 @@ import { spaceIdOf, type SpaceContext } from '../spaces/scope';
 
 type GoalRow = typeof goals.$inferSelect;
 
+/** Quanto cada meta já guardou (soma dos aportes e retiradas). */
+async function savedByGoal(db: Db, goalIds: string[]): Promise<Map<string, number>> {
+  if (goalIds.length === 0) return new Map();
+  const rows = await db
+    .select({ goalId: goalDeposits.goalId, total: sql<string>`sum(${goalDeposits.amount})` })
+    .from(goalDeposits)
+    .where(and(inArray(goalDeposits.goalId, goalIds), isNull(goalDeposits.deletedAt)))
+    .groupBy(goalDeposits.goalId);
+  return new Map(rows.map((r) => [r.goalId, Math.max(0, Number(r.total))]));
+}
+
 async function toGoals(db: Db, spaceId: string, rows: GoalRow[], today: string): Promise<Goal[]> {
+  const saved = await savedByGoal(
+    db,
+    rows.map((r) => r.id),
+  );
   const accountIds = [...new Set(rows.flatMap((r) => (r.accountId ? [r.accountId] : [])))];
   const accountRows = accountIds.length
     ? await db
@@ -27,27 +44,49 @@ async function toGoals(db: Db, spaceId: string, rows: GoalRow[], today: string):
     : [];
   const balances = await balancesFor(db, spaceId, accountRows, today, today);
   const nameOf = new Map(accountRows.map((a) => [a.id, a.name]));
-  return rows.map((r) => {
-    const saved = r.accountId ? (balances.get(r.accountId)?.current ?? 0) : r.savedAmountManual;
-    return {
-      id: r.id,
-      name: r.name,
+  // Reservado numa conta: o guardado de todas as metas ativas dela (não só das listadas).
+  const reserved = new Map<string, number>();
+  if (accountIds.length) {
+    const sameAccount = await db
+      .select({ id: goals.id, accountId: goals.accountId })
+      .from(goals)
+      .where(
+        and(
+          eq(goals.spaceId, spaceId),
+          inArray(goals.accountId, accountIds),
+          isNull(goals.deletedAt),
+          isNull(goals.archivedAt),
+        ),
+      );
+    const all = await savedByGoal(
+      db,
+      sameAccount.map((g) => g.id),
+    );
+    for (const g of sameAccount) {
+      if (!g.accountId) continue;
+      reserved.set(g.accountId, (reserved.get(g.accountId) ?? 0) + (all.get(g.id) ?? 0));
+    }
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    targetAmount: r.targetAmount,
+    targetDate: r.targetDate,
+    accountId: r.accountId,
+    accountName: r.accountId ? (nameOf.get(r.accountId) ?? null) : null,
+    accountBalance: r.accountId ? (balances.get(r.accountId)?.current ?? 0) : null,
+    reservedInAccount: r.accountId ? (reserved.get(r.accountId) ?? 0) : null,
+    archived: r.archivedAt !== null,
+    ...goalProgress({
       targetAmount: r.targetAmount,
+      saved: saved.get(r.id) ?? 0,
       targetDate: r.targetDate,
-      accountId: r.accountId,
-      accountName: r.accountId ? (nameOf.get(r.accountId) ?? null) : null,
-      archived: r.archivedAt !== null,
-      ...goalProgress({
-        targetAmount: r.targetAmount,
-        saved,
-        targetDate: r.targetDate,
-        today,
-      }),
-    };
-  });
+      today,
+    }),
+  }));
 }
 
-/** Metas de poupança com aporte mensal sugerido. @see RN 8 */
+/** Metas de poupança em estilo cofrinho, com aporte mensal sugerido. @see RN 8 */
 export function goalRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
   const find = async (spaceId: string, id: string) => {
     const [row] = await db
@@ -77,19 +116,32 @@ export function goalRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
     const spaceId = spaceIdOf(request);
     const body = createGoalBodySchema.parse(request.body ?? {});
     if (body.accountId) await findAccount(db, spaceId, body.accountId);
-    const [row] = await db
-      .insert(goals)
-      .values({
-        spaceId,
-        name: body.name,
-        targetAmount: body.targetAmount,
-        targetDate: body.targetDate ?? null,
-        accountId: body.accountId ?? null,
-        savedAmountManual: body.accountId ? 0 : body.savedAmount,
-        createdBy: currentUser(request).id,
-      })
-      .returning();
-    if (!row) throw new Error('falha ao criar meta');
+    const userId = currentUser(request).id;
+    const row = await db.transaction(async (tx) => {
+      const [g] = await tx
+        .insert(goals)
+        .values({
+          spaceId,
+          name: body.name,
+          targetAmount: body.targetAmount,
+          targetDate: body.targetDate ?? null,
+          accountId: body.accountId ?? null,
+          createdBy: userId,
+        })
+        .returning();
+      if (!g) throw new Error('falha ao criar meta');
+      if (body.savedAmount > 0) {
+        await tx.insert(goalDeposits).values({
+          spaceId,
+          goalId: g.id,
+          amount: body.savedAmount,
+          date: today(),
+          note: 'Valor inicial',
+          createdBy: userId,
+        });
+      }
+      return g;
+    });
     return reply.code(201).send(await one(spaceId, row));
   });
 
@@ -110,27 +162,71 @@ export function goalRoutes(app: FastifyInstance, { db, today }: SpaceContext) {
     return one(spaceId, row);
   });
 
-  /** Aporte ou retirada marcada à mão (metas sem conta vinculada). */
+  /** Guarda (valor positivo) ou retira (negativo) do cofrinho da meta. */
   app.post('/goals/:id/deposit', async (request) => {
     const { spaceId, id } = spaceItemParamsSchema.parse(request.params);
     const body = goalDepositBodySchema.parse(request.body ?? {});
     const current = await find(spaceId, id);
-    if (current.accountId) {
-      throw badRequest(
-        'goal_linked_to_account',
-        'Esta meta usa o saldo de uma conta: faça uma transferência para ela.',
-      );
-    }
-    if (current.savedAmountManual + body.amount < 0) {
+    if (current.archivedAt)
+      throw badRequest('goal_archived', 'A meta está arquivada. Reabra para mexer.');
+    const saved = (await savedByGoal(db, [id])).get(id) ?? 0;
+    if (saved + body.amount < 0) {
       throw badRequest('goal_negative', 'A retirada é maior que o valor guardado.');
     }
-    const [row] = await db
-      .update(goals)
-      .set({ savedAmountManual: sql`${goals.savedAmountManual} + ${body.amount}` })
-      .where(eq(goals.id, id))
-      .returning();
-    if (!row) throw new Error('falha ao registrar aporte');
-    return one(spaceId, row);
+    await db.insert(goalDeposits).values({
+      spaceId,
+      goalId: id,
+      amount: body.amount,
+      date: body.date ?? today(),
+      note: body.note ?? null,
+      createdBy: currentUser(request).id,
+    });
+    return one(spaceId, current);
+  });
+
+  app.get('/goals/:id/deposits', async (request) => {
+    const { spaceId, id } = spaceItemParamsSchema.parse(request.params);
+    await find(spaceId, id);
+    const rows = await db
+      .select()
+      .from(goalDeposits)
+      .where(and(eq(goalDeposits.goalId, id), isNull(goalDeposits.deletedAt)))
+      .orderBy(desc(goalDeposits.date), desc(goalDeposits.id));
+    const items: GoalDeposit[] = rows.map((r) => ({
+      id: r.id,
+      amount: r.amount,
+      date: r.date,
+      note: r.note,
+    }));
+    return { items };
+  });
+
+  /** Desfaz um aporte ou retirada (exclusão lógica), sem deixar o cofrinho negativo. */
+  app.delete('/goals/:id/deposits/:depositId', async (request, reply) => {
+    const { spaceId, id, depositId } = z
+      .object({ spaceId: z.uuid(), id: z.uuid(), depositId: z.uuid() })
+      .parse(request.params);
+    await find(spaceId, id);
+    const [dep] = await db
+      .select()
+      .from(goalDeposits)
+      .where(
+        and(
+          eq(goalDeposits.id, depositId),
+          eq(goalDeposits.goalId, id),
+          isNull(goalDeposits.deletedAt),
+        ),
+      );
+    if (!dep) throw notFound('Aporte');
+    const saved = (await savedByGoal(db, [id])).get(id) ?? 0;
+    if (saved - dep.amount < 0) {
+      throw badRequest('goal_negative', 'Desfazer esse aporte deixaria o cofrinho negativo.');
+    }
+    await db
+      .update(goalDeposits)
+      .set({ deletedAt: new Date() })
+      .where(eq(goalDeposits.id, depositId));
+    return reply.code(204).send();
   });
 
   app.delete('/goals/:id', async (request, reply) => {

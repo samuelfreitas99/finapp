@@ -70,3 +70,14 @@ Consequências: identidade visual difere do protótipo só na cor; layout e tipo
 Contexto: o roadmap pede anexos de comprovantes. O modelo previa `file_path` (arquivo em disco), mas isso exigiria um volume novo no compose e o backup cobrir dois lugares.
 Decisão: o arquivo fica na coluna `attachments.data` (`bytea`), limitado a 8 MB e 10 por lançamento, só JPG, PNG, WebP ou PDF (tipo conferido pelos primeiros bytes). O app reduz fotos grandes (máx. 1800 px) antes de enviar. Exclusão lógica (`deleted_at`).
 Consequências: o `pg_dump` diário já inclui os comprovantes e não há infraestrutura nova; o banco cresce mais rápido (fotos reduzidas ficam em ~300 KB). Se o volume virar problema, mover os bytes para disco/objeto sem mudar a API (`/attachments/:id/file`).
+
+## ADR-017 Metas em estilo cofrinho (03/10/2026)
+Contexto: a primeira versão das metas usava o saldo inteiro da conta vinculada como "guardado". Com uma conta só e várias metas, todas mostravam o mesmo valor, e o dinheiro de uma meta parecia estar em todas.
+Decisão: cada meta tem o próprio cofrinho: o guardado é a soma dos aportes e retiradas (`goal_deposits`, com histórico e desfazer). A conta vinculada é opcional e só informativa ("onde o dinheiro está"); o app avisa quando o total reservado nas metas passa do saldo da conta. Aportes não movem dinheiro entre contas (é uma reserva no papel).
+Consequências: várias metas podem apontar para a mesma conta sem se misturar; o valor guardado não muda sozinho quando o saldo da conta muda. Migração 0019 transforma o "valor marcado à mão" antigo no primeiro aporte.
+
+## ADR-018 Padrão de navegação: "voltar" e rolagem (03/10/2026)
+Contexto: algumas telas tinham botão de voltar e outras não, e uma tela nova abria na rolagem da anterior.
+Decisão: as 4 telas da barra inferior (Início, Lançamentos, Cartões, Mais) não têm "voltar"; toda outra tela tem. "Voltar" desfaz a última navegação (a tela anterior reabre onde estava); se a tela foi aberta direto por link, vai para a tela-mãe indicada em `back`. A rolagem é restaurada ao voltar e volta ao topo ao abrir uma tela nova (`ScrollRestoration`).
+Consequências: no desktop, os itens da barra lateral que não são abas (Contas, Dívidas...) também mostram "voltar", que leva à tela anterior.
+

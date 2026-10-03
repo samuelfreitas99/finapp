@@ -9,7 +9,7 @@ export const createGoalBodySchema = z.object({
   targetDate: isoDateSchema.nullish(),
   /** Conta onde o dinheiro da meta fica: o guardado passa a ser o saldo dela. */
   accountId: z.uuid().nullish(),
-  /** Já guardado à mão (só sem conta vinculada). */
+  /** Quanto já está guardado para a meta (vira o primeiro aporte). */
   savedAmount: z.int().min(0).max(9_000_000_000_00).default(0),
 });
 export type CreateGoalBody = z.input<typeof createGoalBodySchema>;
@@ -25,8 +25,10 @@ export const updateGoalBodySchema = z
   .partial();
 export type UpdateGoalBody = z.infer<typeof updateGoalBodySchema>;
 
-/** Aporte (positivo) ou retirada (negativa) marcada à mão. */
+/** Aporte (positivo) ou retirada (negativa) no cofrinho da meta. */
 export const goalDepositBodySchema = z.object({
+  date: isoDateSchema.optional(),
+  note: z.string().trim().max(120).nullish(),
   amount: z
     .int()
     .min(-9_000_000_000_00)
@@ -42,6 +44,9 @@ export const goalSchema = z.object({
   targetDate: z.string().nullable(),
   accountId: z.uuid().nullable(),
   accountName: z.string().nullable(),
+  /** Saldo atual da conta vinculada e quanto das metas dela já está reservado. */
+  accountBalance: z.int().nullable(),
+  reservedInAccount: z.int().nullable(),
   archived: z.boolean(),
   saved: z.int(),
   remaining: z.int(),
@@ -51,3 +56,11 @@ export const goalSchema = z.object({
   status: z.enum(['done', 'on_track', 'overdue', 'no_date']),
 });
 export type Goal = z.infer<typeof goalSchema>;
+
+export const goalDepositSchema = z.object({
+  id: z.uuid(),
+  amount: z.int(),
+  date: z.string(),
+  note: z.string().nullable(),
+});
+export type GoalDeposit = z.infer<typeof goalDepositSchema>;

@@ -62,3 +62,8 @@ const ICONS: Record<string, LucideIcon> = {
 export function categoryIcon(name: string | null | undefined): LucideIcon {
   return (name && ICONS[name]) || Circle;
 }
+
+/** Nomes disponíveis para escolher na edição de categoria. */
+export const ICON_NAMES = Object.keys(ICONS).filter(
+  (n) => !['arrow-left-right', 'undo-2', 'scale', 'repeat', 'landmark', 'hand-coins'].includes(n),
+);

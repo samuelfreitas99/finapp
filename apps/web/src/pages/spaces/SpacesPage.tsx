@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useMe } from '../../auth/session';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
+import { copyText } from '../../lib/clipboard';
 import { useSpaceMembers, useSpaceMutations, useSwitchSpace } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
 
@@ -21,12 +22,7 @@ function SpaceCard({ space, myId }: { space: SpaceSummary; myId: string }) {
   const error = rename.error ?? invite.error ?? removeMember.error;
 
   const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({ text: 'Código copiado.' });
-    } catch {
-      toast({ text: 'Copie o código manualmente.' });
-    }
+    toast({ text: (await copyText(text)) ? 'Código copiado.' : 'Copie o código manualmente.' });
   };
 
   return (

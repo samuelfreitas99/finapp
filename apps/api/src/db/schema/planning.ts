@@ -56,8 +56,9 @@ export const budgets = pgTable(
 );
 
 /**
- * Meta de poupança. Com conta vinculada, o guardado é o saldo dela; sem conta, vale o
- * valor marcado à mão (`saved_amount_manual`).
+ * Meta de poupança em estilo cofrinho: cada meta tem o próprio valor guardado (soma dos
+ * aportes e retiradas em `goal_deposits`). A conta vinculada é só informativa ("onde o
+ * dinheiro está"): o app avisa se o total reservado passa do saldo dela.
  * @see RN 8
  */
 export const goals = pgTable(
@@ -71,7 +72,6 @@ export const goals = pgTable(
     targetAmount: bigint('target_amount', { mode: 'number' }).notNull(),
     targetDate: date('target_date', { mode: 'string' }),
     accountId: uuid('account_id').references(() => accounts.id),
-    savedAmountManual: bigint('saved_amount_manual', { mode: 'number' }).notNull().default(0),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -81,6 +81,30 @@ export const goals = pgTable(
   (t) => [
     index('goals_space_idx').on(t.spaceId, t.deletedAt),
     check('goals_target_check', sql`${t.targetAmount} > 0`),
-    check('goals_saved_check', sql`${t.savedAmountManual} >= 0`),
+  ],
+);
+
+/** Aportes (positivos) e retiradas (negativas) de uma meta, com histórico. */
+export const goalDeposits = pgTable(
+  'goal_deposits',
+  {
+    id: id(),
+    spaceId: uuid('space_id')
+      .notNull()
+      .references(() => spaces.id, { onDelete: 'cascade' }),
+    goalId: uuid('goal_id')
+      .notNull()
+      .references(() => goals.id),
+    /** Com sinal: positivo guarda, negativo retira. */
+    amount: bigint('amount', { mode: 'number' }).notNull(),
+    date: date('date', { mode: 'string' }).notNull(),
+    note: text('note'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    deletedAt: deletedAt(),
+  },
+  (t) => [
+    index('goal_deposits_goal_idx').on(t.goalId, t.deletedAt),
+    check('goal_deposits_amount_check', sql`${t.amount} <> 0`),
   ],
 );

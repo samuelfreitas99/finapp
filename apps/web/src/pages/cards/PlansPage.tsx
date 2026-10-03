@@ -15,7 +15,7 @@ export function PlansPage() {
   const plans = useInstallmentPlans({ status });
   return (
     <>
-      <PageHeader title="Parcelamentos" />
+      <PageHeader title="Parcelamentos" back="/mais" />
       <div className="segmented" role="group" aria-label="Situação">
         {TABS.map((t) => (
           <button

@@ -1,5 +1,5 @@
 import { Bell, Eye, EyeOff, Wallet } from 'lucide-react';
-import { Link, NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet, ScrollRestoration } from 'react-router';
 import { useActiveSpace, useMe } from '../auth/session';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { useHiddenValues } from '../lib/hidden-values';
@@ -98,6 +98,7 @@ export function AppLayout() {
           <Item key={item.to} item={item} size={20} />
         ))}
       </nav>
+      <ScrollRestoration />
       <main className="app__main">
         <OfflineBanner />
         <Outlet />

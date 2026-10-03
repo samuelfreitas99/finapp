@@ -22,6 +22,7 @@ export function AccountsPage() {
     <>
       <PageHeader
         title="Contas"
+        back="/mais"
         action={
           <Link to="/contas/nova" className="btn btn--primary">
             <Plus size={18} aria-hidden="true" />

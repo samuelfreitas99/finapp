@@ -68,6 +68,7 @@ export function RecurrencesPage() {
     <>
       <PageHeader
         title="Fixas"
+        back="/mais"
         action={
           <Link to="/fixas/nova" className="btn btn--primary">
             <Plus size={18} aria-hidden="true" />

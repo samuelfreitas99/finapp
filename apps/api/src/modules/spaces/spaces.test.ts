@@ -197,3 +197,75 @@ describe.skipIf(!testDatabaseUrl)('shared spaces (integration)', () => {
     expect((await call(bia, 'GET', `/api/spaces/${shared}/accounts`)).statusCode).toBe(404);
   });
 });
+
+describe.skipIf(!testDatabaseUrl)('invites management (integration)', () => {
+  let drop: () => Promise<void>;
+  let app: ReturnType<typeof buildApp>;
+  let cookie: string;
+
+  const call = (method: 'GET' | 'POST' | 'DELETE', path: string, payload?: unknown, c = cookie) =>
+    app.inject({
+      method,
+      url: path,
+      headers: { cookie: c, origin: appUrl },
+      ...(payload === undefined ? {} : { payload: payload as Record<string, unknown> }),
+    });
+
+  beforeAll(async () => {
+    const temp = await createTempDb();
+    drop = temp.drop;
+    const auth = createAuth({
+      db: temp.db,
+      secret: 'test-secret-test-secret-test-secret-00',
+      appUrl,
+      production: false,
+    });
+    app = buildApp({ db: temp.db, auth, appUrl, today: () => TODAY });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { origin: appUrl },
+      payload: {
+        name: 'Ana',
+        email: 'ana@ex.com',
+        password: 'senha-forte-1',
+        inviteCode: await createAdminInvite(temp.url),
+      },
+    });
+    const raw = res.headers['set-cookie'];
+    cookie = (Array.isArray(raw) ? raw : [String(raw)])
+      .map((c) => String(c).split(';')[0])
+      .join('; ');
+  });
+
+  afterAll(async () => {
+    await app?.close();
+    await drop?.();
+  });
+
+  it('a new user signs up with an invite created in the app, which then cannot be reused', async () => {
+    const invite = (await call('POST', '/api/invites', { email: 'novo@ex.com' })).json();
+    const signUp = (email: string) =>
+      app.inject({
+        method: 'POST',
+        url: '/api/auth/sign-up/email',
+        headers: { origin: appUrl },
+        payload: { name: 'Novo', email, password: 'senha-forte-1', inviteCode: invite.code },
+      });
+    expect((await signUp('outro@ex.com')).statusCode).toBeGreaterThanOrEqual(400);
+    expect((await signUp('novo@ex.com')).statusCode).toBe(200);
+    expect((await signUp('novo2@ex.com')).statusCode).toBeGreaterThanOrEqual(400);
+    const list = (await call('GET', '/api/invites')).json().items;
+    expect(list.find((i: { id: string }) => i.id === invite.id).usedAt).toBeTruthy();
+  });
+
+  it('revokes only your own unused invites', async () => {
+    const invite = (await call('POST', '/api/invites', {})).json();
+    expect((await call('DELETE', `/api/invites/${invite.id}`)).statusCode).toBe(204);
+    expect((await call('DELETE', `/api/invites/${invite.id}`)).statusCode).toBe(404);
+    const used = (await call('GET', '/api/invites'))
+      .json()
+      .items.find((i: { usedAt: string | null }) => i.usedAt);
+    expect((await call('DELETE', `/api/invites/${used.id}`)).statusCode).toBe(404);
+  });
+});

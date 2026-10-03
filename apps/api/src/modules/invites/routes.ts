@@ -1,9 +1,11 @@
 import { createInviteBodySchema, type Invite } from '@finapp/shared';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { generateInviteCode } from '../../auth/onboarding';
 import type { Db } from '../../db/client';
 import { invites, spaces } from '../../db/schema';
+import { notFound } from '../../http/errors';
 import { currentUser, requireUser } from '../../plugins/auth';
 import { spaceRole } from '../spaces/access';
 
@@ -68,5 +70,22 @@ export function inviteRoutes(app: FastifyInstance, db: Db) {
       .returning();
     if (!row) throw new Error('falha ao criar convite');
     return reply.code(201).send(toInvite(row));
+  });
+
+  /** Cancela um convite que você criou e que ainda não foi usado. */
+  app.delete('/api/invites/:id', { preHandler: requireUser }, async (request, reply) => {
+    const { id } = z.object({ id: z.uuid() }).parse(request.params);
+    const [row] = await db
+      .delete(invites)
+      .where(
+        and(
+          eq(invites.id, id),
+          eq(invites.createdBy, currentUser(request).id),
+          isNull(invites.usedAt),
+        ),
+      )
+      .returning({ id: invites.id });
+    if (!row) throw notFound('Convite');
+    return reply.code(204).send();
   });
 }

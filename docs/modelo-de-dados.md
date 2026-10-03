@@ -62,7 +62,8 @@ Itens da fatura = `transactions` com `invoice_id` (e `card_id`). Total da fatura
 | Tabela | Colunas principais |
 |---|---|
 | `budgets` | id, space_id, category_id (despesa, categoria principal), month (`YYYY-MM`, null = todo mês; único por categoria+mês), amount, rollover, deleted_at |
-| `goals` | id, space_id, name, target_amount, target_date (opcional), account_id (opcional: o guardado é o saldo dela), saved_amount_manual, archived_at, deleted_at |
+| `goals` | id, space_id, name, target_amount, target_date (opcional), account_id (opcional, só informativo), archived_at, deleted_at |
+| `goal_deposits` | id, space_id, goal_id, amount (com sinal, ≠0), date, note, created_by, deleted_at: o guardado da meta é a soma |
 
 ## Divisão (casal) e racha
 | Tabela | Colunas principais |

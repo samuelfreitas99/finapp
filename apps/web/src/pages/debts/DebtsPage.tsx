@@ -63,6 +63,7 @@ export function DebtsPage() {
     <>
       <PageHeader
         title="Dívidas"
+        back="/mais"
         action={
           <Link to="/dividas/nova" className="btn btn--primary">
             <Plus size={18} aria-hidden="true" />
