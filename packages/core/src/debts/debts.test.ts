@@ -10,6 +10,7 @@ import {
   fixedSchedule,
   monthlyRateFromAnnual,
   payoffAmount,
+  planAdvance,
   pricePayment,
   priceSchedule,
   roundHalfUp,
@@ -246,6 +247,59 @@ describe('earlyPaymentDiscount (RN 6.5)', () => {
     expect(earlyPaymentDiscount(10000, 0.02, 0)).toBe(0);
     // 0,9999999999 → 0: nunca arredonda um centavo para cima.
     expect(earlyPaymentDiscount(10000000000, 1e-10, 1)).toBe(0);
+  });
+});
+
+describe('planAdvance (RN 6.5)', () => {
+  // Fora de ordem de propósito: a função ordena por vencimento.
+  const candidates = [
+    { id: 'c', dueDate: '2027-01-10', open: 30000 },
+    { id: 'a', dueDate: '2026-11-10', open: 10000 },
+    { id: 'd', dueDate: '2027-02-10', open: 10000 },
+    { id: 'b', dueDate: '2026-12-10', open: 20000 },
+  ];
+  const base = { candidates, date: '2026-10-03' };
+
+  it('picks the next or the last installments, full value without discount', () => {
+    expect(planAdvance({ ...base, count: 2, from: 'next' })).toEqual([
+      { id: 'a', pay: 10000, discount: 0 },
+      { id: 'b', pay: 20000, discount: 0 },
+    ]);
+    expect(planAdvance({ ...base, count: 2, from: 'last' }).map((i) => i.id)).toEqual(['c', 'd']);
+  });
+
+  it('splits the discount of the charged total in proportion, rest on the farthest', () => {
+    // 2 últimas: 30.000 + 10.000 = 40.000; o banco cobrou 37.001 → desconto 2.999.
+    const items = planAdvance({ ...base, count: 2, from: 'last', total: 37001 });
+    expect(items).toEqual([
+      { id: 'c', pay: 27751, discount: 2249 },
+      { id: 'd', pay: 9250, discount: 750 },
+    ]);
+    expect(items.reduce((s, i) => s + i.pay, 0)).toBe(37001);
+    expect(planAdvance({ ...base, count: 1, from: 'next', total: 10000 })).toEqual([
+      { id: 'a', pay: 10000, discount: 0 },
+    ]);
+  });
+
+  it('uses the present value per installment with a monthly rate', () => {
+    // 'a' vence 1 mês depois do pagamento; 'b', 2 meses.
+    const items = planAdvance({ ...base, count: 2, from: 'next', monthlyRate: 0.02 });
+    expect(items[0]).toEqual({
+      id: 'a',
+      pay: 10000 - earlyPaymentDiscount(10000, 0.02, 1),
+      discount: earlyPaymentDiscount(10000, 0.02, 1),
+    });
+    expect(items[1]?.discount).toBe(earlyPaymentDiscount(20000, 0.02, 2));
+  });
+
+  it('rejects invalid requests', () => {
+    expect(() => planAdvance({ ...base, count: 5, from: 'next' })).toThrow(/só há 4/);
+    expect(() => planAdvance({ ...base, count: 0, from: 'next' })).toThrow(RangeError);
+    expect(() => planAdvance({ ...base, count: 1, from: 'next', total: 10001 })).toThrow(/passa/);
+    expect(() => planAdvance({ ...base, count: 1, from: 'next', total: 0 })).toThrow(/positivo/);
+    expect(() =>
+      planAdvance({ ...base, count: 1, from: 'next', total: 9000, monthlyRate: 0.01 }),
+    ).toThrow(/não os dois/);
   });
 });
 

@@ -6,6 +6,7 @@ interface BaseProps {
   disabled?: boolean;
   'aria-label'?: string;
   'aria-describedby'?: string;
+  placeholder?: string;
 }
 
 /**
@@ -74,6 +75,7 @@ export function DecimalInput({
   onChange,
   min = 0,
   max = 100,
+  emptyWhenZero = false,
   className = 'input num',
   ...rest
 }: BaseProps & {
@@ -81,9 +83,11 @@ export function DecimalInput({
   onChange: (value: number) => void;
   min?: number;
   max?: number;
+  /** Mostra o campo vazio quando o valor é 0 (campo opcional); apagar tudo volta a 0. */
+  emptyWhenZero?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
-  const shown = draft ?? String(value).replace('.', ',');
+  const shown = draft ?? (emptyWhenZero && value === 0 ? '' : String(value).replace('.', ','));
 
   return (
     <input
@@ -100,6 +104,7 @@ export function DecimalInput({
       onChange={(e) => {
         const text = e.target.value.replace(/[^\d.,]/g, '');
         setDraft(text);
+        if (text === '' && emptyWhenZero && min <= 0) onChange(0);
         const n = Number(text.replace(',', '.'));
         if (text !== '' && Number.isFinite(n) && n >= min && n <= max) onChange(n);
       }}

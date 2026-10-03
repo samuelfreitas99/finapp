@@ -87,9 +87,10 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Empacotar como app Android (Capacitor/TWA), se fizer falta — decidido **não empacotar** por ora (ADR-019); guia de instalação do PWA em `docs/instalar-no-celular.md`
 
 ## Fase 10: Polimento pós-lançamento (proposta, ver `avaliacao-e-futuro.md`)
-- [ ] Dívidas: pagar adiantado informando o **valor cobrado** (desconto em valor, não só taxa)
-- [ ] Dívidas: "Adiantar parcelas" (quantidade, das próximas ou das últimas)
-- [ ] Dívidas: ações no topo do painel (Pagar próxima, Adiantar, Amortizar, Quitar, Simular), editar dados, selo de atraso na lista
+- [x] Dívidas: pagar adiantado informando o **valor cobrado** (desconto em valor, não só taxa)
+- [x] Dívidas: "Adiantar parcelas" (quantidade, das próximas ou das últimas)
+- [x] Dívidas: ações no topo do painel (Pagar próxima, Adiantar, Amortizar, Quitar, Simular), editar dados, selo de atraso na lista
+- [x] Dívidas: cadastro de imóvel guiado ("O que o seu contrato tem?") e parcelas já vencidas marcadas como pagas
 - [x] Índices: IPEADATA como reserva do Banco Central para INCC-M e IGP-M
 - [ ] Menu "Mais" agrupado por seção
 - [ ] Primeiros passos no Início (checklist que some quando concluído)
@@ -193,3 +194,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: Android: decisão de **não** empacotar (ADR-019) porque o PWA já instala e recebe push; manifest ganhou `id` e `categories`; guia `docs/instalar-no-celular.md`. **Fase 9 concluída** (Claude).
 - 03/10/2026: busca de índices também na subida da API e às 15:30; `api.bcb.gov.br` fora do ar na publicação (ver Dúvidas em aberto) (Claude).
 - 03/10/2026: ajustes de uso (2): campos numéricos sem setinhas (`IntegerInput`/`DecimalInput`: teclado numérico, dá para apagar e digitar 21, valor só aceito dentro do mínimo e máximo); tema padrão claro (escuro e automático em Mais); simulador reorganizado para celular (resultado em destaque, mês a mês e comparação à vista recolhidos); botão "Copiar link" nos convites; excluir conta (`POST /api/me/delete`, senha + EXCLUIR; recusa se é dono de espaço compartilhado com outros membros; apaga o espaço pessoal; no racha herda o criador) (Claude).
+- 03/10/2026: Fase 10 (parte 1): IPEADATA como reserva dos índices (`parseIpeaSeries`); dívidas: desconto em valor ao pagar adiantado, `POST /debts/:id/advance` (`planAdvance` no core), painel com ações no topo, editar dados, observações, selo de atraso e ordem na lista, simulador abre na dívida (`/simuladores?divida=`); cadastro de imóvel com as partes do contrato marcadas pela pessoa (financiamento padrão SAC, sem índice) e parcelas vencidas como pagas (Claude).

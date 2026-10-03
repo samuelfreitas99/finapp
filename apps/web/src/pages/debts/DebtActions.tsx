@@ -1,11 +1,14 @@
 import type { DebtDetail, DebtInstallmentDto } from '@finapp/shared';
 import { useState } from 'react';
 import { MoneyInput } from '../../components/MoneyInput';
+import { DecimalInput, IntegerInput } from '../../components/NumberInputs';
 import { useToast } from '../../components/Toast';
 import { today } from '../../lib/dates';
 import { formatDate, money } from '../../lib/format';
 import {
+  useAccounts,
   useDebtActions,
+  useDebtMutations,
   useIndexValues,
   usePropertyActions,
   useSyncIndexValues,
@@ -14,35 +17,45 @@ import { errorText } from '../transactions/EntryForm';
 
 const percent = (text: string) => Number(text.replace(',', '.')) / 100;
 
-/** Pagar uma parcela (valor, data e, se for adiantada, desconto por taxa). @see RN 6.3, 6.5 */
+/** O que falta pagar de uma parcela. */
+export const openOf = (i: DebtInstallmentDto) => i.amount - i.paidAmount - i.discount;
+
+/** Pagar uma parcela: valor, data e, se for antes do vencimento, desconto. @see RN 6.3, 6.5 */
 export function PayInstallmentForm({
   debtId,
   inst,
+  owedToMe = false,
   onDone,
 }: {
   debtId: string;
   inst: DebtInstallmentDto;
+  owedToMe?: boolean;
   onDone: () => void;
 }) {
   const { pay } = useDebtActions(debtId);
   const toast = useToast();
-  const open = inst.amount - inst.paidAmount - inst.discount;
+  const open = openOf(inst);
   const [amount, setAmount] = useState(open);
   const [date, setDate] = useState(today());
-  const [rate, setRate] = useState('');
-  const future = inst.dueDate.slice(0, 7) > today().slice(0, 7);
+  const [rate, setRate] = useState(0);
+  const [gap, setGap] = useState<'discount' | 'partial'>('discount');
+  const early = inst.dueDate > date;
+  const short = amount > 0 && amount < open;
+  // Pagou menos que a parcela antes do vencimento: em geral é o desconto que o banco deu.
+  const discount = early && short && gap === 'discount' ? open - amount : 0;
+  const verb = owedToMe ? 'Receber' : 'Pagar';
   return (
     <form
-      className="tx__real"
+      className="form"
       onSubmit={(e) => {
         e.preventDefault();
         pay.mutate(
-          rate
-            ? { number: inst.number, date, discountMonthlyRate: percent(rate) }
-            : { number: inst.number, date, amount },
+          rate && early
+            ? { number: inst.number, date, discountMonthlyRate: rate / 100 }
+            : { number: inst.number, date, amount, ...(discount ? { discount } : {}) },
           {
             onSuccess: () => {
-              toast({ text: `Parcela ${inst.number} paga.` });
+              toast({ text: `Parcela ${inst.number} ${owedToMe ? 'recebida' : 'paga'}.` });
               onDone();
             },
           },
@@ -54,41 +67,80 @@ export function PayInstallmentForm({
           {errorText(pay.error)}
         </p>
       )}
-      <label htmlFor={`pay-${inst.id}`} className="muted">
-        Valor pago (parcela: {money(open)})
-      </label>
-      <MoneyInput
-        id={`pay-${inst.id}`}
-        value={amount}
-        onChange={setAmount}
-        replaceOnType
-        autoFocus
-      />
-      <label htmlFor={`date-${inst.id}`} className="muted">
-        Data
-      </label>
-      <input
-        id={`date-${inst.id}`}
-        type="date"
-        className="input"
-        max={today()}
-        value={date}
-        onChange={(e) => e.target.value && setDate(e.target.value)}
-      />
-      {future && (
-        <>
-          <label htmlFor={`rate-${inst.id}`} className="muted">
-            Pagando adiantado? Taxa mensal de desconto (%, opcional)
+      <div className="field-row">
+        <div className="field">
+          <label htmlFor={`pay-${inst.id}`}>
+            {owedToMe ? 'Quanto recebeu' : 'Quanto pagou'} (parcela: {money(open)})
           </label>
-          <input
-            id={`rate-${inst.id}`}
-            className="input num"
-            inputMode="decimal"
-            placeholder="Ex.: 1,5"
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
+          <MoneyInput
+            id={`pay-${inst.id}`}
+            value={amount}
+            onChange={(v) => setAmount(Math.max(0, v))}
+            replaceOnType
+            autoFocus
           />
-        </>
+        </div>
+        <div className="field">
+          <label htmlFor={`date-${inst.id}`}>Data</label>
+          <input
+            id={`date-${inst.id}`}
+            type="date"
+            className="input"
+            max={today()}
+            value={date}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+          />
+        </div>
+      </div>
+      {short && early && !rate && (
+        <fieldset className="fieldset">
+          <legend className="field-label">E a diferença de {money(open - amount)}?</legend>
+          <div className="segmented" role="group">
+            <button
+              type="button"
+              aria-pressed={gap === 'discount'}
+              onClick={() => setGap('discount')}
+            >
+              Foi desconto
+            </button>
+            <button
+              type="button"
+              aria-pressed={gap === 'partial'}
+              onClick={() => setGap('partial')}
+            >
+              Ainda falta pagar
+            </button>
+          </div>
+          <span className="muted field-hint">
+            {gap === 'discount'
+              ? 'Pagando antes do vencimento o banco costuma tirar os juros: a parcela fica quitada.'
+              : 'A parcela fica parcial e o restante continua no planejamento.'}
+          </span>
+        </fieldset>
+      )}
+      {short && !early && (
+        <span className="muted field-hint">
+          A parcela fica parcial e o restante continua no planejamento.
+        </span>
+      )}
+      {early && (
+        <details className="entry__more">
+          <summary>Sabe só a taxa de desconto?</summary>
+          <div className="field">
+            <label htmlFor={`rate-${inst.id}`}>Taxa mensal de desconto (%)</label>
+            <DecimalInput
+              id={`rate-${inst.id}`}
+              placeholder="Ex.: 1,5"
+              max={20}
+              emptyWhenZero
+              value={rate}
+              onChange={setRate}
+            />
+            <span className="muted field-hint">
+              O app calcula o desconto pelos meses de antecedência e ignora o valor acima.
+            </span>
+          </div>
+        </details>
       )}
       <div className="form-actions">
         <button type="button" className="btn" onClick={onDone}>
@@ -97,18 +149,217 @@ export function PayInstallmentForm({
         <button
           type="submit"
           className="btn btn--primary"
-          disabled={pay.isPending || (!rate && amount <= 0)}
+          disabled={pay.isPending || (!(rate && early) && amount <= 0)}
         >
-          {rate ? 'Pagar com desconto' : `Pagar ${money(amount)}`}
+          {rate && early
+            ? `${verb} com desconto`
+            : discount
+              ? `${verb} ${money(amount)} (desconto de ${money(discount)})`
+              : `${verb} ${money(amount)}`}
         </button>
       </div>
     </form>
   );
 }
 
-/** Amortização extraordinária e quitação total. @see RN 6.5 */
-export function DebtExtraActions({ d }: { d: DebtDetail }) {
-  const { amortize, payoff } = useDebtActions(d.id);
+/** Conta de onde sai (ou onde entra) o dinheiro de uma ação da dívida. */
+function AccountField({
+  id,
+  d,
+  value,
+  onChange,
+}: {
+  id: string;
+  d: DebtDetail;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const accounts = useAccounts();
+  return (
+    <div className="field">
+      <label htmlFor={id}>
+        {d.direction === 'owed_to_me' ? 'Entrou na conta' : 'Saiu da conta'}
+      </label>
+      <select id={id} className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Não lançar (só marcar como pago)</option>
+        {(accounts.data ?? []).map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/**
+ * Adiantar várias parcelas: das últimas (como os bancos costumam fazer) ou das próximas,
+ * com o total que o banco cobrou. @see RN 6.5
+ */
+export function AdvanceForm({ d, onDone }: { d: DebtDetail; onDone: () => void }) {
+  const { advance } = useDebtActions(d.id);
+  const toast = useToast();
+  const t = today();
+  const candidates = d.installments
+    .filter((i) => i.status !== 'paid' && i.paidAmount === 0 && i.dueDate > t)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const [count, setCount] = useState(1);
+  const [from, setFrom] = useState<'last' | 'next'>('last');
+  const [charged, setCharged] = useState<number | null>(null);
+  const [rate, setRate] = useState(0);
+  const [accountId, setAccountId] = useState(d.paymentAccountId ?? '');
+  const owedToMe = d.direction === 'owed_to_me';
+
+  if (candidates.length === 0) {
+    return (
+      <p className="muted">
+        Não há parcelas futuras sem pagamento para adiantar. Para pagar a deste mês, use &quot;Pagar
+        parcela&quot;.
+      </p>
+    );
+  }
+  const n = Math.min(count, candidates.length);
+  const chosen = from === 'next' ? candidates.slice(0, n) : candidates.slice(-n);
+  const sum = chosen.reduce((s, i) => s + openOf(i), 0);
+  const total = charged ?? sum;
+  const discount = rate ? null : sum - total;
+  const first = chosen[0] as DebtInstallmentDto;
+  const last = chosen.at(-1) as DebtInstallmentDto;
+
+  return (
+    <form
+      className="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        advance.mutate(
+          {
+            count: n,
+            from,
+            ...(rate ? { discountMonthlyRate: rate / 100 } : total < sum ? { total } : {}),
+            ...(accountId ? { accountId } : {}),
+          },
+          {
+            onSuccess: () => {
+              toast({
+                text: `${n} parcela${n > 1 ? 's' : ''} ${owedToMe ? 'recebida' : 'adiantada'}${n > 1 ? 's' : ''}.`,
+              });
+              onDone();
+            },
+          },
+        );
+      }}
+    >
+      {advance.isError && (
+        <p className="alert alert--error" role="alert">
+          {errorText(advance.error)}
+        </p>
+      )}
+      <div className="field-row">
+        <div className="field">
+          <label htmlFor="adv-count">Quantas parcelas</label>
+          <IntegerInput
+            id="adv-count"
+            min={1}
+            max={candidates.length}
+            value={count}
+            onChange={(v) => {
+              setCount(v);
+              setCharged(null);
+            }}
+          />
+        </div>
+        <div className="field">
+          <span className="field-label" id="adv-from">
+            Quais
+          </span>
+          <div className="segmented" role="group" aria-labelledby="adv-from">
+            <button
+              type="button"
+              aria-pressed={from === 'last'}
+              onClick={() => {
+                setFrom('last');
+                setCharged(null);
+              }}
+            >
+              As últimas
+            </button>
+            <button
+              type="button"
+              aria-pressed={from === 'next'}
+              onClick={() => {
+                setFrom('next');
+                setCharged(null);
+              }}
+            >
+              As próximas
+            </button>
+          </div>
+        </div>
+      </div>
+      <p className="muted">
+        {n > 1
+          ? `Parcelas ${first.number} a ${last.number} (${formatDate(first.dueDate)} a ${formatDate(last.dueDate)})`
+          : `Parcela ${first.number} (${formatDate(first.dueDate)})`}
+        , somam <strong className="num">{money(sum)}</strong>.{' '}
+        {from === 'last'
+          ? 'Adiantando as últimas, o valor da parcela continua o mesmo e o contrato acaba antes.'
+          : 'Adiantando as próximas, você fica sem parcelas a pagar nos próximos meses.'}
+      </p>
+      {!rate && (
+        <div className="field">
+          <label htmlFor="adv-total">{owedToMe ? 'Quanto recebeu' : 'Quanto o banco cobrou'}</label>
+          <MoneyInput
+            id="adv-total"
+            value={total}
+            onChange={(v) => setCharged(Math.max(0, v))}
+            replaceOnType
+          />
+          <span className="muted field-hint">
+            {discount && discount > 0
+              ? `Desconto de ${money(discount)} pelos juros que deixam de existir.`
+              : discount && discount < 0
+                ? 'O valor passa da soma das parcelas.'
+                : 'Se o banco deu desconto, digite o valor que ele mostrou.'}
+          </span>
+        </div>
+      )}
+      <details className="entry__more">
+        <summary>Sabe só a taxa de desconto?</summary>
+        <div className="field">
+          <label htmlFor="adv-rate">Taxa mensal de desconto (%)</label>
+          <DecimalInput
+            id="adv-rate"
+            placeholder="Ex.: 1,5"
+            max={20}
+            emptyWhenZero
+            value={rate}
+            onChange={setRate}
+          />
+          <span className="muted field-hint">
+            Com a taxa, o app calcula o desconto de cada parcela pelos meses de antecedência.
+          </span>
+        </div>
+      </details>
+      <AccountField id="adv-account" d={d} value={accountId} onChange={setAccountId} />
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={onDone}>
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="btn btn--primary"
+          disabled={advance.isPending || (!rate && (total <= 0 || total > sum))}
+        >
+          {rate ? `Adiantar ${n} com desconto` : `Adiantar ${n} por ${money(total)}`}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Amortização extraordinária (Price/SAC). @see RN 6.5 */
+export function AmortizeForm({ d, onDone }: { d: DebtDetail; onDone: () => void }) {
+  const { amortize } = useDebtActions(d.id);
   const toast = useToast();
   const amortizable = d.phases.filter(
     (p) => (p.system === 'price' || p.system === 'sac') && p.summary.remainingCount > 0,
@@ -116,114 +367,266 @@ export function DebtExtraActions({ d }: { d: DebtDetail }) {
   const [amount, setAmount] = useState(0);
   const [mode, setMode] = useState<'reduce_term' | 'reduce_installment'>('reduce_term');
   const [phaseId, setPhaseId] = useState(amortizable[0]?.id ?? '');
-  const owedToMe = d.direction === 'owed_to_me';
+  const [accountId, setAccountId] = useState(d.paymentAccountId ?? '');
 
+  if (amortizable.length === 0) {
+    return (
+      <p className="muted">
+        Para amortizar, o app precisa saber os juros, e esta dívida foi cadastrada só com o valor
+        das parcelas. O efeito é o mesmo de adiantar as últimas parcelas: use &quot;Adiantar&quot;
+        com o valor que o banco cobrar.
+      </p>
+    );
+  }
   return (
-    <>
-      {amortizable.length > 0 && (
-        <form
-          className="card card--pad form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            amortize.mutate(
-              { amount, mode, phaseId },
-              {
-                onSuccess: (r) => {
-                  setAmount(0);
-                  toast({
-                    text: `Amortização de ${money(amount)} lançada. Agora são ${r.summary.remainingCount} parcelas.`,
-                  });
-                },
-              },
-            );
-          }}
-        >
-          <h3>Amortizar</h3>
-          <p className="muted">
-            Um valor extra abate o saldo devedor ({money(d.summary.outstandingPrincipal)}) e as
-            parcelas pendentes são recalculadas.
-          </p>
-          {amortize.isError && (
-            <p className="alert alert--error" role="alert">
-              {errorText(amortize.error)}
-            </p>
-          )}
-          {amortizable.length > 1 && (
-            <div className="field">
-              <label htmlFor="amortize-phase">Fase</label>
-              <select
-                id="amortize-phase"
-                className="input"
-                value={phaseId}
-                onChange={(e) => setPhaseId(e.target.value)}
-              >
-                {amortizable.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="field">
-            <label htmlFor="amortize-amount">Valor extra</label>
-            <MoneyInput
-              id="amortize-amount"
-              value={amount}
-              onChange={(v) => setAmount(Math.max(0, v))}
-            />
-          </div>
-          <div className="segmented" role="group" aria-label="O que reduzir">
-            <button
-              type="button"
-              aria-pressed={mode === 'reduce_term'}
-              onClick={() => setMode('reduce_term')}
-            >
-              Menos parcelas
-            </button>
-            <button
-              type="button"
-              aria-pressed={mode === 'reduce_installment'}
-              onClick={() => setMode('reduce_installment')}
-            >
-              Parcela menor
-            </button>
-          </div>
-          <button type="submit" className="btn" disabled={amortize.isPending || amount <= 0}>
-            Amortizar {amount > 0 ? money(amount) : ''}
-          </button>
-        </form>
-      )}
-
-      <section className="card card--pad form" aria-label="Quitar">
-        <h3>{owedToMe ? 'Receber tudo' : 'Quitar'}</h3>
-        <p className="muted">
-          {owedToMe ? 'Receber' : 'Pagar'} hoje o saldo devedor de{' '}
-          <strong className="num">{money(d.summary.outstandingPrincipal)}</strong> (sem os juros
-          futuros) e encerrar as parcelas restantes.
-          {d.summary.expectedPayoffDate
-            ? ` Hoje a última parcela seria em ${formatDate(d.summary.expectedPayoffDate)}.`
-            : ''}
+    <form
+      className="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        amortize.mutate(
+          { amount, mode, phaseId, ...(accountId ? { accountId } : {}) },
+          {
+            onSuccess: (r) => {
+              toast({
+                text: `Amortização de ${money(amount)} lançada. Agora são ${r.summary.remainingCount} parcelas.`,
+              });
+              onDone();
+            },
+          },
+        );
+      }}
+    >
+      <p className="muted">
+        Um valor extra abate o saldo devedor ({money(d.summary.outstandingPrincipal)}) e as parcelas
+        que faltam são recalculadas.
+      </p>
+      {amortize.isError && (
+        <p className="alert alert--error" role="alert">
+          {errorText(amortize.error)}
         </p>
-        {payoff.isError && (
-          <p className="alert alert--error" role="alert">
-            {errorText(payoff.error)}
-          </p>
-        )}
+      )}
+      {amortizable.length > 1 && (
+        <div className="field">
+          <label htmlFor="amortize-phase">Fase</label>
+          <select
+            id="amortize-phase"
+            className="input"
+            value={phaseId}
+            onChange={(e) => setPhaseId(e.target.value)}
+          >
+            {amortizable.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="field">
+        <label htmlFor="amortize-amount">Valor extra</label>
+        <MoneyInput
+          id="amortize-amount"
+          value={amount}
+          onChange={(v) => setAmount(Math.max(0, v))}
+          autoFocus
+        />
+      </div>
+      <div className="segmented" role="group" aria-label="O que reduzir">
         <button
           type="button"
-          className="btn btn--primary"
-          disabled={payoff.isPending}
-          onClick={() => {
-            if (!window.confirm(`Quitar "${d.name}" com ${money(d.summary.outstandingPrincipal)}?`))
-              return;
-            payoff.mutate({}, { onSuccess: () => toast({ text: `"${d.name}" quitada.` }) });
-          }}
+          aria-pressed={mode === 'reduce_term'}
+          onClick={() => setMode('reduce_term')}
         >
+          Menos parcelas
+        </button>
+        <button
+          type="button"
+          aria-pressed={mode === 'reduce_installment'}
+          onClick={() => setMode('reduce_installment')}
+        >
+          Parcela menor
+        </button>
+      </div>
+      <AccountField id="amortize-account" d={d} value={accountId} onChange={setAccountId} />
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={onDone}>
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="btn btn--primary"
+          disabled={amortize.isPending || amount <= 0}
+        >
+          Amortizar {amount > 0 ? money(amount) : ''}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Quitação total pelo saldo devedor. @see RN 6.5 */
+export function PayoffForm({ d, onDone }: { d: DebtDetail; onDone: () => void }) {
+  const { payoff } = useDebtActions(d.id);
+  const toast = useToast();
+  const [accountId, setAccountId] = useState(d.paymentAccountId ?? '');
+  const owedToMe = d.direction === 'owed_to_me';
+  const hasInterest = d.summary.outstandingPrincipal < d.summary.remainingAmount;
+  return (
+    <form
+      className="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        payoff.mutate(accountId ? { accountId } : {}, {
+          onSuccess: () => {
+            toast({ text: `"${d.name}" quitada.` });
+            onDone();
+          },
+        });
+      }}
+    >
+      <p>
+        {owedToMe ? 'Receber' : 'Pagar'} hoje{' '}
+        <strong className="num">{money(d.summary.outstandingPrincipal)}</strong> e encerrar as{' '}
+        {d.summary.remainingCount} parcelas que faltam.
+      </p>
+      <p className="muted">
+        {hasInterest
+          ? `Sem os juros futuros: economia de ${money(d.summary.remainingAmount - d.summary.outstandingPrincipal)} em relação a pagar até o fim.`
+          : 'Sem a taxa de juros cadastrada, o app não calcula desconto: o valor é a soma do que falta. Se o banco oferecer menos, use "Adiantar" com todas as parcelas e o valor cobrado.'}
+      </p>
+      {payoff.isError && (
+        <p className="alert alert--error" role="alert">
+          {errorText(payoff.error)}
+        </p>
+      )}
+      <AccountField id="payoff-account" d={d} value={accountId} onChange={setAccountId} />
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={onDone}>
+          Cancelar
+        </button>
+        <button type="submit" className="btn btn--primary" disabled={payoff.isPending}>
           {owedToMe ? 'Receber tudo' : 'Quitar dívida'}
         </button>
-      </section>
-    </>
+      </div>
+    </form>
+  );
+}
+
+/** Dados cadastrais (o cronograma não muda). */
+export function EditDebtForm({ d, onDone }: { d: DebtDetail; onDone: () => void }) {
+  const { update } = useDebtMutations();
+  const toast = useToast();
+  const [name, setName] = useState(d.name);
+  const [institution, setInstitution] = useState(d.institution ?? '');
+  const [notes, setNotes] = useState(d.notes ?? '');
+  const [assetValue, setAssetValue] = useState(d.assetValue ?? 0);
+  const [deadline, setDeadline] = useState(d.completionDeadline ?? '');
+  const isProperty = d.kind === 'property';
+  const withWhom = d.kind === 'personal_loan' || d.kind === 'third_party_card';
+  return (
+    <form
+      className="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        update.mutate(
+          {
+            id: d.id,
+            body: {
+              name: name.trim(),
+              institution: institution.trim() || null,
+              notes: notes.trim() || null,
+              ...(isProperty
+                ? {
+                    assetValue: assetValue > 0 ? assetValue : null,
+                    completionDeadline: deadline || null,
+                  }
+                : {}),
+            },
+          },
+          {
+            onSuccess: () => {
+              toast({ text: 'Dados salvos.' });
+              onDone();
+            },
+          },
+        );
+      }}
+    >
+      {update.isError && (
+        <p className="alert alert--error" role="alert">
+          {errorText(update.error)}
+        </p>
+      )}
+      <div className="field">
+        <label htmlFor="edit-name">Nome</label>
+        <input
+          id="edit-name"
+          className="input"
+          maxLength={120}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="edit-institution">{withWhom ? 'Com quem' : 'Banco ou empresa'}</label>
+        <input
+          id="edit-institution"
+          className="input"
+          maxLength={120}
+          value={institution}
+          onChange={(e) => setInstitution(e.target.value)}
+        />
+      </div>
+      {isProperty && (
+        <div className="field-row">
+          <div className="field">
+            <label htmlFor="edit-asset">Valor do imóvel</label>
+            <MoneyInput
+              id="edit-asset"
+              value={assetValue}
+              onChange={(v) => setAssetValue(Math.max(0, v))}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="edit-deadline">Prazo do contrato</label>
+            <input
+              id="edit-deadline"
+              type="date"
+              className="input"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
+      <div className="field">
+        <label htmlFor="edit-notes">Observações</label>
+        <textarea
+          id="edit-notes"
+          className="input"
+          rows={3}
+          maxLength={2000}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+      <span className="muted field-hint">
+        Valores e datas das parcelas não mudam aqui: use Adiantar, Amortizar ou, se o cadastro
+        estiver errado, cancele e cadastre de novo.
+      </span>
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={onDone}>
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="btn btn--primary"
+          disabled={update.isPending || !name.trim()}
+        >
+          Salvar
+        </button>
+      </div>
+    </form>
   );
 }
 

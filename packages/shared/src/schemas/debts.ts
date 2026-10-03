@@ -264,6 +264,26 @@ export const payInstallmentBodySchema = z
   });
 export type PayInstallmentBody = z.input<typeof payInstallmentBodySchema>;
 
+/**
+ * Corpo de `POST /debts/:id/advance`: adiantar várias parcelas futuras de uma vez, das
+ * próximas ou das últimas. Desconto pelo total cobrado **ou** por taxa mensal (só um).
+ * @see RN 6.5
+ */
+export const advanceBodySchema = z
+  .object({
+    count: z.int().min(1).max(600),
+    from: z.enum(['next', 'last']),
+    total: z.int().positive().optional(),
+    discountMonthlyRate: z.number().min(0).lt(1).optional(),
+    date: isoDateSchema.optional(),
+    accountId: z.uuid().optional(),
+  })
+  .refine((b) => b.total === undefined || b.discountMonthlyRate === undefined, {
+    message: 'informe o total cobrado ou a taxa (só um)',
+    path: ['total'],
+  });
+export type AdvanceBody = z.input<typeof advanceBodySchema>;
+
 /** Corpo de `POST /debts/:id/amortize` (price/sac). @see RN 6.5 */
 export const amortizeBodySchema = z.object({
   amount: z.int().positive(),

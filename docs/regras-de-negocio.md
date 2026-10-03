@@ -169,7 +169,9 @@ Se a dívida é paga **por cartão** (ex.: empréstimo na fatura), as parcelas v
 A pessoa informa o que vê no app do banco: quantas parcelas faltam, o próximo vencimento e o valor da parcela. Com a taxa mensal (opcional), a fase vira Price com o saldo devedor calculado pelo valor presente das parcelas restantes (`principalFromPayment`, arredondado para baixo); sem a taxa, parcelas fixas. Com o total de parcelas do contrato (opcional), as anteriores entram como já pagas (sem lançamento) para mostrar o progresso desde o começo.
 
 ### 6.5 Pagar adiantado e amortizar
-- **Pagar parcela adiantada**: marcar parcela futura como paga hoje (com desconto opcional, igual 5.5).
+- **Pagar parcela adiantada**: marcar parcela futura como paga hoje (com desconto opcional, igual 5.5). Na tela, a pessoa digita **quanto pagou**; se for menos que a parcela e antes do vencimento, escolhe "Foi desconto" (padrão: a parcela fica paga com `discount` = diferença) ou "Ainda falta pagar" (fica parcial). A taxa mensal continua como opção.
+- **Adiantar várias parcelas** (`planAdvance` no core): K parcelas futuras sem pagamento (vencimento depois da data do pagamento), **as últimas** (padrão, como os bancos fazem: a parcela não muda e o contrato acaba antes) ou as próximas. Desconto pelo **total cobrado** (soma − total, repartido na proporção de cada parcela, arredondado para baixo, resto na mais distante) ou por taxa mensal (valor presente de cada parcela). Um único lançamento na conta ("Adiantamento: ..."); sem conta, só marca como pagas. Não registra evento (as parcelas guardam pago e desconto).
+- Dívida cadastrada sem taxa (parcelas fixas) não pode ser amortizada; a tela explica e sugere adiantar as últimas parcelas, que tem o mesmo efeito.
 - **Amortização extraordinária** (price/sac): valor extra abate o saldo devedor. Opção `reduce_term` (mantém a parcela, recalcula e remove parcelas do fim) ou `reduce_installment` (mantém o prazo, recalcula as parcelas). Recalcular só parcelas pendentes.
 - **Quitação total**: paga o saldo devedor, cancela pendentes, status `paid_off`.
 

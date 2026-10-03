@@ -137,6 +137,60 @@ describe.skipIf(!testDatabaseUrl)('debt payments, amortization and payoff (integ
     expect(paid.paidAmount + paid.discount).toBe(last.amount);
   });
 
+  it('pays a future installment with the discounted value the bank charged', async () => {
+    const debt = await create();
+    const inst = debt.installments[5];
+    const res = (
+      await api('POST', `/debts/${debt.id}/installments/6/pay`, {
+        amount: inst.amount - 300,
+        discount: 300,
+      })
+    ).json();
+    expect(res.installments[5]).toMatchObject({
+      status: 'paid',
+      paidAmount: inst.amount - 300,
+      discount: 300,
+    });
+  });
+
+  it('advances the last installments in one entry, splitting the discount (RN 6.5)', async () => {
+    const debt = await create();
+    const amounts = debt.installments.slice(-3).map((i: { amount: number }) => i.amount);
+    const sum = amounts.reduce((s: number, a: number) => s + a, 0);
+    const before = await balance();
+    const res = await api('POST', `/debts/${debt.id}/advance`, {
+      count: 3,
+      from: 'last',
+      total: sum - 1000,
+    });
+    expect(res.statusCode).toBe(200);
+    const after = res.json();
+    const last3 = after.installments.slice(-3);
+    expect(last3.every((i: { status: string }) => i.status === 'paid')).toBe(true);
+    expect(last3.reduce((s: number, i: { paidAmount: number }) => s + i.paidAmount, 0)).toBe(
+      sum - 1000,
+    );
+    expect(last3.reduce((s: number, i: { discount: number }) => s + i.discount, 0)).toBe(1000);
+    expect(after.summary.paidCount).toBe(3);
+    expect(await balance()).toBe(before - (sum - 1000));
+    // Os previstos das 3 parcelas saem do planejamento.
+    expect(await plannedOf(debt.name)).toHaveLength(9);
+
+    // Das próximas: a parcela 1 (outubro, já vencida) não entra; começa na de novembro.
+    const next = (
+      await api('POST', `/debts/${debt.id}/advance`, { count: 2, from: 'next' })
+    ).json();
+    expect(next.installments[0].status).toBe('late');
+    expect(next.installments.slice(1, 3).map((i: { status: string }) => i.status)).toEqual([
+      'paid',
+      'paid',
+    ]);
+
+    const tooMany = await api('POST', `/debts/${debt.id}/advance`, { count: 50, from: 'next' });
+    expect(tooMany.statusCode).toBe(400);
+    expect(tooMany.json().error.code).toBe('invalid_advance');
+  });
+
   it('amortizes extra reducing the term and pays off the rest (RN 6.5)', async () => {
     const debt = await create({ name: 'Amortizar' });
     await api('POST', `/debts/${debt.id}/installments/1/pay`, {});

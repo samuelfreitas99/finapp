@@ -660,6 +660,11 @@ textarea.input {
   gap: 2px;
 }
 
+.row-link__title .pill {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
 .row-link__title {
   font-weight: 600;
   overflow: hidden;
@@ -761,6 +766,11 @@ textarea.input {
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+}
+
+a.choice {
+  color: var(--text);
+  text-decoration: none;
 }
 
 .choice[aria-pressed='true'] {
@@ -2176,4 +2186,10 @@ h3 {
   .field-row {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Texto livre do usuário (observações): mantém as quebras de linha. */
+.pre-line {
+  white-space: pre-line;
+  margin: 0;
 }

@@ -6,6 +6,7 @@ import {
   yearMonthOf,
 } from '@finapp/core';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { MoneyInput } from '../../components/MoneyInput';
 import { PageHeader } from '../../components/PageHeader';
 import { currentMonth, monthLabel, today } from '../../lib/dates';
@@ -325,12 +326,12 @@ function PurchaseSimulator() {
   );
 }
 
-function DebtSimulator() {
+function DebtSimulator({ initialDebtId }: { initialDebtId: string }) {
   const { hidden } = useHiddenValues();
   const debts = useDebts();
   const simulate = useSimulateDebt();
   const active = (debts.data ?? []).filter((d) => d.status === 'active' && d.direction === 'i_owe');
-  const [debtId, setDebtId] = useState('');
+  const [debtId, setDebtId] = useState(initialDebtId);
   const [extra, setExtra] = useState(0);
   const id = debtId || active[0]?.id || '';
   const result = simulate.data;
@@ -469,7 +470,10 @@ function DebtSimulator() {
 
 /** Simuladores: compra parcelada e quitação antecipada. Nada é gravado. */
 export function SimulatorsPage() {
-  const [tab, setTab] = useState<Tab>('purchase');
+  // `?divida=<id>` (vindo do painel da dívida) abre direto o simulador de quitação.
+  const [params] = useSearchParams();
+  const debtParam = params.get('divida') ?? '';
+  const [tab, setTab] = useState<Tab>(debtParam ? 'debt' : 'purchase');
   return (
     <>
       <PageHeader title="Simuladores" back="/mais" />
@@ -482,7 +486,7 @@ export function SimulatorsPage() {
         </button>
       </div>
       <p className="muted">Só simula: nada é lançado nem alterado.</p>
-      {tab === 'purchase' ? <PurchaseSimulator /> : <DebtSimulator />}
+      {tab === 'purchase' ? <PurchaseSimulator /> : <DebtSimulator initialDebtId={debtParam} />}
     </>
   );
 }

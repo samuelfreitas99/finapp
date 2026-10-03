@@ -5,10 +5,12 @@ import {
   diffYearMonths,
   earlyPaymentDiscount,
   payoffAmount,
+  planAdvance,
   yearMonthOf,
   type ISODate,
 } from '@finapp/core';
 import {
+  advanceBodySchema,
   amortizeBodySchema,
   debtInstallmentParamsSchema,
   payInstallmentBodySchema,
@@ -181,6 +183,81 @@ export function debtActionRoutes(
           ...(transactionId ? { transactionId } : {}),
         })
         .where(eq(debtInstallments.id, inst.id));
+      await syncPlannedEntries(tx, debt, t, userId);
+      await markPaidOffIfDone(tx, debt);
+    });
+    return detail(spaceId, id);
+  });
+
+  /**
+   * Adiantar várias parcelas futuras de uma vez (das próximas ou das últimas), com o total
+   * cobrado pelo banco ou uma taxa de desconto. Um único lançamento na conta; as parcelas
+   * ficam pagas com o desconto repartido (`planAdvance` no core).
+   */
+  app.post('/debts/:id/advance', async (request) => {
+    const { spaceId, id } = spaceItemParamsSchema.parse(request.params);
+    const body = advanceBodySchema.parse(request.body ?? {});
+    const userId = currentUser(request).id;
+    const t = today();
+    const date = body.date ?? t;
+    assertSettledDate(date);
+    await db.transaction(async (tx) => {
+      const debt = await findDebt(tx, spaceId, id);
+      if (debt.status !== 'active')
+        throw badRequest('debt_not_active', 'Esta dívida não está ativa.');
+      const rows = await installmentsOf(tx, debt.id);
+      // Só parcelas que ainda vão vencer e sem pagamento parcial.
+      const candidates = rows.filter(
+        (r) => !isPaid(r) && r.paidAmount === 0 && compareDates(r.dueDate, date) > 0,
+      );
+      let items;
+      try {
+        items = planAdvance({
+          candidates: candidates.map((r) => ({
+            id: r.id,
+            dueDate: r.dueDate,
+            open: r.amount - r.discount,
+          })),
+          count: body.count,
+          from: body.from,
+          date,
+          ...(body.total !== undefined ? { total: body.total } : {}),
+          ...(body.discountMonthlyRate !== undefined
+            ? { monthlyRate: body.discountMonthlyRate }
+            : {}),
+        });
+      } catch (err) {
+        throw badRequest(
+          'invalid_advance',
+          err instanceof RangeError ? err.message : 'Pedido inválido.',
+        );
+      }
+      const total = items.reduce((s, i) => s + i.pay, 0);
+      const accountId = body.accountId ?? debt.paymentAccountId;
+      const entry = accountId
+        ? await moneyEntry(tx, debt, {
+            amount: total,
+            date,
+            accountId,
+            description: `Adiantamento: ${debt.name} (${items.length} parcela${items.length > 1 ? 's' : ''})`,
+            installmentId: null,
+            userId,
+          })
+        : null;
+      const byId = new Map(candidates.map((r) => [r.id, r]));
+      for (const item of items) {
+        const row = byId.get(item.id) as InstallmentRow;
+        await tx
+          .update(debtInstallments)
+          .set({
+            paidAmount: item.pay,
+            discount: row.discount + item.discount,
+            paidDate: date,
+            status: 'paid',
+            ...(entry ? { transactionId: entry.id } : {}),
+          })
+          .where(eq(debtInstallments.id, item.id));
+      }
       await syncPlannedEntries(tx, debt, t, userId);
       await markPaidOffIfDone(tx, debt);
     });

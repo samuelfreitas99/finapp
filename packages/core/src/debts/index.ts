@@ -408,6 +408,78 @@ export function earlyPaymentDiscount(amount: Cents, monthlyRate: number, months:
   return presentValueDiscount([{ amount, months }], monthlyRate);
 }
 
+export interface AdvanceCandidate {
+  id: string;
+  dueDate: ISODate;
+  /** O que falta pagar da parcela (valor − pago − desconto). */
+  open: Cents;
+}
+
+export interface AdvanceInput {
+  /** Parcelas futuras ainda sem pagamento, em qualquer ordem. */
+  candidates: readonly AdvanceCandidate[];
+  count: number;
+  /** `next`: as que vencem primeiro; `last`: as do fim do contrato (como os bancos costumam fazer). */
+  from: 'next' | 'last';
+  /** Data do pagamento. */
+  date: ISODate;
+  /** Total cobrado pelo banco (o que faltar até a soma das parcelas é desconto). */
+  total?: Cents;
+  /** Ou: taxa mensal para o desconto por valor presente de cada parcela. */
+  monthlyRate?: number;
+}
+
+export interface AdvanceItem {
+  id: string;
+  pay: Cents;
+  discount: Cents;
+}
+
+/**
+ * Adiantar várias parcelas de uma vez: escolhe as `count` parcelas (das próximas ou das
+ * últimas) e divide o pagamento entre elas. Com `total`, o desconto (soma − total) é
+ * repartido na proporção de cada parcela, arredondado para baixo, e o resto vai para a
+ * parcela mais distante. Com `monthlyRate`, cada parcela tem o desconto por valor presente.
+ * Sem nenhum dos dois, paga o valor cheio.
+ * @see RN 6.5
+ */
+export function planAdvance(input: AdvanceInput): AdvanceItem[] {
+  const { candidates, count, from, date, total, monthlyRate } = input;
+  if (!Number.isInteger(count) || count < 1) throw new RangeError(`quantidade inválida: ${count}`);
+  if (total !== undefined && monthlyRate !== undefined) {
+    throw new RangeError('informe o total cobrado ou a taxa, não os dois');
+  }
+  const sorted = [...candidates].sort((a, b) => compareDates(a.dueDate, b.dueDate));
+  if (count > sorted.length) {
+    throw new RangeError(`só há ${sorted.length} parcela(s) para adiantar`);
+  }
+  // Sempre em ordem de vencimento: a última da lista é a mais distante.
+  const chosen = from === 'next' ? sorted.slice(0, count) : sorted.slice(sorted.length - count);
+  for (const c of chosen) assertCents(c.open, 'parcela');
+  const sum = chosen.reduce((s, c) => s + c.open, 0);
+
+  if (monthlyRate !== undefined) {
+    return chosen.map((c) => {
+      const months = Math.max(0, diffYearMonths(yearMonthOf(date), yearMonthOf(c.dueDate)));
+      const discount = earlyPaymentDiscount(c.open, monthlyRate, months);
+      return { id: c.id, pay: c.open - discount, discount };
+    });
+  }
+  if (total === undefined) return chosen.map((c) => ({ id: c.id, pay: c.open, discount: 0 }));
+
+  assertCents(total, 'total');
+  if (total <= 0) throw new RangeError('o total cobrado deve ser positivo');
+  if (total > sum) throw new RangeError('o total cobrado passa da soma das parcelas');
+  const discountTotal = sum - total;
+  const discounts = chosen.map((c) => Math.floor((discountTotal * c.open) / sum));
+  const rest = discountTotal - discounts.reduce((s, d) => s + d, 0);
+  discounts[discounts.length - 1] = (discounts.at(-1) ?? 0) + rest;
+  return chosen.map((c, k) => {
+    const discount = discounts[k] ?? 0;
+    return { id: c.id, pay: c.open - discount, discount };
+  });
+}
+
 export type InstallmentStatus = 'pending' | 'paid' | 'late' | 'partial';
 
 export interface DebtInstallmentState {

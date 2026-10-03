@@ -29,7 +29,22 @@ interface PhaseState {
   startsAfterCompletion: boolean;
   index: Index;
   payments: { dueDate: string; amount: number }[];
+  /** Parte do modelo do imóvel na planta (só o que o contrato tiver entra no cadastro). */
+  template?: PropertyPart;
+  /** Entra no cadastro (no imóvel, a pessoa marca as partes que o contrato tem). */
+  included: boolean;
 }
+
+type PropertyPart = 'down' | 'balloon' | 'construction' | 'financing';
+
+/** Partes do imóvel na planta, na linguagem do contrato. @see RN 6.7 */
+const PROPERTY_PART_TEXT: Record<PropertyPart, string> = {
+  down: 'Parcelas mensais pagas direto à construtora durante a obra.',
+  balloon: 'Parcelas maiores em datas marcadas: anuais, semestrais ou na entrega das chaves.',
+  construction:
+    'Cobrados pelo banco todo mês até a entrega das chaves (evolução de obra). O valor muda todo mês.',
+  financing: 'O que o banco financia, pago depois que você recebe as chaves.',
+};
 
 interface FormState {
   kind: DebtKind;
@@ -51,6 +66,10 @@ interface FormState {
   moneyAmount: number;
   moneyAccountId: string;
   phases: PhaseState[];
+  /** Avançado/imóvel: parcelas já vencidas que a pessoa já pagou (preenchido ao salvar). */
+  pastPaid: number;
+  /** Avançado/imóvel: "já paguei as parcelas que venceram antes de hoje". */
+  pastAllPaid: boolean;
 }
 
 interface SimpleState {
@@ -98,23 +117,40 @@ const phase = (over: Partial<PhaseState> = {}): PhaseState => ({
   startsAfterCompletion: false,
   index: 'none',
   payments: [{ dueDate: nextMonthDay(20), amount: 0 }],
+  included: true,
   ...over,
 });
 
 /** Modelo do imóvel na planta (RN 6.7): entrada, intermediárias, juros de obra e financiamento. */
 const PROPERTY_PHASES = (): PhaseState[] => [
-  phase({ name: 'Entrada', system: 'fixed', installments: 24, index: 'incc' }),
-  phase({ name: 'Intermediárias', system: 'balloon' }),
-  phase({ name: 'Juros de obra', system: 'variable', endsAtCompletion: true }),
+  phase({
+    name: 'Entrada',
+    system: 'fixed',
+    installments: 24,
+    index: 'incc',
+    template: 'down',
+    included: false,
+  }),
+  phase({ name: 'Intermediárias', system: 'balloon', template: 'balloon', included: false }),
+  phase({
+    name: 'Juros de obra',
+    system: 'variable',
+    endsAtCompletion: true,
+    template: 'construction',
+    included: false,
+  }),
   phase({
     name: 'Financiamento',
-    system: 'price',
+    system: 'sac',
     installments: 360,
     rateBase: 'annual',
     startsAfterCompletion: true,
-    index: 'ipca',
+    template: 'financing',
+    included: false,
   }),
 ];
+
+const includedPhases = (f: FormState) => f.phases.filter((p) => p.included);
 
 const rateValue = (p: PhaseState) => Number(p.ratePercent.replace(',', '.')) / 100;
 
@@ -264,11 +300,11 @@ function toBody(f: FormState): DebtBody {
     completionDate: f.kind === 'property' && f.completionDate ? f.completionDate : null,
     completionDeadline: f.kind === 'property' && f.completionDeadline ? f.completionDeadline : null,
     assetValue: f.kind === 'property' && f.assetValue > 0 ? f.assetValue : null,
-    paidInstallments: simple?.paidInstallments ?? 0,
+    paidInstallments: simple?.paidInstallments ?? f.pastPaid,
     ...(MONEY_KINDS.includes(f.kind) && f.moneyAccountId && f.moneyAmount > 0
       ? { moneyAccountId: f.moneyAccountId, principal: f.moneyAmount }
       : {}),
-    phases: simple ? simple.phases : f.phases.map(phaseBody),
+    phases: simple ? simple.phases : includedPhases(f).map(phaseBody),
   };
 }
 
@@ -290,34 +326,64 @@ function PhaseEditor({
   const id = (k: string) => `phase-${i}-${k}`;
   return (
     <fieldset className="part card card--pad">
-      <legend className="sr-only">Fase {i + 1}</legend>
-      <div className="field-row">
+      <legend className="sr-only">{p.template ? p.name : `Fase ${i + 1}`}</legend>
+      {p.template && <h3>{p.name}</h3>}
+      {p.template === 'financing' && (
         <div className="field">
-          <label htmlFor={id('name')}>Nome da fase</label>
-          <input
-            id={id('name')}
-            className="input"
-            maxLength={60}
-            value={p.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-          />
+          <span className="field-label" id={id('fin-system')}>
+            Sistema do financiamento
+          </span>
+          <div className="segmented" role="group" aria-labelledby={id('fin-system')}>
+            <button
+              type="button"
+              aria-pressed={p.system === 'sac'}
+              onClick={() => onChange({ system: 'sac' })}
+            >
+              SAC
+            </button>
+            <button
+              type="button"
+              aria-pressed={p.system === 'price'}
+              onClick={() => onChange({ system: 'price' })}
+            >
+              Price
+            </button>
+          </div>
+          <span className="muted field-hint">
+            Está no contrato. SAC: a parcela começa maior e vai caindo (comum na Caixa). Price: a
+            parcela é igual todo mês.
+          </span>
         </div>
-        <div className="field">
-          <label htmlFor={id('system')}>Como é calculada</label>
-          <select
-            id={id('system')}
-            className="input"
-            value={p.system}
-            onChange={(e) => onChange({ system: e.target.value as DebtSystem })}
-          >
-            {(Object.keys(DEBT_SYSTEM_LABEL) as DebtSystem[]).map((s) => (
-              <option key={s} value={s}>
-                {DEBT_SYSTEM_LABEL[s]}
-              </option>
-            ))}
-          </select>
+      )}
+      {!p.template && (
+        <div className="field-row">
+          <div className="field">
+            <label htmlFor={id('name')}>Nome da fase</label>
+            <input
+              id={id('name')}
+              className="input"
+              maxLength={60}
+              value={p.name}
+              onChange={(e) => onChange({ name: e.target.value })}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor={id('system')}>Como é calculada</label>
+            <select
+              id={id('system')}
+              className="input"
+              value={p.system}
+              onChange={(e) => onChange({ system: e.target.value as DebtSystem })}
+            >
+              {(Object.keys(DEBT_SYSTEM_LABEL) as DebtSystem[]).map((s) => (
+                <option key={s} value={s}>
+                  {DEBT_SYSTEM_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       {p.system !== 'balloon' && (
         <div className="field">
@@ -410,7 +476,9 @@ function PhaseEditor({
       {p.system === 'variable' && (
         <>
           <div className="field">
-            <label htmlFor={id('monthly')}>Valor deste mês</label>
+            <label htmlFor={id('monthly')}>
+              {p.template === 'construction' ? 'Valor do último boleto' : 'Valor deste mês'}
+            </label>
             <MoneyInput
               id={id('monthly')}
               value={p.monthlyValue}
@@ -420,7 +488,7 @@ function PhaseEditor({
               Os meses seguintes usam este valor como estimativa até você informar o real.
             </span>
           </div>
-          {isProperty ? (
+          {isProperty && p.template !== 'construction' ? (
             <label className="toggle">
               <input
                 type="checkbox"
@@ -503,18 +571,20 @@ function PhaseEditor({
         </div>
       )}
 
-      {isProperty && (p.system === 'fixed' || p.system === 'price' || p.system === 'sac') && (
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={p.startsAfterCompletion}
-            onChange={(e) => onChange({ startsAfterCompletion: e.target.checked })}
-          />
-          <span>
-            <strong>Começa no mês seguinte à entrega das chaves</strong>
-          </span>
-        </label>
-      )}
+      {isProperty &&
+        !p.template &&
+        (p.system === 'fixed' || p.system === 'price' || p.system === 'sac') && (
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={p.startsAfterCompletion}
+              onChange={(e) => onChange({ startsAfterCompletion: e.target.checked })}
+            />
+            <span>
+              <strong>Começa no mês seguinte à entrega das chaves</strong>
+            </span>
+          </label>
+        )}
 
       <div className="field">
         <label htmlFor={id('index')}>Correção</label>
@@ -570,6 +640,8 @@ export function NewDebtPage() {
     moneyAmount: 0,
     moneyAccountId: '',
     phases: [phase({ system: 'price' })],
+    pastPaid: 0,
+    pastAllPaid: true,
   });
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -578,11 +650,14 @@ export function NewDebtPage() {
 
   const isProperty = form.kind === 'property';
   const hasCompletion = Boolean(form.completionDate);
-  const needsCompletion = form.phases.some((p) => p.endsAtCompletion || p.startsAfterCompletion);
+  const chosen = includedPhases(form);
+  const needsCompletion = chosen.some((p) => p.endsAtCompletion || p.startsAfterCompletion);
   const useSimple = !isProperty && !form.advanced;
   const ready = useSimple
     ? simpleReady(form)
-    : form.phases.every((p) => phaseReady(p, hasCompletion)) && (!needsCompletion || hasCompletion);
+    : chosen.length > 0 &&
+      chosen.every((p) => phaseReady(p, hasCompletion)) &&
+      (!needsCompletion || hasCompletion);
   const setSimple = (next: Partial<SimpleState>) =>
     setForm((f) => ({ ...f, simple: { ...f.simple, ...next } }));
   const deferred = useDeferredValue(form);
@@ -615,7 +690,7 @@ export function NewDebtPage() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    create.mutate(toBody(form), {
+    create.mutate(toBody({ ...form, pastPaid: form.pastAllPaid ? pastRows : 0 }), {
       onSuccess: (d) => {
         toast({ text: `"${d.name}" cadastrada com ${d.summary.totalCount} parcelas.` });
         navigate(`/dividas/${d.id}`, { replace: true });
@@ -624,6 +699,8 @@ export function NewDebtPage() {
   };
 
   const rows = preview.data?.rows ?? [];
+  // Cadastro avançado/imóvel com começo no passado: as parcelas vencidas contam como pagas.
+  const pastRows = useSimple ? 0 : rows.filter((r) => r.dueDate < todayIn()).length;
   const totalAmount = rows.reduce((s, r) => s + r.amount, 0);
   const totalInterest = rows.reduce((s, r) => s + r.interestPart, 0);
 
@@ -954,35 +1031,84 @@ export function NewDebtPage() {
           </section>
         )}
 
+        {isProperty && (
+          <section className="card card--pad form" role="group" aria-labelledby="parts-title">
+            <h2 id="parts-title">O que o seu contrato tem?</h2>
+            <p className="muted">
+              Marque só as partes que aparecem no contrato. Cada uma abre os campos dela logo
+              abaixo.
+            </p>
+            {form.phases.map((p, i) =>
+              p.template ? (
+                <label key={i} className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={p.included}
+                    onChange={(e) => setPhase(i, { included: e.target.checked })}
+                  />
+                  <span>
+                    <strong>{p.name}</strong>
+                    <span className="muted"> {PROPERTY_PART_TEXT[p.template]}</span>
+                  </span>
+                </label>
+              ) : null,
+            )}
+          </section>
+        )}
+
         {(isProperty || form.advanced) && (
           <section className="stack" aria-label="Fases">
-            <h2>{form.phases.length > 1 ? 'Fases' : 'Parcelas'}</h2>
-            {form.phases.map((p, i) => (
-              <PhaseEditor
-                key={i}
-                p={p}
-                i={i}
-                isProperty={isProperty}
-                canRemove={form.phases.length > 1}
-                onChange={(next) => setPhase(i, next)}
-                onRemove={() =>
-                  set(
-                    'phases',
-                    form.phases.filter((_, k) => k !== i),
-                  )
-                }
-              />
-            ))}
+            {!isProperty && <h2>{form.phases.length > 1 ? 'Fases' : 'Parcelas'}</h2>}
+            {form.phases.map((p, i) =>
+              !p.included ? null : (
+                <PhaseEditor
+                  key={i}
+                  p={p}
+                  i={i}
+                  isProperty={isProperty}
+                  canRemove={!p.template && form.phases.length > 1}
+                  onChange={(next) => setPhase(i, next)}
+                  onRemove={() =>
+                    set(
+                      'phases',
+                      form.phases.filter((_, k) => k !== i),
+                    )
+                  }
+                />
+              ),
+            )}
+            {!useSimple && pastRows > 0 && (
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={form.pastAllPaid}
+                  onChange={(e) => set('pastAllPaid', e.target.checked)}
+                />
+                <span>
+                  <strong>
+                    Já paguei as {pastRows} parcela{pastRows > 1 ? 's' : ''} que venceram antes de
+                    hoje
+                  </strong>
+                  <span className="muted">
+                    {' '}
+                    Desmarque se alguma ficou em aberto: elas aparecem como atrasadas.
+                  </span>
+                </span>
+              </label>
+            )}
             {form.phases.length < 8 && (
               <button
                 type="button"
                 className="btn btn--ghost"
                 onClick={() =>
-                  set('phases', [...form.phases, phase({ name: `Fase ${form.phases.length + 1}` })])
+                  set('phases', [
+                    ...form.phases,
+                    phase({ name: `Fase ${form.phases.filter((p) => p.included).length + 1}` }),
+                  ])
                 }
               >
                 <Plus size={16} aria-hidden="true" />
-                Adicionar fase
+                {isProperty ? 'Outra parte do contrato' : 'Adicionar fase'}
               </button>
             )}
           </section>

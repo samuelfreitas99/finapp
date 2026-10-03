@@ -1,6 +1,15 @@
-import type { DebtInstallmentDto } from '@finapp/shared';
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import type { DebtDetail, DebtInstallmentDto } from '@finapp/shared';
+import {
+  Building2,
+  Calculator,
+  CircleCheckBig,
+  FastForward,
+  Pencil,
+  TrendingDown,
+  type LucideIcon,
+} from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
 import { DEBT_KIND_META, DEBT_SYSTEM_LABEL, INSTALLMENT_STATUS_LABEL } from '../../lib/debts';
@@ -8,7 +17,97 @@ import { formatDate, money } from '../../lib/format';
 import { useHiddenValues } from '../../lib/hidden-values';
 import { useDebt, useDebtMutations } from '../../lib/queries';
 import { errorText } from '../transactions/EntryForm';
-import { DebtExtraActions, PayInstallmentForm, PropertyActions } from './DebtActions';
+import {
+  AdvanceForm,
+  AmortizeForm,
+  EditDebtForm,
+  PayInstallmentForm,
+  PayoffForm,
+  PropertyActions,
+} from './DebtActions';
+
+type Panel = 'pay' | 'advance' | 'amortize' | 'payoff' | 'property' | 'edit';
+
+/**
+ * Ações da dívida logo abaixo do resumo: "Pagar parcela" em destaque e as demais numa
+ * grade; cada uma abre o formulário ali mesmo (uma por vez).
+ */
+function DebtActionPanel({
+  d,
+  panel,
+  setPanel,
+}: {
+  d: DebtDetail;
+  panel: Panel | null;
+  setPanel: (p: Panel | null) => void;
+}) {
+  const owedToMe = d.direction === 'owed_to_me';
+  const next = d.installments
+    .filter((i) => i.status !== 'paid')
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+  const close = () => setPanel(null);
+  const toggle = (p: Panel) => setPanel(panel === p ? null : p);
+  const action = (p: Panel, label: string, Icon: LucideIcon) => (
+    <button type="button" className="choice" aria-pressed={panel === p} onClick={() => toggle(p)}>
+      <Icon size={20} aria-hidden="true" />
+      {label}
+    </button>
+  );
+  const forms: Record<Panel, { title: string; body: ReactNode }> = {
+    pay: {
+      title: next ? `Parcela ${next.number}, vence em ${formatDate(next.dueDate)}` : '',
+      body: next ? (
+        <PayInstallmentForm debtId={d.id} inst={next} owedToMe={owedToMe} onDone={close} />
+      ) : null,
+    },
+    advance: {
+      title: owedToMe ? 'Receber parcelas adiantadas' : 'Adiantar parcelas',
+      body: <AdvanceForm d={d} onDone={close} />,
+    },
+    amortize: { title: 'Amortizar', body: <AmortizeForm d={d} onDone={close} /> },
+    payoff: {
+      title: owedToMe ? 'Receber tudo' : 'Quitar a dívida',
+      body: <PayoffForm d={d} onDone={close} />,
+    },
+    property: { title: 'Imóvel', body: <PropertyActions d={d} /> },
+    edit: { title: 'Editar dados', body: <EditDebtForm d={d} onDone={close} /> },
+  };
+  const open = panel ? forms[panel] : null;
+
+  return (
+    <section className="stack" aria-label="Ações">
+      {next && panel !== 'pay' && (
+        <button
+          type="button"
+          className="btn btn--primary btn--block"
+          onClick={() => setPanel('pay')}
+        >
+          {owedToMe ? 'Receber' : 'Pagar'} parcela {next.number}:{' '}
+          {money(next.amount - next.paidAmount - next.discount)}
+          {next.status === 'late' ? ' (atrasada)' : ` em ${formatDate(next.dueDate)}`}
+        </button>
+      )}
+      <div className="choice-grid">
+        {action('advance', owedToMe ? 'Receber adiantado' : 'Adiantar', FastForward)}
+        {!owedToMe && action('amortize', 'Amortizar', TrendingDown)}
+        {action('payoff', owedToMe ? 'Receber tudo' : 'Quitar', CircleCheckBig)}
+        {!owedToMe && (
+          <Link className="choice" to={`/simuladores?divida=${d.id}`}>
+            <Calculator size={20} aria-hidden="true" />
+            Simular
+          </Link>
+        )}
+        {d.kind === 'property' && action('property', 'Imóvel e índices', Building2)}
+      </div>
+      {open && (
+        <div className="card card--pad form" role="region" aria-label={open.title}>
+          <h3>{open.title}</h3>
+          {open.body}
+        </div>
+      )}
+    </section>
+  );
+}
 
 const STATUS_PILL: Record<DebtInstallmentDto['status'], string> = {
   pending: 'pill',
@@ -51,6 +150,7 @@ export function DebtPage() {
   const { hidden } = useHiddenValues();
   const [showAll, setShowAll] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
+  const [panel, setPanel] = useState<Panel | null>(null);
 
   if (debt.isPending) return <div className="skeleton" style={{ height: 480 }} />;
   if (debt.isError || !debt.data) {
@@ -73,7 +173,21 @@ export function DebtPage() {
 
   return (
     <>
-      <PageHeader title={d.name} back="/dividas" />
+      <PageHeader
+        title={d.name}
+        back="/dividas"
+        action={
+          <button
+            type="button"
+            className="btn btn--ghost"
+            aria-pressed={panel === 'edit'}
+            onClick={() => setPanel(panel === 'edit' ? null : 'edit')}
+          >
+            <Pencil size={18} aria-hidden="true" />
+            Editar
+          </button>
+        }
+      />
       <p className="muted">
         {DEBT_KIND_META[d.kind].label}
         {d.institution ? `, ${d.institution}` : ''}
@@ -105,6 +219,17 @@ export function DebtPage() {
         <p className="alert" role="status">
           {s.lateCount} parcela(s) atrasada(s), {money(s.lateAmount, hidden)}.
         </p>
+      )}
+
+      {d.status === 'active' ? (
+        <DebtActionPanel d={d} panel={panel} setPanel={setPanel} />
+      ) : (
+        panel === 'edit' && (
+          <section className="card card--pad form" aria-label="Editar dados">
+            <h3>Editar dados</h3>
+            <EditDebtForm d={d} onDone={() => setPanel(null)} />
+          </section>
+        )
       )}
 
       <section className="card card--pad" aria-label="Números">
@@ -207,14 +332,26 @@ export function DebtPage() {
               <span className="row-link__value">
                 <strong className="num">{money(i.amount, hidden)}</strong>
                 {d.status === 'active' && i.status !== 'paid' && paying !== i.id && (
-                  <button type="button" className="btn btn--ghost" onClick={() => setPaying(i.id)}>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    onClick={() => {
+                      setPanel(null);
+                      setPaying(i.id);
+                    }}
+                  >
                     {owedToMe ? 'Receber' : 'Pagar'}
                   </button>
                 )}
               </span>
               {paying === i.id && (
                 <div className="schedule-pay">
-                  <PayInstallmentForm debtId={d.id} inst={i} onDone={() => setPaying(null)} />
+                  <PayInstallmentForm
+                    debtId={d.id}
+                    inst={i}
+                    owedToMe={owedToMe}
+                    onDone={() => setPaying(null)}
+                  />
                 </div>
               )}
             </li>
@@ -227,15 +364,17 @@ export function DebtPage() {
         </ul>
       </section>
 
-      {d.status === 'active' && d.kind === 'property' && <PropertyActions d={d} />}
-
-      {d.status === 'active' && <DebtExtraActions d={d} />}
+      {d.notes && (
+        <section className="card card--pad" aria-label="Observações">
+          <p className="pre-line">{d.notes}</p>
+        </section>
+      )}
 
       {d.status === 'active' && (
-        <section className="card card--pad form" aria-label="Cancelar">
+        <section className="form" aria-label="Cancelar">
           <button
             type="button"
-            className="btn btn--danger"
+            className="btn btn--ghost btn--danger"
             disabled={cancel.isPending}
             onClick={() => {
               if (

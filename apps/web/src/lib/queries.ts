@@ -1,6 +1,7 @@
 import type {
   Account,
   NotificationDto,
+  AdvanceBody,
   AmortizeBody,
   PayInstallmentBody,
   PayoffBody,
@@ -578,6 +579,10 @@ export function useDebtActions(id: string) {
     pay: useMutation({
       mutationFn: ({ number, ...body }: PayInstallmentBody & { number: number }) =>
         post(`/installments/${number}/pay`, body),
+      onSuccess: invalidate,
+    }),
+    advance: useMutation({
+      mutationFn: (body: AdvanceBody) => post('/advance', body),
       onSuccess: invalidate,
     }),
     amortize: useMutation({

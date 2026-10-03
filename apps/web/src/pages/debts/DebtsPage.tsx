@@ -20,7 +20,14 @@ function DebtRowItem({ d }: { d: Debt }) {
           <Icon size={18} />
         </span>
         <span className="row-link__main">
-          <span className="row-link__title">{d.name}</span>
+          <span className="row-link__title">
+            {d.name}
+            {d.summary.lateCount > 0 && (
+              <span className="pill pill--overdue">
+                {d.summary.lateCount > 1 ? `${d.summary.lateCount} atrasadas` : 'atrasada'}
+              </span>
+            )}
+          </span>
           <span
             className="progress"
             role="progressbar"
@@ -33,7 +40,6 @@ function DebtRowItem({ d }: { d: Debt }) {
           </span>
           <span className="row-link__meta">
             {pct}% quitado, {d.summary.paidCount} de {d.summary.totalCount} parcelas
-            {d.summary.lateCount > 0 ? `, ${d.summary.lateCount} atrasada(s)` : ''}
             {d.next
               ? `. Próxima: ${money(d.next.amount - d.next.paidAmount, hidden)} em ${formatDate(d.next.dueDate)}`
               : ''}
@@ -53,7 +59,14 @@ function DebtRowItem({ d }: { d: Debt }) {
 export function DebtsPage() {
   const list = useDebts();
   const { hidden } = useHiddenValues();
-  const items = (list.data ?? []).filter((d) => d.status !== 'cancelled');
+  // Atrasadas primeiro, depois pela próxima parcela; sem próxima (quitadas) por último.
+  const items = (list.data ?? [])
+    .filter((d) => d.status !== 'cancelled')
+    .sort(
+      (a, b) =>
+        Number(b.summary.lateCount > 0) - Number(a.summary.lateCount > 0) ||
+        (a.next?.dueDate ?? '9999').localeCompare(b.next?.dueDate ?? '9999'),
+    );
   const owe = items.filter((d) => d.direction === 'i_owe' && d.status === 'active');
   const owed = items.filter((d) => d.direction === 'owed_to_me' && d.status === 'active');
   const done = items.filter((d) => d.status === 'paid_off');
