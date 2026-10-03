@@ -71,8 +71,11 @@ export function PlanPage() {
             </dd>
           </div>
           <div>
-            <dt>Já pago</dt>
-            <dd className="num">{money(p.summary.paidAmount, hidden)}</dd>
+            <dt>
+              Já pago
+              {p.startInstallment > 1 ? ` (${p.startInstallment - 1} antes de cadastrar)` : ''}
+            </dt>
+            <dd className="num">{money(p.totalAmount - p.summary.remainingAmount, hidden)}</dd>
           </div>
           <div>
             <dt>Falta</dt>

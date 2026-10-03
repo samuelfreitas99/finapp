@@ -33,6 +33,35 @@ export interface EntryState {
   adjust: 'none' | 'previous' | 'next';
   /** Repetir todo mês (vira uma recorrência). */
   repeat?: boolean;
+  /** Parcelado que já está sendo pago ("estou na parcela 4 de 10"). */
+  ongoing?: boolean;
+  /** Em andamento: a parcela que vem agora (na fatura aberta, ou o próximo boleto). */
+  currentInstallment?: number;
+  /** Em andamento: o valor digitado é o de cada parcela (padrão) ou o total. */
+  amountIs?: 'total' | 'installment';
+}
+
+/**
+ * Corpo do parcelamento (prévia e criação). Em andamento, gera só da parcela atual em
+ * diante; no carnê, o vencimento informado é o dessa parcela e o da 1ª é calculado.
+ * @see RN 5.3
+ */
+export function planBody(s: EntryState, cardId: string | null) {
+  const start = s.ongoing ? Math.min(Math.max(1, s.currentInstallment ?? 1), s.installments) : 1;
+  const value =
+    s.ongoing && (s.amountIs ?? 'installment') === 'installment'
+      ? { installmentAmount: s.amount }
+      : { totalAmount: s.amount };
+  const firstDueDate = start > 1 ? addMonths(s.firstDueDate, -(start - 1)) : s.firstDueDate;
+  // Em andamento, a data do formulário é a da parcela atual: a compra foi start−1 meses antes.
+  const firstDate = start > 1 ? addMonths(s.date, -(start - 1)) : s.date;
+  return {
+    ...(cardId ? { cardId } : { accountId: s.accountId, firstDueDate, adjust: s.adjust }),
+    ...value,
+    installments: s.installments,
+    firstDate,
+    startInstallment: start,
+  };
 }
 
 export const CARD_PREFIX = 'card:';
@@ -110,17 +139,12 @@ export function EntryForm({
   const cardId = onCard ? form.accountId.slice(CARD_PREFIX.length) : null;
   const splitting = !isTransfer && form.kind === 'expense' && form.installments > 1;
   const firstDueDate = form.firstDueDate || addMonths(form.date, 1);
+  const ongoing = splitting && Boolean(form.ongoing);
+  const current = Math.min(form.currentInstallment ?? 2, form.installments);
+  const amountIs = form.amountIs ?? 'installment';
   const preview = useInstallmentPreview(
     splitting && form.amount > 0 && form.accountId
-      ? {
-          description: 'prévia',
-          ...(cardId
-            ? { cardId }
-            : { accountId: form.accountId, firstDueDate, adjust: form.adjust }),
-          totalAmount: form.amount,
-          installments: form.installments,
-          firstDate: form.date,
-        }
+      ? { description: 'prévia', ...planBody({ ...form, firstDueDate }, cardId) }
       : null,
   );
   const previewItems = preview.data?.items ?? [];
@@ -245,25 +269,94 @@ export function EntryForm({
 
       {splitting && (
         <div className="split card card--pad">
-          <div className="field">
-            <label htmlFor="installments">Parcelas</label>
-            <select
-              id="installments"
-              className="input"
-              value={form.installments}
-              onChange={(e) => set('installments', Number(e.target.value))}
+          <div className="segmented" role="group" aria-label="Situação do parcelamento">
+            <button type="button" aria-pressed={!ongoing} onClick={() => set('ongoing', false)}>
+              Compra nova
+            </button>
+            <button
+              type="button"
+              aria-pressed={ongoing}
+              onClick={() =>
+                setForm((f) => ({
+                  ...f,
+                  ongoing: true,
+                  currentInstallment: f.currentInstallment ?? 2,
+                  amountIs: f.amountIs ?? 'installment',
+                }))
+              }
             >
-              {Array.from({ length: 23 }, (_, i) => i + 2).map((n) => (
-                <option key={n} value={n}>
-                  {n}x {form.amount > 0 ? `de ${formatBRL(Math.floor(form.amount / n))}` : ''}
-                </option>
-              ))}
-            </select>
+              Já estou pagando
+            </button>
           </div>
+          {ongoing && (
+            <div className="segmented" role="group" aria-label="O valor digitado é">
+              <button
+                type="button"
+                aria-pressed={amountIs === 'installment'}
+                onClick={() => set('amountIs', 'installment')}
+              >
+                Valor é de cada parcela
+              </button>
+              <button
+                type="button"
+                aria-pressed={amountIs === 'total'}
+                onClick={() => set('amountIs', 'total')}
+              >
+                Valor é o total
+              </button>
+            </div>
+          )}
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="installments">{ongoing ? 'Parcelas no total' : 'Parcelas'}</label>
+              <select
+                id="installments"
+                className="input"
+                value={form.installments}
+                onChange={(e) => set('installments', Number(e.target.value))}
+              >
+                {Array.from({ length: 47 }, (_, i) => i + 2).map((n) => (
+                  <option key={n} value={n}>
+                    {ongoing && amountIs === 'installment'
+                      ? `${n}x`
+                      : `${n}x ${form.amount > 0 ? `de ${formatBRL(Math.floor(form.amount / n))}` : ''}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {ongoing && (
+              <div className="field">
+                <label htmlFor="currentInstallment">
+                  {onCard ? 'Parcela na fatura aberta' : 'Próxima parcela a pagar'}
+                </label>
+                <select
+                  id="currentInstallment"
+                  className="input"
+                  value={current}
+                  onChange={(e) => set('currentInstallment', Number(e.target.value))}
+                >
+                  {Array.from({ length: form.installments }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      {n}ª de {form.installments}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          {ongoing && (
+            <p className="muted field-hint">
+              {onCard
+                ? 'Olhe a fatura aberta do cartão: ela mostra "Parcela 4/10", por exemplo. As anteriores não entram (já foram pagas).'
+                : 'As parcelas anteriores não entram (já foram pagas). Informe abaixo o vencimento da próxima.'}
+            </p>
+          )}
           {!onCard && (
             <>
               <div className="field">
-                <label htmlFor="firstDueDate">Vencimento da 1ª parcela</label>
+                <label htmlFor="firstDueDate">
+                  {ongoing ? `Vencimento da ${current}ª parcela` : 'Vencimento da 1ª parcela'}
+                </label>
                 <input
                   id="firstDueDate"
                   type="date"
@@ -290,6 +383,9 @@ export function EntryForm({
           {previewItems.length > 0 && (
             <p className="split__preview" aria-live="polite">
               <strong>
+                {ongoing && previewItems[0]
+                  ? `Parcelas ${previewItems[0].number} a ${previewItems.at(-1)?.number ?? ''}: `
+                  : ''}
                 {previewItems.length}x de {formatBRL(previewItems.at(-1)?.amount ?? 0)}
                 {previewItems[0] && previewItems[0].amount !== previewItems.at(-1)?.amount
                   ? ` (1ª de ${formatBRL(previewItems[0].amount)})`
@@ -297,12 +393,14 @@ export function EntryForm({
               </strong>
               {onCard ? (
                 <span>
-                  1ª na fatura de {monthLabel(previewItems[0]?.invoiceMonth ?? '')}, última em{' '}
+                  {ongoing ? `${previewItems[0]?.number ?? ''}ª` : '1ª'} na fatura de{' '}
+                  {monthLabel(previewItems[0]?.invoiceMonth ?? '')}, última em{' '}
                   {monthLabel(previewItems.at(-1)?.invoiceMonth ?? '')}.
                 </span>
               ) : (
                 <span>
-                  1ª vence em {formatDate(previewItems[0]?.date ?? firstDueDate)}, última em{' '}
+                  {ongoing ? `${previewItems[0]?.number ?? ''}ª` : '1ª'} vence em{' '}
+                  {formatDate(previewItems[0]?.date ?? firstDueDate)}, última em{' '}
                   {formatDate(previewItems.at(-1)?.date ?? firstDueDate)}. Cada parcela fica
                   prevista na conta até você confirmar o pagamento.
                 </span>

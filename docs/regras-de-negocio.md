@@ -124,6 +124,7 @@ Parcelamento fora do cartão: parcela k vence em `first_due_date + (k-1) meses` 
 
 ### 5.3 Plano já em andamento
 "Estou na parcela 4 de 10": gera só as parcelas 4..10, a 4 na fatura atual. Parcelas 1..3 não são criadas (opção de criar como históricas já pagas).
+Na tela (+ › Parcelar › "Já estou pagando", ou o botão "Já estou pagando" em Parcelamentos): a pessoa diz o total de parcelas, qual vem na fatura aberta (cartão) ou qual é a próxima a pagar (carnê, com o vencimento dela), e se o valor digitado é **de cada parcela** (padrão, é o que a fatura mostra) ou o total. A data da compra é calculada para trás (`data − (k−1)` meses) e, no carnê, o vencimento da 1ª também (`planBody` em `EntryForm.tsx`). O resumo do plano mostra "Já pago" incluindo as parcelas anteriores ao cadastro.
 
 ### 5.4 Cancelar / devolver
 Cancela as parcelas ainda não faturadas (faturas `open` e futuras) com `deleted_at`, e cria estorno na fatura aberta para parcelas já em faturas fechadas, se o banco devolver.

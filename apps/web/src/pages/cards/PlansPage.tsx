@@ -1,4 +1,6 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { PageHeader } from '../../components/PageHeader';
 import { useInstallmentPlans } from '../../lib/queries';
 import { PlanList } from './PlanList';
@@ -15,7 +17,20 @@ export function PlansPage() {
   const plans = useInstallmentPlans({ status });
   return (
     <>
-      <PageHeader title="Parcelamentos" back="/mais" />
+      <PageHeader
+        title="Parcelamentos"
+        back="/mais"
+        action={
+          <Link to="/lancar?parcelado=andamento" className="btn btn--primary">
+            <Plus size={18} aria-hidden="true" />
+            Já estou pagando
+          </Link>
+        }
+      />
+      <p className="muted">
+        Compra nova parcelada: use o + e toque em &quot;Parcelar&quot;. Compra antiga que você ainda
+        está pagando: toque em &quot;Já estou pagando&quot; e informe em qual parcela está.
+      </p>
       <div className="segmented" role="group" aria-label="Situação">
         {TABS.map((t) => (
           <button

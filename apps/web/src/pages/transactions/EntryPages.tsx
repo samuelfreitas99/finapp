@@ -2,7 +2,7 @@ import type { Transaction, TransactionList } from '@finapp/shared';
 import { api, spacePath } from '../../lib/api';
 import { enqueueEntry, isOffline } from '../../lib/offline-queue';
 import { Landmark, Trash2 } from 'lucide-react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/Toast';
 import { today } from '../../lib/dates';
@@ -30,6 +30,7 @@ import {
   EntryForm,
   errorText,
   isCardTarget,
+  planBody,
   type EntryKind,
   type EntryState,
 } from './EntryForm';
@@ -75,6 +76,9 @@ export function NewEntryPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
+  // `?parcelado=andamento` (de Parcelamentos): abre no parcelado que já está sendo pago.
+  const [params] = useSearchParams();
+  const ongoingPlan = params.get('parcelado') === 'andamento';
 
   if (accounts.isPending || categories.isPending || cards.isPending) {
     return <div className="skeleton" style={{ height: 520 }} />;
@@ -167,20 +171,17 @@ export function NewEntryPage() {
       createPlan.mutate(
         {
           description: describe(s, category?.name),
-          ...(cardId
-            ? { cardId }
-            : { accountId: s.accountId, firstDueDate: s.firstDueDate, adjust: s.adjust }),
-          totalAmount: s.amount,
-          installments: s.installments,
-          firstDate: s.date,
+          ...planBody(s, cardId),
           categoryId: s.categoryId,
         },
         {
           onSuccess: (plan) => {
             toast({
-              text: cardId
-                ? `Compra parcelada em ${s.installments}x.`
-                : `Carnê de ${s.installments} parcelas criado.`,
+              text: s.ongoing
+                ? `Parcelamento cadastrado a partir da ${planBody(s, cardId).startInstallment}ª parcela.`
+                : cardId
+                  ? `Compra parcelada em ${s.installments}x.`
+                  : `Carnê de ${s.installments} parcelas criado.`,
             });
             navigate(`/parcelamentos/${plan.id}`, { replace: true });
           },
@@ -234,9 +235,17 @@ export function NewEntryPage() {
           pix: false,
           pixCounterparty: '',
           notes: '',
-          installments: 1,
+          installments: ongoingPlan ? 10 : 1,
           firstDueDate: '',
           adjust: 'none',
+          ...(ongoingPlan
+            ? {
+                accountId: cardList[0] ? `card:${cardList[0].id}` : defaultAccount,
+                ongoing: true,
+                currentInstallment: 2,
+                amountIs: 'installment' as const,
+              }
+            : {}),
         }}
         accounts={list}
         cards={cardList}
