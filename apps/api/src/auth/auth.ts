@@ -1,10 +1,11 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
+import { passkey } from '@better-auth/passkey';
 import { twoFactor } from 'better-auth/plugins';
 import { uuidv7 } from 'uuidv7';
 import type { Db } from '../db/client';
-import { authAccounts, sessions, twoFactors, users, verifications } from '../db/schema';
+import { authAccounts, passkeys, sessions, twoFactors, users, verifications } from '../db/schema';
 import { claimInvite, onboardUser } from './onboarding';
 
 export interface AuthOptions {
@@ -39,10 +40,15 @@ export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
         account: authAccounts,
         verification: verifications,
         twoFactor: twoFactors,
+        passkey: passkeys,
       },
     }),
     // Verificação em duas etapas por aplicativo autenticador (TOTP) e códigos de backup.
-    plugins: [twoFactor({ issuer: 'FinApp' })],
+    // O domínio do app é o "rpID" das chaves de acesso: trocar de domínio invalida as chaves.
+    plugins: [
+      twoFactor({ issuer: 'FinApp' }),
+      passkey({ rpID: new URL(appUrl).hostname, rpName: 'FinApp', origin: appUrl }),
+    ],
     emailAndPassword: {
       enabled: true,
       autoSignIn: true,
@@ -62,6 +68,7 @@ export function createAuth({ db, secret, appUrl, production }: AuthOptions) {
         '/sign-up/email': { window: 60, max: 5 },
         '/two-factor/verify-totp': { window: 60, max: 5 },
         '/two-factor/verify-backup-code': { window: 60, max: 5 },
+        '/passkey/verify-authentication': { window: 60, max: 10 },
       },
     },
     advanced: {

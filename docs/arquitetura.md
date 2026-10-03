@@ -46,7 +46,7 @@ finapp/
 Cada funcionalidade da API é um módulo (`modules/cards`, `modules/debts`...) com rotas finas, serviço (orquestra e chama o core) e repositório (Drizzle). Toda rota passa pelo plugin de autenticação e pelo `requireSpaceMember(space_id)`.
 
 ## Autenticação
-- Better Auth com e-mail/senha (V1), passkeys e 2FA (V2). Sessão em cookie `HttpOnly; Secure; SameSite=Lax`.
+- Better Auth com e-mail/senha, 2FA por TOTP e passkeys (plugins `two-factor` e `@better-auth/passkey`), mais bloqueio do app por PIN (`/api/me/pin`). Sessão em cookie `HttpOnly; Secure; SameSite=Lax`.
 - Cadastro só com código de convite (`invites`): `POST /api/auth/sign-up/email` com `inviteCode`. Ao criar o usuário nascem o espaço **Pessoal**, as configurações e, se o convite for de um espaço compartilhado, a participação nele.
 - Primeiro acesso / convite pelo servidor: `docker exec finapp-api node server.cjs --create-invite [dias]` (produção) ou `pnpm --filter @finapp/api invite:create [dias]` (dev). Depois, convites pelo app (`POST /api/invites`).
 - A API aplica as migrações pendentes ao subir (desligar com `RUN_MIGRATIONS=false`) e depois o seed idempotente: feriados nacionais do ano anterior até +30 anos e categorias padrão dos espaços que não têm (desligar com `RUN_SEED=false`; manual: `pnpm db:seed`).

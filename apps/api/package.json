@@ -15,6 +15,7 @@
     "invite:create": "tsx src/cli/create-invite-cli.ts"
   },
   "dependencies": {
+    "@better-auth/passkey": "1.7.7",
     "@fastify/static": "^10.1.5",
     "@finapp/core": "workspace:*",
     "@finapp/shared": "workspace:*",

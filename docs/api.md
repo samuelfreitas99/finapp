@@ -78,6 +78,8 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 
 - 2FA (Better Auth, `/api/auth/two-factor/*`): `POST enable` (`{ password }` → `totpURI` e `backupCodes`), `POST verify-totp` (`{ code }`; confirma a ativação ou conclui o login), `POST verify-backup-code`, `POST disable` (`{ password }`); `POST /api/auth/sign-in/email` devolve `{ twoFactorRedirect: true }` quando ligado; `GET /api/me` traz `twoFactorEnabled`
 
+- Passkeys (Better Auth, `/api/auth/passkey/*`): `GET generate-register-options` e `POST verify-registration` (`{ response, name }`, logado), `GET generate-authenticate-options` e `POST verify-authentication` (`{ response }`, cria a sessão), `GET list-user-passkeys`, `POST delete-passkey` (`{ id }`)
+
 ## Racha (fora de espaço)
 - `/api/split-groups` CRUD, `POST /api/split-groups/join/:code`
 - `/api/split-groups/:id/expenses` CRUD

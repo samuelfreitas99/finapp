@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { markUnlocked } from '../lib/app-lock';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '../lib/push';
 import { errorText } from './transactions/EntryForm';
+import { PasskeysCard } from './PasskeysCard';
 import { TwoFactorCard } from './TwoFactorCard';
 
 const TYPE_LABEL: Record<NotificationType, { label: string; days?: boolean }> = {
@@ -328,6 +329,7 @@ export function SettingsPage() {
     <>
       <PageHeader title="Configurações" back="/mais" />
       <PinCard />
+      <PasskeysCard />
       <TwoFactorCard />
       <PushCard />
       <AlertSettings />

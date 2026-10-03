@@ -88,3 +88,24 @@ export const twoFactors = pgTable(
   },
   (t) => [index('two_factors_user_idx').on(t.userId)],
 );
+
+/** Chaves de acesso (passkeys / WebAuthn) para entrar sem senha. */
+export const passkeys = pgTable(
+  'passkeys',
+  {
+    id: id(),
+    name: text('name'),
+    publicKey: text('public_key').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    credentialID: text('credential_id').notNull().unique(),
+    counter: integer('counter').notNull(),
+    deviceType: text('device_type').notNull(),
+    backedUp: boolean('backed_up').notNull(),
+    transports: text('transports'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    aaguid: text('aaguid'),
+  },
+  (t) => [index('passkeys_user_idx').on(t.userId)],
+);

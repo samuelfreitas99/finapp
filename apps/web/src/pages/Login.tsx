@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { authErrorMessage } from '../auth/messages';
-import { useSignIn, useVerifyTwoFactor } from '../auth/session';
+import { meKey, useSignIn, useVerifyTwoFactor } from '../auth/session';
+import { useQueryClient } from '@tanstack/react-query';
 import { BrandMark } from '../components/BrandMark';
+import { passkeysSupported, signInWithPasskey } from '../lib/passkeys';
 
 export function LoginPage() {
   const signIn = useSignIn();
@@ -10,6 +12,9 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const verify = useVerifyTwoFactor();
+  const qc = useQueryClient();
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [needCode, setNeedCode] = useState(false);
   const [backup, setBackup] = useState(false);
   const [code, setCode] = useState('');
@@ -25,6 +30,21 @@ export function LoginPage() {
         },
       },
     );
+  };
+
+  const loginWithPasskey = async () => {
+    setPasskeyError(null);
+    setPasskeyBusy(true);
+    try {
+      if (await signInWithPasskey()) {
+        await qc.invalidateQueries({ queryKey: meKey });
+        navigate('/', { replace: true });
+      }
+    } catch (err) {
+      setPasskeyError(authErrorMessage(err));
+    } finally {
+      setPasskeyBusy(false);
+    }
   };
 
   const submitCode = (e: FormEvent) => {
@@ -130,6 +150,23 @@ export function LoginPage() {
               {signIn.isPending ? 'Entrando…' : 'Entrar'}
             </button>
           </form>
+        )}
+        {!needCode && passkeysSupported() && (
+          <div className="stack">
+            {passkeyError && (
+              <p className="alert alert--error" role="alert">
+                {passkeyError}
+              </p>
+            )}
+            <button
+              type="button"
+              className="btn btn--block"
+              disabled={passkeyBusy}
+              onClick={() => void loginWithPasskey()}
+            >
+              {passkeyBusy ? 'Aguardando o aparelho…' : 'Entrar com chave de acesso'}
+            </button>
+          </div>
         )}
         <p className="auth__switch">
           Recebeu um convite? <Link to="/criar-conta">Criar conta</Link>

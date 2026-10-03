@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 7** (Fases 1–6 concluídas; Fase 2 aguarda confirmar o uso real).
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 8** (Fases 1–7 concluídas; Fase 2 aguarda confirmar o uso real).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -72,7 +72,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Anexos de comprovantes
 - [x] Importação OFX/CSV com deduplicação e regras de categoria
 - [x] Exportação CSV/XLSX/JSON
-- [ ] Passkeys, 2FA, bloqueio por PIN, audit log (feito: audit log, PIN e 2FA; falta: passkeys)
+- [x] Passkeys, 2FA, bloqueio por PIN, audit log
 
 ## Fase 8: Compartilhamento e racha
 - [ ] Espaço compartilhado: convites, membros, seletor de espaço, visão consolidada
@@ -112,6 +112,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Audit log: uma linha por requisição de escrita bem-sucedida no espaço (hook em `spaceScoped`), com usuário, entidade, id, ação (`create`/`update`/`delete` ou o verbo da rota) e o corpo enviado sem campos sensíveis (`after`); `before` não é preenchido (só o que foi enviado). Importação e anexos registram só a ação (sem conteúdo). Qualquer membro do espaço vê o histórico.
 - Bloqueio por PIN: 4 a 6 números, guardado com hash scrypt em `user_settings.lock_pin_hash`; o app pede ao abrir e após 60 s em segundo plano, e a verificação trava por 1 minuto depois de 5 erros (contagem em memória, zera ao reiniciar a API). É uma **trava de tela**: não criptografa nada nem invalida a sessão; quem tem o cookie de sessão continua acessando a API. Esqueceu o PIN: sair e entrar com a senha, depois desligar/trocar.
 - 2FA: TOTP (aplicativo autenticador) pelo plugin `two-factor` do Better Auth, com 10 códigos de backup de uso único mostrados uma vez; segredo e códigos ficam cifrados em `two_factors`. Ligar e desligar exigem a senha; o login com 2FA ligado devolve `twoFactorRedirect` e só cria a sessão depois do código (5 tentativas por minuto por IP e trava do plugin por conta). Não há "confiar neste aparelho" nem 2FA por e-mail/SMS (e-mail ainda não é enviado pelo app). Se perder o aplicativo e os códigos de backup, só recuperando pelo banco (um administrador remove a linha de `two_factors` e zera `users.two_factor_enabled`).
+- Passkeys: plugin `@better-auth/passkey` (WebAuthn); o `rpID` é o domínio de `APP_URL` (hoje `financas.voleidraft.top`): **trocar de domínio invalida as chaves** (a senha continua valendo). Entrar com passkey vale como segundo fator e **não pede o código do 2FA**. O cerimonial completo (criar/usar a chave no aparelho) só foi testado até a geração das opções e o mapeamento do banco: a validação criptográfica depende do autenticador do aparelho e precisa de um teste manual no celular depois do deploy. Não há exigência de HTTPS no dev além de `localhost`.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -162,3 +163,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: histórico de alterações: tabela `audit_log` (migração 0013), registro automático das escritas do espaço, `GET /audit-log` (cursor) e tela "Histórico de alterações" (Claude).
 - 03/10/2026: bloqueio por PIN: `PUT/DELETE /api/me/pin`, `POST /api/me/pin/verify`, `pinEnabled` em `/api/me`, tela de bloqueio e cartão "Bloqueio por PIN" em Configurações (Claude).
 - 03/10/2026: verificação em duas etapas (TOTP + códigos de backup): plugin two-factor, tabela `two_factors` e `users.two_factor_enabled` (migração 0014), segunda etapa no login e cartão em Configurações com QR code (dependência `qrcode` no front) (Claude).
+- 03/10/2026: passkeys: plugin passkey, tabela `passkeys` (migração 0015), botão "Entrar com chave de acesso" no login e cartão "Chaves de acesso" em Configurações (dependência `@simplewebauthn/browser`). **Fase 7 concluída** (Claude).
