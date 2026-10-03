@@ -64,11 +64,18 @@ export async function startJobs({
   // Índices de correção (INCC, IPCA, IGP-M) do Banco Central e do IBGE, uma vez por dia
   // (e na subida, para recuperar o que ficou para trás). Falha de rede só vai para o log.
   await boss.createQueue(INDEXES_JOB);
-  await boss.schedule(INDEXES_JOB, '30 9 * * *', null, { tz: REFERENCE_TIME_ZONE, missed: 'once' });
-  await boss.work(INDEXES_JOB, async () => {
+  // Duas vezes por dia: se a fonte estiver fora do ar de manhã, tenta de novo à tarde.
+  await boss.schedule(INDEXES_JOB, '30 9,15 * * *', null, {
+    tz: REFERENCE_TIME_ZONE,
+    missed: 'once',
+  });
+  const runIndexSync = async () => {
     const r = await syncIndexValues(db, todayIn());
     log.info({ saved: r.saved, errors: r.errors }, 'índices atualizados');
-  });
+  };
+  await boss.work(INDEXES_JOB, runIndexSync);
+  // Na subida também, sem atrasar o início da API; falha só vai para o log.
+  void runIndexSync().catch((err) => log.error({ err }, 'índices: falha na busca inicial'));
 
   // Alertas do dia às 08:00; o envio roda de hora em hora para o que ficou no silêncio.
   await boss.createQueue(ALERTS_JOB);
