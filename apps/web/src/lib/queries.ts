@@ -11,6 +11,9 @@ import type {
   UpdateDebtBody,
   Projection,
   Attachment,
+  GroupLink,
+  GroupLinkBody,
+  SyncResult,
   GroupDetail,
   GroupExpenseBody,
   GroupSettlementBody,
@@ -1022,4 +1025,48 @@ export function useRachaMutations(groupId?: string) {
       onSuccess: refresh,
     }),
   };
+}
+
+export function useGroupLink(groupId: string) {
+  return useQuery({
+    queryKey: ['racha', 'link', groupId],
+    queryFn: () => api<GroupLink>(`/api/split-groups/${groupId}/link`),
+  });
+}
+
+export function useGroupLinkMutations(groupId: string) {
+  const qc = useQueryClient();
+  // O lançamento nasce no espaço do usuário: atualiza também contas e lançamentos.
+  const refresh = () => qc.invalidateQueries();
+  return {
+    save: useMutation({
+      mutationFn: (body: GroupLinkBody) =>
+        api<SyncResult>(`/api/split-groups/${groupId}/link`, { method: 'PUT', body }),
+      onSuccess: refresh,
+    }),
+    sync: useMutation({
+      mutationFn: () =>
+        api<SyncResult>(`/api/split-groups/${groupId}/link/sync`, { method: 'POST' }),
+      onSuccess: refresh,
+    }),
+    unlink: useMutation({
+      mutationFn: () => api(`/api/split-groups/${groupId}/link`, { method: 'DELETE' }),
+      onSuccess: refresh,
+    }),
+  };
+}
+
+/** Contas e categorias de despesa de um espaço específico (não só o ativo). */
+export function useSpaceChoices(spaceId: string) {
+  return useQuery({
+    queryKey: ['space-choices', spaceId],
+    enabled: spaceId !== '',
+    queryFn: async () => {
+      const [accounts, categories] = await Promise.all([
+        api<{ items: Account[] }>(`/api/spaces/${spaceId}/accounts`),
+        api<{ items: Category[] }>(`/api/spaces/${spaceId}/categories?kind=expense`),
+      ]);
+      return { accounts: accounts.items, categories: categories.items };
+    },
+  });
 }

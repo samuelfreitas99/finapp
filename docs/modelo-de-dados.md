@@ -76,6 +76,9 @@ Itens da fatura = `transactions` com `invoice_id` (e `card_id`). Total da fatura
 | `split_expense_shares` | expense_id, participant_id, amount, weight |
 | `split_settlements` | id, group_id, from_participant_id, to_participant_id, amount, date, method, created_by, deleted_at (`transaction_id` virá com a integração ao espaço pessoal) |
 
+| `split_group_links` | id, group_id, user_id, space_id, account_id, category_id (opcional); único por (group_id, user_id): onde a parte do usuário vira lançamento |
+| `split_expense_postings` | expense_id, user_id, transaction_id: o lançamento que representa a parte do usuário em cada despesa (chave primária composta) |
+
 Grupos de racha **não** pertencem a um espaço: o acesso é por `split_participants.user_id`.
 
 ## Notificações e auditoria

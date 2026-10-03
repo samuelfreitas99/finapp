@@ -8,7 +8,14 @@ import { useToast } from '../../components/Toast';
 import { today } from '../../lib/dates';
 import { formatDate, money } from '../../lib/format';
 import { useHiddenValues } from '../../lib/hidden-values';
-import { useGroup, useRachaMutations } from '../../lib/queries';
+import {
+  useGroup,
+  useGroupLink,
+  useGroupLinkMutations,
+  useRachaMutations,
+  useSpaceChoices,
+} from '../../lib/queries';
+import { useMe } from '../../auth/session';
 import { errorText } from '../transactions/EntryForm';
 
 const MODE_LABEL: Record<RachaMode, string> = {
@@ -202,6 +209,140 @@ function ExpenseForm({ group, onDone }: { group: GroupDetail; onDone: () => void
   );
 }
 
+function LinkCard({ groupId }: { groupId: string }) {
+  const toast = useToast();
+  const { data: me } = useMe();
+  const link = useGroupLink(groupId);
+  const { save, sync, unlink } = useGroupLinkMutations(groupId);
+  const personal = me?.spaces.find((s) => s.type === 'personal')?.id ?? me?.spaces[0]?.id ?? '';
+  const [spaceId, setSpaceId] = useState('');
+  const [accountId, setAccountId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const space = spaceId || link.data?.spaceId || personal;
+  const choices = useSpaceChoices(space);
+  const error = link.error ?? save.error ?? sync.error ?? unlink.error;
+  const accounts = (choices.data?.accounts ?? []).filter((a) => !a.archived);
+  const categories = (choices.data?.categories ?? []).filter(
+    (c) => !c.isSystem && !c.archived && !c.parentId,
+  );
+  const account = accountId || link.data?.accountId || accounts[0]?.id || '';
+  const result = (r: { created: number; updated: number; removed: number }) =>
+    toast({
+      text:
+        r.created + r.updated + r.removed === 0
+          ? 'Tudo em dia, nada a lançar.'
+          : `${r.created} lançados, ${r.updated} atualizados, ${r.removed} removidos.`,
+    });
+
+  if (!link.data) return null;
+  return (
+    <section className="card card--pad form" aria-labelledby="g-link">
+      <h2 id="g-link">No meu espaço pessoal</h2>
+      <p className="muted">
+        Opcional: a sua parte de cada despesa vira um lançamento na conta escolhida, e o saldo da
+        conta já inclui o que você deve ou tem a receber. Acertos entre amigos não geram lançamento.
+      </p>
+      {error && (
+        <p className="alert alert--error" role="alert">
+          {errorText(error)}
+        </p>
+      )}
+      <div className="field">
+        <label htmlFor="lk-space">Espaço</label>
+        <select
+          id="lk-space"
+          className="input"
+          value={space}
+          onChange={(e) => {
+            setSpaceId(e.target.value);
+            setAccountId('');
+            setCategoryId('');
+          }}
+        >
+          {me?.spaces.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor="lk-account">Conta</label>
+        <select
+          id="lk-account"
+          className="input"
+          value={account}
+          onChange={(e) => setAccountId(e.target.value)}
+        >
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor="lk-cat">Categoria (opcional)</label>
+        <select
+          id="lk-cat"
+          className="input"
+          value={categoryId || link.data.categoryId || ''}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
+          <option value="">Sem categoria</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="form__actions">
+        {link.data.linked && (
+          <>
+            <button
+              type="button"
+              className="btn"
+              onClick={() =>
+                unlink.mutate(undefined, {
+                  onSuccess: () => toast({ text: 'Desligado. Os lançamentos já criados ficam.' }),
+                })
+              }
+            >
+              Desligar
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={sync.isPending}
+              onClick={() => sync.mutate(undefined, { onSuccess: result })}
+            >
+              Sincronizar
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          className="btn btn--primary"
+          disabled={!account || save.isPending}
+          onClick={() =>
+            save.mutate(
+              {
+                spaceId: space,
+                accountId: account,
+                categoryId: (categoryId || link.data?.categoryId || null) as string | null,
+              },
+              { onSuccess: result },
+            )
+          }
+        >
+          {link.data.linked ? 'Salvar' : 'Ligar e lançar'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /** Um grupo de racha: saldos, despesas, acertos e participantes. @see RN 11 */
 export function GroupPage() {
   const { id = '' } = useParams();
@@ -368,6 +509,8 @@ export function GroupPage() {
           </ul>
         </section>
       )}
+
+      <LinkCard groupId={g.id} />
 
       <section className="card card--pad stack" aria-labelledby="g-people">
         <h2 id="g-people">Participantes</h2>

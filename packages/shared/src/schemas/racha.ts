@@ -127,3 +127,26 @@ export const groupBalancesQuerySchema = z.object({
     .transform((v) => v === 'true')
     .default(true),
 });
+
+/** Liga o grupo ao seu espaço: a sua parte de cada despesa vira lançamento nessa conta. */
+export const groupLinkBodySchema = z.object({
+  spaceId: z.uuid(),
+  accountId: z.uuid(),
+  categoryId: z.uuid().nullish(),
+});
+export type GroupLinkBody = z.infer<typeof groupLinkBodySchema>;
+
+export const groupLinkSchema = z.object({
+  linked: z.boolean(),
+  spaceId: z.uuid().nullable(),
+  accountId: z.uuid().nullable(),
+  categoryId: z.uuid().nullable(),
+});
+export type GroupLink = z.infer<typeof groupLinkSchema>;
+
+export const syncResultSchema = z.object({
+  created: z.int(),
+  updated: z.int(),
+  removed: z.int(),
+});
+export type SyncResult = z.infer<typeof syncResultSchema>;

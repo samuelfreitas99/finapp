@@ -91,6 +91,7 @@ Validações comuns: lançamento efetivado não pode ter data futura (`settled_i
 - `POST /api/split-groups/:id/expenses`, `PUT/DELETE .../expenses/:eid` (`{ description, amount, date, mode: equal|percent|amount|shares, category?, payers: [{ participantId, amount }], shares: [{ participantId, percent? | amount? | weight? }] }`; pagamentos somam o valor)
 - `GET /api/split-groups/:id/balances?simplify=true` (saldo por participante + pagamentos mínimos)
 - `POST /api/split-groups/:id/settlements` (`{ fromParticipantId, toParticipantId, amount, date?, method? }`), `DELETE .../settlements/:sid`
+- Integração com o espaço pessoal: `GET /api/split-groups/:id/link`, `PUT .../link` (`{ spaceId, accountId, categoryId? }` → `{ created, updated, removed }`; liga e sincroniza a sua parte de cada despesa como despesa efetivada), `POST .../link/sync`, `DELETE .../link` (mantém o que já foi criado)
 
 ## Notificações
 - `GET /api/push/vapid-key` ✅ (503 `push_disabled` sem chaves), `POST/DELETE /api/push/subscriptions` ✅ (`PushSubscription.toJSON()`; upsert por endpoint), `POST /api/push/test` ✅

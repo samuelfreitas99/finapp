@@ -326,3 +326,196 @@ describe.skipIf(!testDatabaseUrl)('racha (integration)', () => {
     expect((await call(ana, 'GET', g())).json().name).toBe('Viagem Floripa');
   });
 });
+
+describe.skipIf(!testDatabaseUrl)('racha → personal space (integration)', () => {
+  let drop: () => Promise<void>;
+  let app: ReturnType<typeof buildApp>;
+  let adminUrl: string;
+  type User = { cookie: string; id: string; personal: string };
+  let ana: User;
+  let bia: User;
+  let group = '';
+  let anaP = '';
+  let biaP = '';
+  let anaAccount = '';
+  let biaAccount = '';
+
+  const call = (
+    who: User,
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    path: string,
+    payload?: unknown,
+  ) =>
+    app.inject({
+      method,
+      url: path,
+      headers: { cookie: who.cookie, origin: appUrl },
+      ...(payload === undefined ? {} : { payload: payload as Record<string, unknown> }),
+    });
+  const g = (path = '') => `/api/split-groups/${group}${path}`;
+
+  const signUp = async (name: string, email: string): Promise<User> => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      headers: { origin: appUrl },
+      payload: {
+        name,
+        email,
+        password: 'senha-forte-1',
+        inviteCode: await createAdminInvite(adminUrl),
+      },
+    });
+    const raw = res.headers['set-cookie'];
+    const cookie = (Array.isArray(raw) ? raw : [String(raw)])
+      .map((c) => String(c).split(';')[0])
+      .join('; ');
+    const me = (await call({ cookie, id: '', personal: '' }, 'GET', '/api/me')).json();
+    return { cookie, id: me.user.id, personal: me.activeSpaceId };
+  };
+  const newAccount = async (who: User) =>
+    (
+      await call(who, 'POST', `/api/spaces/${who.personal}/accounts`, {
+        name: 'Conta',
+        type: 'checking',
+        initialBalance: 100000,
+        initialDate: '2026-01-01',
+      })
+    ).json().id as string;
+  const txs = async (who: User) =>
+    (
+      (await call(who, 'GET', `/api/spaces/${who.personal}/transactions?limit=50`)).json()
+        .items as {
+        id: string;
+        description: string;
+        amount: number;
+        status: string;
+        date: string;
+      }[]
+    ).filter((t) => t.description.startsWith('Racha'));
+  const balanceOf = async (who: User, account: string) =>
+    (await call(who, 'GET', `/api/spaces/${who.personal}/accounts`))
+      .json()
+      .items.find((a: { id: string }) => a.id === account).balance as number;
+  const addExpense = (amount: number, description = 'Jantar') =>
+    call(ana, 'POST', g('/expenses'), {
+      description,
+      amount,
+      date: '2026-10-10',
+      mode: 'equal',
+      payers: [{ participantId: anaP, amount }],
+      shares: [{ participantId: anaP }, { participantId: biaP }],
+    });
+
+  beforeAll(async () => {
+    const temp = await createTempDb();
+    drop = temp.drop;
+    adminUrl = temp.url;
+    const auth = createAuth({
+      db: temp.db,
+      secret: 'test-secret-test-secret-test-secret-00',
+      appUrl,
+      production: false,
+    });
+    app = buildApp({ db: temp.db, auth, appUrl, today: () => TODAY });
+    ana = await signUp('Ana', 'ana@ex.com');
+    bia = await signUp('Bia', 'bia@ex.com');
+    anaAccount = await newAccount(ana);
+    biaAccount = await newAccount(bia);
+    group = (await call(ana, 'POST', '/api/split-groups', { name: 'Viagem' })).json().id;
+    const code = (await call(ana, 'GET', g())).json().joinCode;
+    await call(bia, 'POST', '/api/split-groups/join', { code });
+    const people = (await call(ana, 'GET', g())).json().participants as {
+      id: string;
+      userId: string;
+    }[];
+    anaP = people.find((p) => p.userId === ana.id)?.id ?? '';
+    biaP = people.find((p) => p.userId === bia.id)?.id ?? '';
+    await addExpense(10000, 'Antes de ligar');
+  });
+
+  afterAll(async () => {
+    await app?.close();
+    await drop?.();
+  });
+
+  it('is off by default and rejects accounts that are not yours', async () => {
+    expect((await call(ana, 'GET', g('/link'))).json()).toMatchObject({ linked: false });
+    expect(await txs(ana)).toEqual([]);
+    const stolen = await call(ana, 'PUT', g('/link'), {
+      spaceId: bia.personal,
+      accountId: biaAccount,
+    });
+    expect(stolen.statusCode).toBe(404);
+    const wrongAccount = await call(ana, 'PUT', g('/link'), {
+      spaceId: ana.personal,
+      accountId: biaAccount,
+    });
+    expect(wrongAccount.statusCode).toBe(404);
+  });
+
+  it('turns my share into settled expenses, including past ones, once', async () => {
+    const res = await call(ana, 'PUT', g('/link'), {
+      spaceId: ana.personal,
+      accountId: anaAccount,
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ created: 1, updated: 0, removed: 0 });
+    const mine = await txs(ana);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({
+      amount: 5000,
+      status: 'settled',
+      description: 'Racha Viagem: Antes de ligar',
+    });
+    expect(await balanceOf(ana, anaAccount)).toBe(100000 - 5000);
+    // Rodar de novo não duplica.
+    expect((await call(ana, 'POST', g('/link/sync'))).json()).toEqual({
+      created: 0,
+      updated: 0,
+      removed: 0,
+    });
+    expect(await txs(bia)).toEqual([]);
+  });
+
+  it('keeps linked users in sync when expenses change, are edited or deleted', async () => {
+    await call(bia, 'PUT', g('/link'), { spaceId: bia.personal, accountId: biaAccount });
+    expect(await txs(bia)).toHaveLength(1);
+
+    const created = await addExpense(3000, 'Café');
+    const id = created.json().id;
+    expect((await txs(ana)).map((t) => t.amount).sort()).toEqual([1500, 5000]);
+    expect((await txs(bia)).map((t) => t.amount).sort()).toEqual([1500, 5000]);
+
+    await call(ana, 'PUT', g(`/expenses/${id}`), {
+      description: 'Café',
+      amount: 4000,
+      date: '2026-10-12',
+      mode: 'equal',
+      payers: [{ participantId: anaP, amount: 4000 }],
+      shares: [{ participantId: anaP }, { participantId: biaP }],
+    });
+    const cafe = (await txs(bia)).find((t) => t.description.endsWith('Café'));
+    expect(cafe).toMatchObject({ amount: 2000, date: '2026-10-12' });
+
+    await call(ana, 'DELETE', g(`/expenses/${id}`));
+    expect((await txs(bia)).map((t) => t.amount)).toEqual([5000]);
+    expect((await txs(ana)).map((t) => t.amount)).toEqual([5000]);
+  });
+
+  it('does not recreate what the user deleted, and unlinking keeps the history', async () => {
+    const mine = await txs(bia);
+    expect(
+      (await call(bia, 'DELETE', `/api/spaces/${bia.personal}/transactions/${mine[0]?.id}`))
+        .statusCode,
+    ).toBe(204);
+    expect((await call(bia, 'POST', g('/link/sync'))).json().created).toBe(0);
+    expect(await txs(bia)).toEqual([]);
+
+    expect((await call(ana, 'DELETE', g('/link'))).statusCode).toBe(204);
+    await addExpense(2000, 'Depois de desligar');
+    expect((await txs(ana)).map((t) => t.amount)).toEqual([5000]);
+    expect((await call(ana, 'GET', g('/link'))).json().linked).toBe(false);
+    expect((await call(ana, 'POST', g('/link/sync'))).json().error.code).toBe('not_linked');
+  });
+});

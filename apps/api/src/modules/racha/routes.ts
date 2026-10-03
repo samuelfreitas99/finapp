@@ -10,6 +10,7 @@ import {
   createGroupBodySchema,
   groupBalancesQuerySchema,
   groupExpenseBodySchema,
+  groupLinkBodySchema,
   groupSettlementBodySchema,
   joinGroupBodySchema,
   updateGroupBodySchema,
@@ -17,6 +18,7 @@ import {
   type GroupDetail,
   type GroupExpense,
   type GroupExpenseBody,
+  type GroupLink,
   type GroupSummary,
 } from '@finapp/shared';
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
@@ -28,12 +30,17 @@ import {
   splitExpensePayers,
   splitExpenseShares,
   splitExpenses,
+  splitGroupLinks,
   splitGroups,
   splitParticipants,
   splitSettlements,
 } from '../../db/schema';
 import { ApiError, badRequest, notFound } from '../../http/errors';
 import { currentUser, requireUser } from '../../plugins/auth';
+import { findAccount } from '../accounts/service';
+import { findCategory } from '../categories/routes';
+import { spaceRole } from '../spaces/access';
+import { syncAllLinks, syncGroupLink } from './link';
 
 const groupParams = z.object({ groupId: z.uuid() });
 const itemParams = z.object({ groupId: z.uuid(), id: z.uuid() });
@@ -417,6 +424,7 @@ export function rachaRoutes(app: FastifyInstance, db: Db, today: () => string = 
     const { group } = await memberOf(db, user.id, groupId);
     requireOpen(group.archivedAt);
     const id = await saveExpense(groupId, body, user.id);
+    await syncAllLinks(db, groupId);
     return reply.code(201).send({ id });
   });
 
@@ -438,6 +446,7 @@ export function rachaRoutes(app: FastifyInstance, db: Db, today: () => string = 
       );
     if (!exists) throw notFound('Despesa');
     await saveExpense(groupId, body, user.id, id);
+    await syncAllLinks(db, groupId);
     return reply.code(204).send();
   });
 
@@ -457,6 +466,7 @@ export function rachaRoutes(app: FastifyInstance, db: Db, today: () => string = 
       )
       .returning({ id: splitExpenses.id });
     if (!row) throw notFound('Despesa');
+    await syncAllLinks(db, groupId);
     return reply.code(204).send();
   });
 
@@ -511,6 +521,84 @@ export function rachaRoutes(app: FastifyInstance, db: Db, today: () => string = 
       )
       .returning({ id: splitSettlements.id });
     if (!row) throw notFound('Acerto');
+    return reply.code(204).send();
+  });
+
+  app.get('/api/split-groups/:groupId/link', pre, async (request): Promise<GroupLink> => {
+    const user = currentUser(request);
+    const { groupId } = groupParams.parse(request.params);
+    await memberOf(db, user.id, groupId);
+    const [link] = await db
+      .select()
+      .from(splitGroupLinks)
+      .where(and(eq(splitGroupLinks.groupId, groupId), eq(splitGroupLinks.userId, user.id)));
+    return {
+      linked: Boolean(link),
+      spaceId: link?.spaceId ?? null,
+      accountId: link?.accountId ?? null,
+      categoryId: link?.categoryId ?? null,
+    };
+  });
+
+  /** Liga (ou troca) o espaço/conta onde a sua parte vira lançamento e já sincroniza. */
+  app.put('/api/split-groups/:groupId/link', pre, async (request) => {
+    const user = currentUser(request);
+    const { groupId } = groupParams.parse(request.params);
+    const body = groupLinkBodySchema.parse(request.body ?? {});
+    await memberOf(db, user.id, groupId);
+    if (!(await spaceRole(db, user.id, body.spaceId))) {
+      throw new ApiError(404, 'space_not_found', 'Espaço não encontrado.');
+    }
+    const account = await findAccount(db, body.spaceId, body.accountId);
+    if (account.archivedAt) throw badRequest('account_archived', 'A conta está arquivada.');
+    if (body.categoryId) {
+      const category = await findCategory(db, body.spaceId, body.categoryId);
+      if (category.isSystem || category.archivedAt || category.kind !== 'expense') {
+        throw badRequest('invalid_category', 'Use uma categoria de despesa ativa.');
+      }
+    }
+    const [link] = await db
+      .insert(splitGroupLinks)
+      .values({
+        groupId,
+        userId: user.id,
+        spaceId: body.spaceId,
+        accountId: body.accountId,
+        categoryId: body.categoryId ?? null,
+      })
+      .onConflictDoUpdate({
+        target: [splitGroupLinks.groupId, splitGroupLinks.userId],
+        set: {
+          spaceId: body.spaceId,
+          accountId: body.accountId,
+          categoryId: body.categoryId ?? null,
+        },
+      })
+      .returning();
+    if (!link) throw new Error('falha ao ligar o grupo');
+    return syncGroupLink(db, link);
+  });
+
+  app.post('/api/split-groups/:groupId/link/sync', pre, async (request) => {
+    const user = currentUser(request);
+    const { groupId } = groupParams.parse(request.params);
+    await memberOf(db, user.id, groupId);
+    const [link] = await db
+      .select()
+      .from(splitGroupLinks)
+      .where(and(eq(splitGroupLinks.groupId, groupId), eq(splitGroupLinks.userId, user.id)));
+    if (!link) throw badRequest('not_linked', 'Ligue o grupo ao seu espaço primeiro.');
+    return syncGroupLink(db, link);
+  });
+
+  /** Desliga: os lançamentos já criados ficam como estão; novas despesas deixam de entrar. */
+  app.delete('/api/split-groups/:groupId/link', pre, async (request, reply) => {
+    const user = currentUser(request);
+    const { groupId } = groupParams.parse(request.params);
+    await memberOf(db, user.id, groupId);
+    await db
+      .delete(splitGroupLinks)
+      .where(and(eq(splitGroupLinks.groupId, groupId), eq(splitGroupLinks.userId, user.id)));
     return reply.code(204).send();
   });
 }

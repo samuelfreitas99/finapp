@@ -1,6 +1,6 @@
 # Roadmap e progresso
 
-**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 8** (Fases 1–7 concluídas; Fase 2 aguarda confirmar o uso real).
+**Para qualquer IA**: pegue a primeira tarefa não marcada da fase atual, leia os docs indicados, implemente com testes, marque `[x]` aqui no mesmo PR e anote em "Registro" o que foi feito. Fase atual: **Fase 9** (Fases 1–8 concluídas; Fase 2 aguarda confirmar o uso real).
 
 Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arquitetura.md, API = api.md, DS = design.md.
 
@@ -78,7 +78,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Espaço compartilhado: convites, membros, seletor de espaço, visão consolidada
 - [x] Divisão de despesas do casal e saldo entre membros
 - [x] Racha: grupos, despesas, saldos, simplificação, acertos com Pix
-- [ ] Integração do racha com o espaço pessoal
+- [x] Integração do racha com o espaço pessoal
 
 ## Fase 9: Extras
 - [ ] Correção por índice (INCC/IPCA/IGP-M) com busca automática (API pública do Banco Central/IBGE, gratuita)
@@ -116,6 +116,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - Espaço compartilhado: o dono cria o espaço, convida (código de 7 dias, uso único, e-mail opcional) e remove membros; membros veem e editam tudo e podem sair; o dono não sai. Espaço pessoal nunca é compartilhado (convite para ele é recusado). Quem já tem conta entra por `POST /api/invites/accept`; quem não tem, usa o código no cadastro. Excluir/transferir a posse de um espaço compartilhado ainda não existe. Contas e cartões do espaço compartilhado têm `owner_user_id` no banco, mas a API ainda não usa. O consolidado soma saldo, previsto e receitas/despesas efetivadas de todos os espaços do usuário (cada um por seu `buildDashboard`); a divisão de despesas entre membros é o próximo item.
 - Divisão no casal: por despesa, na tela de edição ("Dividir com o espaço"): quem pagou com dinheiro próprio + `equal`/`percent`/`amount`; o resto da divisão vai para quem pagou; despesa sem divisão não gera saldo (saiu do dinheiro do espaço). O saldo só conta despesas **efetivadas** e não excluídas; se o valor mudar depois, a tela avisa ("refazer a divisão") e o saldo usa as partes gravadas. O padrão do espaço (igual, percentual ou sem divisão) é só **sugestão** na tela de divisão: não divide sozinho as despesas novas. Acerto = pagamento registrado entre dois membros (desfazível). Despesas de cartão podem ser divididas como as demais.
 - Racha: grupo fora de qualquer espaço; acesso por participante (`split_participants.user_id`). Amigo sem conta entra só com o nome e pode ser "assumido" depois por quem entrar com o código (`join_code`, o mesmo formato dos convites). Despesa com um ou mais pagadores e divisão `equal`/`percent`/`amount`/`shares`; o resto dos centavos vai para o primeiro pagador. Quem aparece em despesa ou acerto não pode ser removido; grupo arquivado fica só para consulta. "Acertos com Pix" registra o pagamento (método livre); não gera cobrança nem lançamento (isso é a integração com o espaço pessoal, próximo item). Nesta versão a tela cadastra um pagador por despesa (a API aceita vários). Qualquer participante com conta edita e exclui despesas do grupo.
+- Integração do racha: opcional por grupo e por pessoa. A **parte** do usuário em cada despesa vira uma despesa efetivada (data da despesa, categoria escolhida ou sem) na conta que ele escolher, em qualquer espaço dele; sincroniza ao ligar (inclui o passado) e a cada despesa lançada, editada ou excluída no grupo, e sob demanda. Escolha de modelo: o lançamento é o **custo** da pessoa, então o saldo da conta já embute o que ela deve ou tem a receber (quem pagou tudo vê só a própria parte; quem não pagou vê a parte debitada mesmo antes de acertar). Por isso **acertos entre amigos não geram lançamento** (só movem dinheiro entre "a receber" e caixa, sem mudar o custo) e não há linha "a receber" separada no Planejamento. O que o usuário apagar do lançamento não é recriado; desligar mantém o que já foi criado. Despesa com data anterior ao saldo inicial da conta é ignorada.
 
 ## Registro
 - 01/10/2026: decisões e documentação inicial (Claude).
@@ -170,3 +171,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: espaço compartilhado: `POST /api/spaces`, `PATCH /api/spaces/:id`, membros (listar/remover/sair), `POST /api/invites/accept`, `PUT /api/me/active-space`, `GET /api/consolidated`; seletor de espaço no topo, tela "Espaços e membros" e cartão "Todos os espaços" no Início (Claude).
 - 03/10/2026: divisão do casal: tabelas `transaction_splits` e `space_settlements` (migração 0016), `PUT/GET /transactions/:id/split`, `GET/PUT /split-settings`, `GET /couple/balance`, `POST/DELETE /couple/settlements`; seção "Dividir com o espaço" na edição da despesa e tela "Divisão do espaço (casal)" (Claude).
 - 03/10/2026: racha: tabelas `split_groups`, `split_participants`, `split_expenses`, `split_expense_payers`, `split_expense_shares`, `split_settlements` (migração 0017), API `/api/split-groups/*` (grupos, participantes, entrar com código, despesas, saldos com simplificação, acertos) e telas "Racha entre amigos" e do grupo (Claude).
+- 03/10/2026: integração do racha com o espaço pessoal: `split_group_links` e `split_expense_postings` (migração 0018), `GET/PUT/DELETE /api/split-groups/:id/link` e `POST .../link/sync`, sincronização automática das despesas do grupo e cartão "No meu espaço pessoal" na tela do grupo. **Fase 8 concluída** (Claude).

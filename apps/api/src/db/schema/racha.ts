@@ -14,6 +14,9 @@ import {
 } from 'drizzle-orm/pg-core';
 import { createdAt, deletedAt, id, inList, updatedAt } from './_helpers';
 import { users } from './auth';
+import { accounts, categories } from './registry';
+import { spaces } from './spaces';
+import { transactions } from './transactions';
 
 const SPLIT_MODES = ['equal', 'percent', 'amount', 'shares'] as const;
 
@@ -147,4 +150,47 @@ export const splitSettlements = pgTable(
     check('split_settlements_amount_check', sql`${t.amount} > 0`),
     check('split_settlements_parties_check', sql`${t.fromParticipantId} <> ${t.toParticipantId}`),
   ],
+);
+
+/**
+ * Integração opcional do racha com o espaço pessoal (RN 11): o usuário escolhe em qual
+ * espaço/conta a **parte dele** de cada despesa do grupo vira lançamento.
+ */
+export const splitGroupLinks = pgTable(
+  'split_group_links',
+  {
+    id: id(),
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => splitGroups.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    spaceId: uuid('space_id')
+      .notNull()
+      .references(() => spaces.id, { onDelete: 'cascade' }),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id),
+    categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('split_group_links_group_user_uq').on(t.groupId, t.userId)],
+);
+
+/** Qual lançamento representa a parte do usuário em cada despesa (evita duplicar ao sincronizar). */
+export const splitExpensePostings = pgTable(
+  'split_expense_postings',
+  {
+    expenseId: uuid('expense_id')
+      .notNull()
+      .references(() => splitExpenses.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    transactionId: uuid('transaction_id')
+      .notNull()
+      .references(() => transactions.id),
+  },
+  (t) => [primaryKey({ columns: [t.expenseId, t.userId] })],
 );
