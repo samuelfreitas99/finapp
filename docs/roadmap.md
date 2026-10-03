@@ -13,7 +13,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - [x] Protótipos das telas principais como Artifact para aprovação (DS): https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH (aprovado em 01/10/2026)
 - [x] Subdomínio no túnel Cloudflare existente apontando para o app "hello world" (ARQ › Deploy)
 - [x] Backup diário com restic + teste de restauração (ARQ › Backup)
-  - [ ] destino externo (offsite): escolher B2, Google Drive (rclone) ou outro disco e configurar no `.env`
+  - [x] destino externo (offsite): Google Drive do `contato.finappoficial@gmail.com` via rclone (03/10/2026)
 
 ## Fase 1: Núcleo (`packages/core`, só funções puras e testes)
 - [x] `money`: centavos, divisão com resto (5.1), formatação pt-BR (RN 5.1)
@@ -100,7 +100,7 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
   - [x] Esqueci a senha (link por e-mail via SMTP, ou gerado pelo servidor com `--reset-link`)
   - [x] Conta de e-mail para envio (SMTP) configurada no `.env` (Gmail `contato.finappoficial@gmail.com` com senha de app)
   - [x] Política de privacidade e termos de uso (LGPD): `/privacidade` e `/termos`, públicas; texto simples, **sem revisão jurídica** (recomendada antes de abrir a estranhos)
-  - [ ] Backup externo (offsite)
+  - [x] Backup externo (offsite): Google Drive, cópia diária após o backup local, restauração testada
   - [ ] Cadastro aberto com Cloudflare Turnstile (só quando sair do convite)
 
 ## Dúvidas em aberto
@@ -211,3 +211,4 @@ Legenda dos docs: RN = regras-de-negocio.md, MD = modelo-de-dados.md, ARQ = arqu
 - 03/10/2026: importação com conciliação (confirma previstos, liga lançamentos feitos à mão, `matchId` no commit, contadores `matched`/`confirmed`/`linked`) e **fatura de cartão** (CSV/OFX por cartão e mês, pagamento da fatura ignorado, índice único `card_id + import_key`, migração 0023); guia "Como funciona" na tela (Claude).
 - 03/10/2026: parcelado em andamento na tela ("Compra nova" / "Já estou pagando" no Parcelar, valor da parcela ou total, parcela atual; botão em Parcelamentos com `/lancar?parcelado=andamento`); "Já pago" do plano conta as parcelas anteriores (Claude).
 - 03/10/2026: ajustes de uso (3): Início com "Cartões e dívidas" (fatura fechada a pagar ou a aberta de cada cartão, total devido e próxima parcela); compra/parcela no cartão em Lançamentos mostra "Na fatura" sem "Confirmar"; "Pago com" da dívida começa na primeira conta (antes "Só acompanhar" escondia as parcelas do Planejamento); valores não quebram linha (Claude).
+- 03/10/2026: backup externo ligado: `OFFSITE_REMOTE=gdrive:finapp-backup` (Drive do contato.finappoficial, escopo `drive.file`), `rclone.conf` em `/srv/finapp-backups/rclone`; primeira cópia feita e restauração conferida a partir do Drive (restic snapshots + pg_restore -l) (Claude).
