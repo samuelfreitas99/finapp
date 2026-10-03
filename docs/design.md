@@ -37,7 +37,7 @@ Protótipo de referência: https://claude.ai/artifact/TipKvxg72ojK7zERMLsgzH
 - Seletor de espaço (Pessoal / Casa) no topo, com opção "Consolidado".
 
 ## Telas principais
-1. **Início**: saldo atual total (olho para ocultar) · "Previsto para o fim do mês" · cartão "Próximos vencimentos" (7 dias) · faturas abertas com barra de limite · resumo receitas x despesas do mês · gastos por categoria (rosca) · progresso das dívidas · alertas.
+1. **Início**: (implementado) saldo, previsto, próximos vencimentos, **Cartões e dívidas** (a fatura que importa agora de cada cartão: a fechada a pagar ou a aberta; total devido e próxima parcela), entradas/saídas. (Ideia original:) saldo atual total (olho para ocultar) · "Previsto para o fim do mês" · cartão "Próximos vencimentos" (7 dias) · faturas abertas com barra de limite · resumo receitas x despesas do mês · gastos por categoria (rosca) · progresso das dívidas · alertas.
 2. **Lançar (+)**: abas Despesa / Receita / Transferência. Teclado numérico abre já no valor. Categoria em grade de ícones (mais usadas primeiro). Conta ou cartão (último usado como padrão). Botões rápidos: "Pix", "Parcelar", "Repetir". Data hoje, com atalhos Ontem/Outra.
 3. **Lançamentos**: lista agrupada por dia, seletor de mês, filtros em chips, busca. Previstos com estilo atenuado e botão "Confirmar".
 4. **Cartões**: carrossel de cartões; fatura do mês selecionado com total, status, fechamento/vencimento, itens, "Pagar fatura"; aba "Parcelamentos ativos" com progresso.

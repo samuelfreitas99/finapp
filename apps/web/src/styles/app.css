@@ -2332,3 +2332,9 @@ h3 {
   font-size: 13px;
   color: var(--primary);
 }
+
+/* Valores nas listas nunca quebram entre o sinal e o número. */
+.row-link > .num,
+.row-link__value .num {
+  white-space: nowrap;
+}

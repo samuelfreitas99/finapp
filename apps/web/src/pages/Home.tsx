@@ -2,18 +2,20 @@ import { isPastDue, parseISODate } from '@finapp/core';
 import { AlertTriangle, CalendarCheck, Landmark, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 import { useMe } from '../auth/session';
+import { HomeObligations } from '../components/HomeObligations';
 import { OnboardingCard } from '../components/OnboardingCard';
 import { TopBar } from '../layout/AppLayout';
 import { dayLabel } from '../lib/dates';
 import { money, monthShort } from '../lib/format';
 import { useHiddenValues } from '../lib/hidden-values';
-import { useAccounts, useConsolidated, useDashboard } from '../lib/queries';
+import { useAccounts, useCards, useConsolidated, useDashboard } from '../lib/queries';
 import { errorText } from './transactions/EntryForm';
 
 export function HomePage() {
   const { data: me } = useMe();
   const dash = useDashboard();
   const accounts = useAccounts();
+  const cards = useCards();
   const consolidated = useConsolidated((me?.spaces.length ?? 0) > 1);
   const { hidden } = useHiddenValues();
   const firstName = me?.user.name.split(' ')[0] ?? '';
@@ -167,6 +169,8 @@ export function HomePage() {
           </ul>
         )}
       </section>
+
+      <HomeObligations cards={cards.data ?? []} />
 
       <section className="month-summary" aria-label={`Receitas e despesas de ${monthShort(month)}`}>
         <div className="card card--pad">

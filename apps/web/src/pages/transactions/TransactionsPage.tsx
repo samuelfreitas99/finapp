@@ -223,6 +223,8 @@ export function TransactionsPage() {
                     ? Scale
                     : categoryIcon(cat?.icon);
                 const planned = t.status === 'planned';
+                // Compra/parcela no cartão não se confirma: ela já está na fatura.
+                const onCardBill = planned && Boolean(t.cardId) && !t.estimated;
                 const meta = [
                   isTransfer
                     ? `${t.type === 'transfer_out' ? 'Saiu de' : 'Entrou em'} ${accountName.get(t.accountId ?? '') ?? 'conta'}`
@@ -251,7 +253,9 @@ export function TransactionsPage() {
                         <span className="row-link__title">{t.description}</span>
                         <span className="row-link__meta">
                           {planned && (
-                            <span className="pill">{t.estimated ? 'Estimado' : 'Previsto'}</span>
+                            <span className="pill">
+                              {t.estimated ? 'Estimado' : onCardBill ? 'Na fatura' : 'Previsto'}
+                            </span>
                           )}
                           {meta}
                         </span>
@@ -260,7 +264,7 @@ export function TransactionsPage() {
                         {money(signed(t), hidden, true)}
                       </strong>
                     </Link>
-                    {planned && <ConfirmPlanned t={t} />}
+                    {planned && !onCardBill && <ConfirmPlanned t={t} />}
                   </li>
                 );
               })}

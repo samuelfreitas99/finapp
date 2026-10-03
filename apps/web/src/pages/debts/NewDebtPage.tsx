@@ -287,6 +287,9 @@ function simpleReady(f: FormState): boolean {
   return s.installment > 0 || (simpleRate(s) !== null && f.moneyAmount > 0);
 }
 
+/** "Pago com" ainda não escolhido: usa a primeira conta (para as parcelas entrarem no Planejamento). */
+const AUTO_TARGET = 'auto';
+
 function toBody(f: FormState): DebtBody {
   const card = isCardTarget(f.target) ? f.target.slice(CARD_PREFIX.length) : null;
   const useSimple = f.kind !== 'property' && !f.advanced;
@@ -622,7 +625,7 @@ export function NewDebtPage() {
     direction: 'i_owe',
     name: '',
     institution: '',
-    target: '',
+    target: AUTO_TARGET,
     completionDate: '',
     completionDeadline: '',
     assetValue: 0,
@@ -660,8 +663,10 @@ export function NewDebtPage() {
       (!needsCompletion || hasCompletion);
   const setSimple = (next: Partial<SimpleState>) =>
     setForm((f) => ({ ...f, simple: { ...f.simple, ...next } }));
+  const withTarget = (f: FormState): FormState =>
+    f.target === AUTO_TARGET ? { ...f, target: accounts.data?.[0]?.id ?? '' } : f;
   const deferred = useDeferredValue(form);
-  const preview = useDebtPreview(ready ? toBody(deferred) : null);
+  const preview = useDebtPreview(ready ? toBody(withTarget(deferred)) : null);
 
   const chooseKind = (kind: DebtKind) =>
     setForm((f) => ({
@@ -690,7 +695,7 @@ export function NewDebtPage() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    create.mutate(toBody({ ...form, pastPaid: form.pastAllPaid ? pastRows : 0 }), {
+    create.mutate(toBody(withTarget({ ...form, pastPaid: form.pastAllPaid ? pastRows : 0 })), {
       onSuccess: (d) => {
         toast({ text: `"${d.name}" cadastrada com ${d.summary.totalCount} parcelas.` });
         navigate(`/dividas/${d.id}`, { replace: true });
@@ -785,7 +790,7 @@ export function NewDebtPage() {
             <select
               id="target"
               className="input"
-              value={form.target}
+              value={withTarget(form).target}
               onChange={(e) => set('target', e.target.value)}
             >
               <option value="">Só acompanhar (não lançar parcelas)</option>
@@ -809,7 +814,9 @@ export function NewDebtPage() {
                 )}
             </select>
             <span className="muted field-hint">
-              Cada parcela vira um lançamento previsto e entra no Planejamento.
+              {withTarget(form).target
+                ? 'Cada parcela vira um lançamento previsto e entra no Planejamento e nos avisos.'
+                : 'Só acompanhar: as parcelas não entram no Planejamento nem nos avisos de vencimento.'}
             </span>
           </div>
           {MONEY_KINDS.includes(form.kind) && (form.mode === 'new' || form.advanced) && (
